@@ -112,6 +112,17 @@ Legend for relevance: **A** = adopt as a real measurement in our dev contour · 
 3. **Expert panel as ground truth** for the 3–5 headline comparisons (demo task + held-out tasks); LLM judges used only for cheap iteration signal, with ≥2 judge models and reported disagreement. Rationale: arXiv 2606.06454 shows judge verdicts collapse under real controls; human top-3 recovery on SummEval is only 23–32% even at high reliability (arXiv 2609.27787) — so we treat expert scoring as the decision-grade instrument and say so.
 4. **Pre-registered minimum detectable difference**: at our item counts (≈2–4 tasks × 2–3 artifacts), only differences larger than ~1 point on a 5-point rubric (or a full rank swap in pairwise) will be claimed; smaller effects are reported as "no detectable difference".
 
+### 2.3 Plateau / stopping protocol (owner rule #10, BRIEF 2026-11-16)
+
+Owner rule: *a feature/skill/wrapper is complete NOT when the team decides, but when the gain on a professional benchmark over several iterations with new hypotheses stops being strong (plateau); without benchmark proof of plateau a feature is not declared done.*
+
+Operationalization for our eval suite:
+1. **Per feature with a benchmark** (M1–M9, B1–B12 in ROADMAP): an iteration loop — implement a hypothesis variant → measure on the eval suite → compare to the previous iteration.
+2. **"Strong gain" = above the pre-registered MDD** (§2.2 point 4): >1 rubric point, a full pairwise rank swap, or the script-metric threshold defined per feature. Below that = "no detectable difference".
+3. **Plateau declared** when two consecutive iterations with *different hypotheses* (not re-runs of the same variant) both show gains below MDD. The iteration history (variant → hypothesis → metric → delta) is recorded in `docs/research/measurements.md` — that table IS the plateau evidence.
+4. **No plateau evidence → feature is not "done"**: it stays in "iterating" state in the roadmap; if the deadline forces shipping, the description document must state "plateau not reached, best-known configuration shipped" explicitly.
+5. OpenClaw monitors: the rule exists so self-improvement stays justified — every iteration must be a *new hypothesis* (from `hypothesis-validation.md` or a new one), not parameter fiddling; otherwise the loop is gaming the metric.
+
 ---
 
 ## 3. Human / baseline comparators (owner requirement: compare vs manual analyst and vs plain chat)
