@@ -77,3 +77,14 @@
 
 - `project/materials/telco-customer-churn.csv` (скачан 2026-11-16,
   977 501 байт, HTTP 200)
+
+## Ре-проверка 2026-11-16 (О4, браузер, живая перекачка)
+
+- Зеркало https://raw.githubusercontent.com/alexeygrigorev/mlbookcamp-code/master/chapter-03-churn-prediction/WA_Fn-UseC_-Telco-Customer-Churn.csv
+  резолвится; живой подсчёт в браузере: 7 044 строки (7 043 записи +
+  заголовок), 21 колонка, Churn=Yes — 1 869, доля 26.54% — совпадает
+  с записью ev-002 точно (артефакт прогона —
+  `eval/runs/browser-live-check-2026-11-16/results.md`).
+- Страница https://www.kaggle.com/datasets/blastchar/telco-customer-churn
+  резолвится; название, 7 043 строки, 21 колонка, упоминание IBM —
+  совпадают. Скачивание по-прежнему требует авторизации (не обходили).

@@ -245,13 +245,25 @@ def _is_allowlisted(title: str) -> bool:
 
 
 def _is_measurement_log(path: Path) -> bool:
-    """Правило C: журнал измерений/прогона (путь содержит project/council/
-    или файл measurements.md). Для таких файлов основанием числового
-    утверждения может быть ссылка на артефакт прогона."""
+    """Правило C: журнал измерений/прогона. Для таких файлов основанием
+    числового утверждения может быть ссылка на артефакт прогона.
+
+    Охват (намеренно узкий): журналы Консилиума (`project/council/`),
+    файл `measurements.md`, журналы стенда О4 (`eval/runs/…`) и
+    результаты бенчмарков (`eval/benchmarks/…/results.md`,
+    `analysis.md`, `manifest.md`). Правило C не ослабляет проверку
+    обычных артефактов — для них основание только в строке.
+    """
     parts = path.parts
     if "council" in parts:
         return True
-    return path.name == "measurements.md"
+    if path.name == "measurements.md":
+        return True
+    if "runs" in parts and "eval" in parts:
+        return True
+    if "benchmarks" in parts and path.name in ("results.md", "analysis.md", "manifest.md"):
+        return True
+    return False
 
 
 def _has_reference(line: str, measurement_log: bool = False) -> bool:

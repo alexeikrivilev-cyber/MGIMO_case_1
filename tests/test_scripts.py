@@ -350,6 +350,38 @@ class CheckSourcesMeasurementLogTests(TempDirTestCase):
         result = run_script(CHECK_SOURCES, str(path))
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
 
+    def test_o4_stand_journals_are_measurement_logs(self) -> None:
+        # О4: журналы стенда (eval/runs/**, результаты бенчмарков) —
+        # тот же класс, что журналы Консилиума (правило C).
+        for rel in (
+            "eval/runs/ab-options-demo-retention/manifest.md",
+            "eval/benchmarks/dabstep/runs/2026-11-16-dev10/results.md",
+        ):
+            path = self.write(
+                rel,
+                "# Прогон\n\n## Итог\n\n- Точность 7/10, стоимость $1.27 "
+                "(артефакт: `results.json`).\n",
+            )
+            result = run_script(CHECK_SOURCES, str(path))
+            self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_o4_stand_journal_bare_number_exit_2(self) -> None:
+        path = self.write(
+            "eval/runs/critic-matrix/analysis.md",
+            "# Анализ\n\n## Метрики\n\n- Точность 7/10, стоимость $1.27.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_benchmarks_readme_not_measurement_log(self) -> None:
+        # README стенда — не журнал: правило C на него не распространяется.
+        path = self.write(
+            "eval/benchmarks/dabstep/README.md",
+            artifact("## Метрики\n- Точность 7/10.\n"),
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
     def test_section_reference_grounds_table_numbers(self) -> None:
         # Числа в таблице секции обоснованы ссылкой на артефакт в теле секции
         # (процедура измерения документирована в секции).
