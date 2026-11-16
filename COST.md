@@ -37,7 +37,7 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e1b345cf1ffe7gMpPaxqOaYKzc | проверка мержа хука | step-5-preview | 230 | 104 | 0 | 73344 | 0 | 0 | $0.01 |
 | 2026-11-16 | ses_e1b2ed595ffetRIQcJzHUUXuNU | проба целевой среды (проверка модели) | step-5-preview | 120 | 6 | 0 | 36608 | 0 | 0 | $0.00 |
 | 2026-11-16 | ses_e1b2d5cc8ffe4OA7wYRI8UkGol | О2 инфраструктура: навыки, шаблоны, check_options (делегация OpenCode) | step-5-preview | 66778 | 50954 | 0 | 7275968 | 0 | 0 | $0.93 |
-| 2026-11-16 | ses_e1b1903a6ffeJ0RzpozjLwP9St | О2 инфраструктура принята и закоммичена | step-5-preview | 61333 | 43734 | 0 | 3770880 | 0 | 0 | $0.56 |
+| 2026-11-16 | ses_e1b1903a6ffeJ0RzpozjLwP9St | Шаг 2 (ИССЛЕДОВАНИЕ) | step-5-preview | 61333 | 43734 | 0 | 3770880 | 0 | 0 | $0.56 |
 | 2026-11-16 | ses_e1b1269a4ffe5gJIhbGoK6LnQl | Шаг 3 | step-5-preview | 68250 | 47628 | 0 | 3161728 | 0 | 0 | $0.51 |
 | 2026-11-16 | ses_e1b0c278effeAbKyzmO0FRkI0u | Шаг 4 | step-5-preview | 50185 | 27678 | 0 | 1890112 | 0 | 0 | $0.31 |
 <!-- cost-rows:end -->
