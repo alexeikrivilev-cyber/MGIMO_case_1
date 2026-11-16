@@ -33,3 +33,6 @@ __pycache__/
 
 # --- Бенчмарк-стенд: сырьё перекачиваемо (URL — в fetch_data.sh), в git не идёт ---
 eval/benchmarks/dabstep/data/
+
+# --- Метка прогона для хука cost-append (TASK-hermes-6 п.4: STATE.md раннеры не трогают) ---
+eval/.cost-label

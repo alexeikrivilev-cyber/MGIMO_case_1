@@ -63,6 +63,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "eval"))
+
+from arg_chunk import ARG_LIMIT_BYTES, chunk_prompt  # noqa: E402,F401 (реэкспорт для тестов)
+import run_label  # noqa: E402  (метка прогона — отдельный файл, не STATE.md)
 
 EXIT_OK = 0
 EXIT_USAGE = 1
@@ -76,36 +80,6 @@ DEFAULT_FEATURE = "options"
 # Лимит точечных правок critic-loop2: сколько правок из ответа модели
 # реально попадает в файл патчей (контракт промпта — не более 15).
 MAX_PATCH_EDITS = 15
-
-# Linux ограничивает ОДИН аргумент exec до 128 КБ (MAX_ARG_STRLEN).
-# Промпт сессии council-full на held-out (бриф + 5 выходов Phase 1 +
-# 5 выходов Phase 2) — 133 КБ: одним argv он не влезает и процесс
-# падал с OSError E2BIG (внешне выглядело как «тихое убийство»).
-# Поэтому промпт режется по границам UTF-8 на части и передаётся
-# несколькими позиционными аргументами `opencode run` (склейка
-#message через пробел — проверено).
-ARG_LIMIT_BYTES = 120_000
-
-
-def chunk_prompt(prompt: str, limit_bytes: int = ARG_LIMIT_BYTES) -> list[str]:
-    """Промпт → части, каждая ≤ limit_bytes байт и валидный UTF-8.
-
-    Граница реза никогда не рассекает многобайтовый символ (откат до
-    lead-byte). Промпт в пределах лимита возвращается как есть.
-    """
-    data = prompt.encode("utf-8")
-    if len(data) <= limit_bytes:
-        return [prompt]
-    chunks: list[bytes] = []
-    start = 0
-    while start < len(data):
-        end = min(start + limit_bytes, len(data))
-        if end < len(data):
-            while end > start and (data[end] & 0xC0) == 0x80:
-                end -= 1  # откат из середины многобайтового символа
-        chunks.append(data[start:end])
-        start = end
-    return [chunk.decode("utf-8") for chunk in chunks]
 
 TASKS = {
     "demo-retention": {
@@ -537,40 +511,19 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def set_state_step(label: str) -> str | None:
-    state = REPO_ROOT / "STATE.md"
-    try:
-        text = state.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    match = re.search(r"(##\s*шаг\s*\n\n)([^\n#]*(?:\n(?![#\n])[^\n#]*)*)", text)
-    if not match:
-        return None
-    previous = match.group(2).strip()
-    patched = text[: match.start(2)] + label + text[match.end(2) :]
-    try:
-        state.write_text(patched, encoding="utf-8")
-    except OSError:
-        return None
-    return previous
+def set_run_label(label: str) -> None:
+    """Подпись прогона для хука cost-append — в отдельный файл метки.
+
+    STATE.md принадлежит агенту: раннер пишет метку в `eval/.cost-label`
+    (модуль run_label), поэтому правки STATE во время сессии не
+    затираются restore'ом (гонка, найденная в О4-хвосте;
+    TASK-hermes-6 п.4).
+    """
+    run_label.set_run_label(label)
 
 
-def restore_state_step(previous: str | None) -> None:
-    if previous is None:
-        return
-    state = REPO_ROOT / "STATE.md"
-    try:
-        text = state.read_text(encoding="utf-8")
-    except OSError:
-        return
-    match = re.search(r"(##\s*шаг\s*\n\n)([^\n#]*(?:\n(?![#\n])[^\n#]*)*)", text)
-    if not match:
-        return
-    patched = text[: match.start(2)] + previous + text[match.end(2) :]
-    try:
-        state.write_text(patched, encoding="utf-8")
-    except OSError:
-        pass
+def clear_run_label() -> None:
+    run_label.clear_run_label()
 
 
 def run_session(prompt: str, out_dir: Path, name: str, model: str, timeout: int) -> tuple[int, str]:
@@ -582,7 +535,7 @@ def run_session(prompt: str, out_dir: Path, name: str, model: str, timeout: int)
     # Метка для хука cost-append: «О4: ab-<прогон>-<рука>-<сессия>» —
     # прогон и рука берутся из пути (out_dir = <прогон>/<рука>), чтобы
     # $/run атрибутировался однозначно при нескольких прогонах.
-    previous = set_state_step(f"О4: ab-{out_dir.parent.name}-{out_dir.name}-{name}")
+    set_run_label(f"О4: ab-{out_dir.parent.name}-{out_dir.name}-{name}")
     try:
         proc = subprocess.run(
             ["opencode", "run", "--model", model, *chunk_prompt(prompt)],
@@ -597,7 +550,7 @@ def run_session(prompt: str, out_dir: Path, name: str, model: str, timeout: int)
         )
         return EXIT_RUN_FAILED, ""
     finally:
-        restore_state_step(previous)
+        clear_run_label()
     (out_dir / f"{name}.out").write_text(proc.stdout, encoding="utf-8")
     (out_dir / f"{name}.err").write_text(proc.stderr, encoding="utf-8")
     (out_dir / f"{name}.end").write_text(

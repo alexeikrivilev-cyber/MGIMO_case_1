@@ -39,6 +39,10 @@ const SCRIPTS_DIR = resolve(REPO_ROOT, "scripts");
 const COST_MD = resolve(REPO_ROOT, "COST.md");
 const STATE_MD = resolve(REPO_ROOT, "STATE.md");
 const HOOKS_LOG = resolve(REPO_ROOT, ".opencode/hooks.log");
+// Метка прогона раннеров (run_critic.py, run_ab.py) — ОТДЕЛЬНЫЙ файл:
+// STATE.md принадлежит агенту, общий файл давал гонку read/write
+// (правки агента затирались restore'ом метки; TASK-hermes-6 п.4).
+const RUN_LABEL = resolve(REPO_ROOT, "eval/.cost-label");
 
 // Прод-прайс step-5-preview, $ за 1M токенов (§1.8 прайс-документа).
 // Формула: input×1.00 + cache.read×0.10 + output×2.70 (в метриках OpenCode
@@ -115,6 +119,14 @@ function snapshotFrom(tokens: Record<string, any> | undefined): TokenSnapshot | 
 }
 
 function currentStep(): string {
+  // 1) метка активного прогона раннера — приоритетнее (атрибуция $/run);
+  try {
+    const label = readFileSync(RUN_LABEL, "utf-8").trim();
+    if (label) return label.slice(0, 40);
+  } catch {
+    // файла метки нет — обычная сессия агента, падаём на STATE.md
+  }
+  // 2) иначе — шаг агента из STATE.md (как до фикса изоляции).
   try {
     const text = readFileSync(STATE_MD, "utf-8");
     const match = /^##\s*шаг\s*\n+([^\n#]+)/m.exec(text);

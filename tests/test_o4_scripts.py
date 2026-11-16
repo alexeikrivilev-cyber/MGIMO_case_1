@@ -107,24 +107,58 @@ class RunCriticCliTests(unittest.TestCase):
             self.assertNotIn("ДОПОЛНИТЕЛЬНЫЙ МАНДАТ", self_plain)
 
 
-class StateStepLabelTests(unittest.TestCase):
-    """Метка «Шаг» для хука cost-append: выставление и точное восстановление."""
+class RunLabelTests(unittest.TestCase):
+    """Метка прогона для хука cost-append: отдельный файл, STATE.md не трогается.
 
-    def test_set_and_restore_identical(self) -> None:
+    Дефект (TASK-hermes-6 п.4): прежняя реализация писала метку в STATE.md
+    и восстанавливала «предыдущее» значение — правки агента во время
+    сессии критика затирались restore'ом. Метка теперь живёт в
+    eval/.cost-label; STATE.md раннеры не открывают на запись вовсе.
+    """
+
+    def test_label_file_set_and_clear(self) -> None:
+        module = load_module("run_label_under_test", EVAL_DIR / "run_label.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            module.LABEL_PATH = Path(tmp) / ".cost-label"
+            module.set_run_label("О4: ab-test-arm-session")
+            self.assertTrue(module.LABEL_PATH.is_file())
+            self.assertEqual(module.current_run_label(), "О4: ab-test-arm-session")
+            module.clear_run_label()
+            self.assertFalse(module.LABEL_PATH.exists())
+            self.assertIsNone(module.current_run_label())
+            module.clear_run_label()  # повторное удаление — не ошибка
+
+    def test_state_md_untouched_during_run(self) -> None:
+        """Прогон метки не изменяет STATE.md агента ни на байт."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            shutil_copy = (REPO_ROOT / "STATE.md").read_text(encoding="utf-8")
-            (root / "STATE.md").write_text(shutil_copy, encoding="utf-8")
-            module = load_module("run_critic_under_test", SCRIPTS_DIR / "run_critic.py")
+            state = root / "STATE.md"
+            original = (REPO_ROOT / "STATE.md").read_text(encoding="utf-8")
+            state.write_text(original, encoding="utf-8")
+            module = load_module("run_critic_label_under_test", SCRIPTS_DIR / "run_critic.py")
             module.REPO_ROOT = root
-            previous = module.set_state_step("О4: test-label")
-            self.assertIsNotNone(previous)
-            patched = (root / "STATE.md").read_text(encoding="utf-8")
-            self.assertIn("## шаг\n\nО4: test-label", patched)
-            module.restore_state_step(previous)
-            self.assertEqual(
-                (root / "STATE.md").read_text(encoding="utf-8"), shutil_copy
-            )
+            module.run_label.LABEL_PATH = root / "eval" / ".cost-label"
+            module.set_run_label("О4: test-label")
+            self.assertEqual(state.read_text(encoding="utf-8"), original)
+            module.clear_run_label()
+            self.assertEqual(state.read_text(encoding="utf-8"), original)
+
+    def test_agent_edits_state_during_session_survive(self) -> None:
+        """Гонка больше не теряет правки: агент правит STATE, пока метка жива."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / "STATE.md"
+            original = (REPO_ROOT / "STATE.md").read_text(encoding="utf-8")
+            state.write_text(original, encoding="utf-8")
+            module = load_module("run_critic_race_under_test", SCRIPTS_DIR / "run_critic.py")
+            module.REPO_ROOT = root
+            module.run_label.LABEL_PATH = root / "eval" / ".cost-label"
+            module.set_run_label("О4: test-label")
+            # агент пишет STATE.md своей копией во время «сессии»
+            edited = original.replace("## шаг", "## шаг-правка-агента", 1)
+            state.write_text(edited, encoding="utf-8")
+            module.clear_run_label()
+            self.assertEqual(state.read_text(encoding="utf-8"), edited)
 
 
 # --------------------------------------------------------------------------

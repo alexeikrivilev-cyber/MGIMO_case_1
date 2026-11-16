@@ -31,13 +31,17 @@ import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "eval"))
+
+from arg_chunk import chunk_prompt  # noqa: E402  (путь добавляется выше)
+import run_label  # noqa: E402  (метка прогона — отдельный файл, не STATE.md)
+
 EXIT_OK = 0
 EXIT_USAGE = 1
 EXIT_NOT_FOUND = 2
 EXIT_NO_KEY = 3
 EXIT_RUN_FAILED = 4
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
 
 CRITIC_ROLE = (
     "Ты — внутренний агент-критик «Стратега» с изолированным контекстом "
@@ -130,50 +134,19 @@ def build_prompt(
     )
 
 
-def set_state_step(label: str) -> str | None:
+def set_run_label(label: str) -> None:
     """Подпись прогона для хука cost-append (колонка «Шаг» в COST.md).
 
-    Хук читает STATE.md `## шаг`; выставляем метку на время прогона и
-    возвращаем прежнее значение после. Возвращает прежний текст секции
-    (или None, если файла/секции нет).
+    Метка пишется в отдельный файл `eval/.cost-label` (модуль
+    run_label): STATE.md принадлежит агенту, и раннер не трогает его —
+    иначе restore метки затирал бы правки агента (гонка, найденная в
+    прогоне О4-хвоста; TASK-hermes-6 п.4).
     """
-    state = REPO_ROOT / "STATE.md"
-    try:
-        text = state.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    import re
-
-    match = re.search(r"(##\s*шаг\s*\n\n)([^\n#]*(?:\n(?![#\n])[^\n#]*)*)", text)
-    if not match:
-        return None
-    previous = match.group(2).strip()
-    patched = text[: match.start(2)] + label + text[match.end(2) :]
-    try:
-        state.write_text(patched, encoding="utf-8")
-    except OSError:
-        return None
-    return previous
+    run_label.set_run_label(label)
 
 
-def restore_state_step(previous: str | None) -> None:
-    if previous is None:
-        return
-    state = REPO_ROOT / "STATE.md"
-    try:
-        text = state.read_text(encoding="utf-8")
-    except OSError:
-        return
-    import re
-
-    match = re.search(r"(##\s*шаг\s*\n\n)([^\n#]*(?:\n(?![#\n])[^\n#]*)*)", text)
-    if not match:
-        return
-    patched = text[: match.start(2)] + previous + text[match.end(2) :]
-    try:
-        state.write_text(patched, encoding="utf-8")
-    except OSError:
-        pass
+def clear_run_label() -> None:
+    run_label.clear_run_label()
 
 
 def main(argv: list[str]) -> int:
@@ -211,9 +184,8 @@ def main(argv: list[str]) -> int:
         encoding="utf-8",
     )
 
-    cmd = ["opencode", "run", "--model", args.model, prompt]
-    step_label = f"О4: {tag}"
-    previous_step = set_state_step(step_label)
+    cmd = ["opencode", "run", "--model", args.model, *chunk_prompt(prompt)]
+    set_run_label(f"О4: {tag}")
     try:
         proc = subprocess.run(
             cmd,
@@ -229,7 +201,7 @@ def main(argv: list[str]) -> int:
         print(f"прогон превысил таймаут {args.timeout}s: {out_dir}", file=sys.stderr)
         return EXIT_RUN_FAILED
     finally:
-        restore_state_step(previous_step)
+        clear_run_label()
 
     (out_dir / "critic.out").write_text(proc.stdout, encoding="utf-8")
     (out_dir / "critic.err").write_text(proc.stderr, encoding="utf-8")
