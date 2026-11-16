@@ -7,4 +7,23 @@
 обоснованной продуктовой и коммуникационной стратегии — и остаётся с ним
 после принятия решения.
 
-См. [BRIEF.md](BRIEF.md) — кейс, требования и критерии.
+Агент открывается в средах типа Cursor / Claude Code / GigaCode / Codex
+(единый формат инструкций — `AGENTS.md`); это НЕ программа и НЕ автономный агент.
+
+## Карта документов
+
+| Документ | Что внутри |
+|---|---|
+| [BRIEF.md](BRIEF.md) | Кейс хакатона, ТЗ, требования владельца, критерии оценки (первоисточник) |
+| [PRD.md](PRD.md) | Продуктовое и архитектурное решение: workflow, разделение знаний, routing, Консилиум, двухконтурная стоимость, риски, DoD |
+| [ROADMAP.md](ROADMAP.md) | План по дням (16–21.11.2026) с проверяемым артефактом на день; бэклог фич с измерениями |
+| [docs/research/benchmarks.md](docs/research/benchmarks.md) | Бенчмарки агентных/исследовательских систем 2025–2026: что измеряют, применимость, матрица «фича → измерение» |
+| [docs/research/hypothesis-validation.md](docs/research/hypothesis-validation.md) | Проверка гипотез (persona, мультиагентность, CoT, skills, адвокат дьявола…) с вердиктами и ссылками |
+| [docs/research/council-design.md](docs/research/council-design.md) | Фича «Консилиум»: роли, протокол, два контура (dev/prod), план измерений |
+| [docs/research/agentic-ecosystem.md](docs/research/agentic-ecosystem.md) | Экосистема «агент-как-папка» 2025–2026: AGENTS.md, skills, hooks, subagents, MCP — что оправдано |
+| [docs/research/llm-pricing-agent-costs.md](docs/research/llm-pricing-agent-costs.md) | Актуальные цены API и стоимость агентных прогонов (для двухконтурной модели стоимости) |
+
+## Статус
+
+**День 1 (16.11.2026) — завершён:** исследование, PRD, ROADMAP, research-документы.
+Дальше — по [ROADMAP.md](ROADMAP.md): День 2 — скелет агента и шаги 0–1.
