@@ -129,6 +129,23 @@ Peak = 01:00–04:00 and 06:00–10:00 UTC Mon–Fri; off-peak = half price.
 - Perplexity Agent API: model tokens + $0.0025 / web search + $0.0005 / URL fetch (hyperresearch.ai comparison page, accessed 2026-11-16).
 - Consumer: Pro $20/mo, Max $200/mo (claude.com-style plans; perplexity pricing via hyperresearch comparison).
 
+### 1.8 StepFun — source: https://platform.stepfun.ai/docs/en/guides/pricing/details (accessed 2026-11-16)
+
+| Model | Input (cache miss) $/M | Input (cache hit) $/M | Output $/M |
+|---|---|---|---|
+| step-5-preview | $1.00 | $0.10 | $2.70 |
+| step-3.7-flash | $0.20 | $0.04 | $1.15 |
+| step-3.5-flash | $0.10 | $0.02 | $0.30 |
+
+- Дословно со страницы прайса: для step-5-preview цена cache-miss включает
+  запись нового контента в кэш; выходные токены включают и reasoning, и
+  финальный ответ (reasoning не тарифицируется поверх output).
+- Кросс-проверка двумя агрегаторами (accessed 2026-11-16): artificialanalysis.ai
+  и pricepertoken.com дают те же $1.00 / $0.10 / $2.70 для step-5-preview.
+- Это международный прайс-лист; целевая среда демо (OpenCode) обращается к
+  `https://api.stepfun.ai/step_plan/v1`. Оценки в `COST.md` считаются по этой
+  таблице.
+
 ---
 
 ## 2. Deep-research product costs (published per-task figures)

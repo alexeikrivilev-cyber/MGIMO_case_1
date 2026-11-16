@@ -23,6 +23,9 @@ Thumbs.db
 # --- Кэш проверок и прогонов ---
 .pytest_cache/
 .cache/
-.opencode/
 __pycache__/
 *.pyc
+
+# --- OpenCode: окружение/зависимости/логи — вне git; конфиг и плагины — в git ---
+.opencode/node_modules/
+.opencode/hooks.log

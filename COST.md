@@ -14,6 +14,11 @@
 |---|---|---|---|---|---|---|
 | 2026-11-16 | День 1: research (2 сабагента, 23 API-вызова) | Sonnet 5.5 (list, без кэша) | 4,189,926 | 48,802 | ~8.87 | appendix `docs/research/llm-pricing-agent-costs.md` |
 | 2026-11-16 | День 2: постановка, скелет, демо-задача (оркестратор) | step-5-preview (Hermes) | — | — | не метрится рантаймом | отмечено честно, не оцениваем |
+| 2026-11-16 | Мета: делегация OpenCode #1 — скрипты check_sources/check_state + тесты | step-5-preview (OpenCode) | 10 963 | 41 221 | ~0.23 | сессия ses_e1b51dc58ffeiR65GfbdYjCQtd (cache-read 1 099 264) |
+| 2026-11-16 | Мета: делегация OpenCode #2 — скрипт cost_report | step-5-preview (OpenCode) | 55 806 | 7 369 | ~0.19 | сессия ses_e1b5e2a23ffe20FR6AxEXLK50r (cache-read 1 186 112) |
+| 2026-11-16 | Мета: пробы инфраструктуры OpenCode (3 сессии: auth, attach, однократный ответ) | step-5-preview (OpenCode) | 45 658 | 119 | ~0.05 | ses_e1b5784c9ffe…, ses_e1b44b564ffe…, ses_e1b5e3d92ffe… (cache-read 4 224 суммарно) |
+
+Примечания к dev-таблице: в контуре OpenCode reasoning-токены провайдером не сепарированы (учтены в output, колонка reasoning = 0); поисковых вызовов не было — в прогонах OpenCode не подключён web-search (MCP web-search — решение PO R5, более поздняя очередь). Оценка $ — по прайсам §1.8 (R1): input (cache-miss) × $1.00/M + cache-read × $0.10/M + output × $2.70/M; input в метриках OpenCode excludes cache-read. Сверка: внутренний cost OpenCode (по прайсам models.dev) для тех же сессий — $0.2497 / $0.2045 / $0.0463; разница — курсовые коэффициенты агрегатора, оба варианта в пределах 10%.
 | 2026-11-16 | Продолжение прерванного прогона: cost_report.py + починка тестового контракта (44/44 зелёные), пробы CLI | step-5-preview (Hermes) | — | — | не метрится рантаймом | отмечено честно, не оцениваем; поисковых вызовов: 0 |
 
 ## Контур прода (prod) — метрика $/прогон для пользователя

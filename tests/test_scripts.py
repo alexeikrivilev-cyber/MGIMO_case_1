@@ -498,10 +498,17 @@ class CostReportTests(TempDirTestCase):
         self.assertTrue(result.stderr.strip())
 
     def test_repo_cost_file_is_reported(self) -> None:
-        """Критерий приёмки: сводка по реальному COST.md репозитория."""
+        """Критерий приёмки: сводка по реальному COST.md репозитория.
+
+        Ожидание не завязываем на конкретный итог $: COST.md растёт
+        (каждый прогон дописывает строку) — проверяем, что отчёт строится
+        и dev-контур со строковой оценкой $ в нём есть.
+        """
         result = run_script(COST_REPORT)
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
-        self.assertIn("8.87", result.stdout)
+        self.assertIn("Контур разработки (dev): строк:", result.stdout)
+        self.assertRegex(result.stdout, r"оценка \$: \d+\.\d{2}")
+        self.assertIn("Итого (dev + prod):", result.stdout)
 
 
 if __name__ == "__main__":
