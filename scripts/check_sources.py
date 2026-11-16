@@ -27,6 +27,14 @@
            ``млн``/``тыс``/``руб``/``₽``/``$`` либо глагол роста/падения рядом
            с цифрами) — должна содержать URL, ``ev-N`` или маркер
            ``[гипотеза]`` / ``[прогноз]`` / ``[допущение]`` в той же строке.
+    C. Журналы измерений и протоколов прогонов (путь содержит
+       ``project/council/`` или файл ``measurements.md``): их числовые
+       утверждения — результаты собственных прогонов, а не факты о мире;
+       основанием считается ссылка на артефакт прогона: sessionID
+       (``ses_…``), хеш (≥12 hex) или имя файла/пути в бэктиках
+       (``COST.md``, ``scripts/…``) — в строке утверждения либо в секции,
+       документирующей процедуру измерения. Правило не ослабляет B для
+       обычных артефактов.
 
 Блокцитаты (``> ...``) и код-фенсы (`` ``` ``) из всех проверок исключаются:
 это цитаты запроса и выдержки. Файл читается как UTF-8 (допускается BOM),
@@ -56,6 +64,11 @@ NUMERIC_CLAIM_RE = re.compile(
 )
 GROWTH_VERB_RE = re.compile(r"вырос|упал|снизил|сократил", re.IGNORECASE)
 DATE_VALUE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})\b")
+# Правило C: основание-артефакт для журналов измерений и прогонов —
+# sessionID, хеш (≥12 hex) или имя файла/пути в бэктиках.
+ARTIFACT_REF_RE = re.compile(
+    r"ses_[A-Za-z0-9]{6,}|\b[0-9a-f]{12,64}\b|`[^`]+[./][^`]*`"
+)
 
 # Заголовки секций, которым ссылка не нужна (регистронезависимо, по подстроке).
 ALLOWLIST = (
@@ -231,9 +244,21 @@ def _is_allowlisted(title: str) -> bool:
     return any(keyword in lowered for keyword in ALLOWLIST)
 
 
-def _has_reference(line: str) -> bool:
-    """В строке есть URL или ссылка на evidence."""
-    return bool(URL_RE.search(line) or EVIDENCE_RE.search(line))
+def _is_measurement_log(path: Path) -> bool:
+    """Правило C: журнал измерений/прогона (путь содержит project/council/
+    или файл measurements.md). Для таких файлов основанием числового
+    утверждения может быть ссылка на артефакт прогона."""
+    parts = path.parts
+    if "council" in parts:
+        return True
+    return path.name == "measurements.md"
+
+
+def _has_reference(line: str, measurement_log: bool = False) -> bool:
+    """В строке есть URL, ссылка на evidence или (для журналов) артефакт."""
+    if URL_RE.search(line) or EVIDENCE_RE.search(line):
+        return True
+    return measurement_log and bool(ARTIFACT_REF_RE.search(line))
 
 
 def _is_hard_claim(line: str) -> bool:
@@ -243,19 +268,20 @@ def _is_hard_claim(line: str) -> bool:
     return bool(GROWTH_VERB_RE.search(line) and DIGIT_RE.search(line))
 
 
-def _is_grounded(line: str) -> bool:
+def _is_grounded(line: str, measurement_log: bool = False) -> bool:
     """Утверждение имеет основание в той же строке."""
-    return _has_reference(line) or bool(MARKER_RE.search(line))
+    return _has_reference(line, measurement_log) or bool(MARKER_RE.search(line))
 
 
-def check_artifact(active: list[tuple[int, str]]) -> list[tuple[int, str]]:
+def check_artifact(active: list[tuple[int, str]], measurement_log: bool = False) -> list[tuple[int, str]]:
     """Проверка обычного артефакта. Возвращает нарушения."""
     problems: list[tuple[int, str]] = []
+    sections = _split_sections(active)
 
-    for lineno, title, body in _split_sections(active):
+    for lineno, title, body in sections:
         if _is_allowlisted(title):
             continue
-        if not any(_has_reference(line) for _, line in body):
+        if not any(_has_reference(line, measurement_log) for _, line in body):
             problems.append(
                 (
                     lineno,
@@ -264,13 +290,43 @@ def check_artifact(active: list[tuple[int, str]]) -> list[tuple[int, str]]:
                 )
             )
 
+    if not measurement_log:
+        for lineno, line in active:
+            if _is_hard_claim(line) and not _is_grounded(line):
+                problems.append(
+                    (
+                        lineno,
+                        "числовое утверждение без основания: нужен URL, ev-N или "
+                        "маркер [гипотеза] / [прогноз] / [допущение] в этой строке",
+                    )
+                )
+        return problems
+
+    # Правило C (журналы измерений): числовое утверждение обосновано, если
+    # ссылка на артефакт прогона есть в его строке ИЛИ в секции, которая
+    # документирует процедуру измерения (секция = «чем мерили»).
+    section_ref: dict[int, bool] = {}
+    for lineno, title, body in sections:
+        section_ref[lineno] = _is_allowlisted(title) or any(
+            _has_reference(line, True) for _, line in body
+        )
+    current_ref = False
     for lineno, line in active:
-        if _is_hard_claim(line) and not _is_grounded(line):
+        heading = HEADING_RE.match(line)
+        if heading:
+            level = len(heading.group(1))
+            if level in (2, 3):
+                current_ref = section_ref.get(lineno, False)
+            else:
+                current_ref = False  # заголовок `#` закрывает секцию
+            continue
+        if _is_hard_claim(line) and not _is_grounded(line, True) and not current_ref:
             problems.append(
                 (
                     lineno,
-                    "числовое утверждение без основания: нужен URL, ev-N или "
-                    "маркер [гипотеза] / [прогноз] / [допущение] в этой строке",
+                    "числовое утверждение без основания: нужен URL, ev-N, маркер "
+                    "[гипотеза] / [прогноз] / [допущение] в строке либо ссылка на "
+                    "артефакт прогона в секции (правило C)",
                 )
             )
     return problems
@@ -288,7 +344,7 @@ def check_file(path: Path) -> list[tuple[int, str]]:
     active = _active_lines(text)
     if _is_evidence_path(path):
         return check_evidence_record(active)
-    return check_artifact(active)
+    return check_artifact(active, _is_measurement_log(path))
 
 
 def main(argv: list[str] | None = None) -> int:

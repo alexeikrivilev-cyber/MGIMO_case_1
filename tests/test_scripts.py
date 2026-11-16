@@ -283,6 +283,69 @@ class CheckSourcesArtifactTests(TempDirTestCase):
         self.assertRegex(result.stdout, r"project/research\.md:\d+: .+")
 
 
+class CheckSourcesMeasurementLogTests(TempDirTestCase):
+    """Правило C: журналы измерений/прогонов — основание-артефакт."""
+
+    def test_council_run_log_with_artifact_ref_exit_0(self) -> None:
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Стоимость прогона\n\n"
+            "- Итог: in 163 297 / out 161 284; оценка §1.8 — $0.68 "
+            "(строки в `COST.md`, БД OpenCode).\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_council_run_log_bare_number_exit_2(self) -> None:
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Стоимость прогона\n\n"
+            "- Итог: in 163 297 / out 161 284; оценка §1.8 — $0.68.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_measurements_md_by_name_is_measurement_log(self) -> None:
+        path = self.write(
+            "docs/research/measurements.md",
+            "# Измерения\n\n## 1. Рука A1\n\n"
+            "- Стоимость $0.05; сессия ses_e1ae82643ffe7CsjWCB7D73j4c.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_ordinary_artifact_path_ref_does_not_ground(self) -> None:
+        # Правило C не протекает в обычные артефакты: путь в бэктиках
+        # не является основанием для research.md.
+        path = self.write(
+            "project/research.md",
+            artifact("## Анализ\n- Выручка выросла на 12% (`scripts/x.py`).\n"),
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_hash_reference_grounds_measurement_log(self) -> None:
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Phase 0\n\n"
+            "- Бриф заморожен: sha256 231e8722226fd5ac8b62bec5b1a1ab565824f6bc770875ad776a926996d12ba6.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_section_reference_grounds_table_numbers(self) -> None:
+        # Числа в таблице секции обоснованы ссылкой на артефакт в теле секции
+        # (процедура измерения документирована в секции).
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Дистанции\n\n"
+            "Замер — `scripts/council_diversity.py` по выходам рук.\n\n"
+            "| Рука | Дистанция |\n|---|---|\n| A0 | 0.960 |\n| A1 | 0.963 |\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+
 class CheckSourcesCliTests(TempDirTestCase):
     """Контракт CLI check_sources.py."""
 
@@ -876,6 +939,170 @@ class TemplatesStructureTests(unittest.TestCase):
         for name in self.NEW_TEMPLATES:
             path = REPO_ROOT / "templates" / name
             self.assertTrue(path.is_file(), f"нет шаблона {name}: {path}")
+
+
+# --------------------------------------------------------------------------
+# 7) council_quota.py — квоты протокола Консилиума ( council-design.md §4 )
+# --------------------------------------------------------------------------
+
+COUNCIL_QUOTA = "council_quota.py"
+
+
+def council_phase2_text(addressed: list[int], silent: list[int] | None = None,
+                        positions: bool = True) -> str:
+    """Фикстура выхода Phase 2: адресные строки по вариантам инвентаря."""
+    silent = silent or []
+    lines = []
+    for number in addressed:
+        if number in silent:
+            lines.append(f"O{number} — возражений нет: механизм устойчив к этой линзе")
+        else:
+            lines.append(f"O{number} — возражение с основанием ev-002 [гипотеза]")
+    if positions:
+        lines.append("\n## ИЗМЕНЕНИЯ ПОЗИЦИЙ (Round-0 → Phase 2)\n\nДа, сузил окно механики.")
+    return "\n".join(lines) + "\n"
+
+
+class CouncilQuotaTests(TempDirTestCase):
+    """R1 покрытие, R2 квота ≥2 линз, R3 позиции, R4 dissent в синтезе."""
+
+    ALL = list(range(1, 15))
+
+    def make_run(self, *, addressed=None, silent=None, positions=True,
+                 with_synthesis=True, synthesis_text=None) -> Path:
+        run_dir = self.tmp / "run-001"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        for role in ("product", "comms", "data", "devil", "user"):
+            text = council_phase2_text(
+                addressed if addressed is not None else self.ALL,
+                silent,
+                positions,
+            )
+            (run_dir / f"phase2-{role}.out").write_text(text, encoding="utf-8")
+        if with_synthesis:
+            (run_dir / "synthesis.md").write_text(
+                synthesis_text or "# Синтез\n\n## 5. Разногласия\n\n- Спор сохранён.\n",
+                encoding="utf-8",
+            )
+        return run_dir
+
+    def test_full_run_exit_0(self) -> None:
+        run_dir = self.make_run()
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("ok", result.stdout.lower())
+
+    def test_role_missing_option_exit_2(self) -> None:
+        run_dir = self.make_run(addressed=self.ALL[:-1])
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("R1", result.stdout)
+
+    def test_single_lens_objection_without_reason_exit_2(self) -> None:
+        # По O7 Objectует только product; остальные роли адресуют вариант
+        # строкой без возражения и без причины «возражений нет» —
+        # «молчание» не считается ни возражением, ни unchallenged (R2).
+        run_dir = self.make_run()
+        for role in ("comms", "data", "devil", "user"):
+            path = run_dir / f"phase2-{role}.out"
+            text = path.read_text(encoding="utf-8")
+            text = text.replace(
+                "O7 — возражение с основанием ev-002 [гипотеза]",
+                "O7 — учтено.",
+            )
+            path.write_text(text, encoding="utf-8")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("O7", result.stdout)
+        self.assertIn("R2", result.stdout)
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(COUNCIL_QUOTA)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_unchallenged_with_reason_exit_0(self) -> None:
+        # «возражений нет» с причиной у двух линз — вариант «unchallenged»
+        run_dir = self.make_run(silent=[7, 8])
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_missing_positions_block_exit_2(self) -> None:
+        run_dir = self.make_run()
+        for role in ("product", "comms", "data", "devil", "user"):
+            path = run_dir / f"phase2-{role}.out"
+            path.write_text(path.read_text(encoding="utf-8").replace("ИЗМЕНЕНИЯ ПОЗИЦИЙ", ""), encoding="utf-8")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("R3", result.stdout)
+
+    def test_synthesis_without_dissent_exit_2(self) -> None:
+        run_dir = self.make_run(synthesis_text="# Синтез\n\n- Без секции разногласий.\n")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("R4", result.stdout)
+
+    def test_missing_run_dir_exit_1(self) -> None:
+        result = run_script(COUNCIL_QUOTA, str(self.tmp / "no-such-run"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_real_council_run_passes(self) -> None:
+        """Критерий приёмки: реальный прогон Консилиума репозитория проходит."""
+        run_dir = REPO_ROOT / "project" / "council" / "run-2026-11-16-01"
+        if not run_dir.is_dir():
+            self.skipTest("прогон Консилиума не найден")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 8) council_diversity.py — proxy-разнообразие набора вариантов
+# --------------------------------------------------------------------------
+
+COUNCIL_DIVERSITY = "council_diversity.py"
+
+
+class CouncilDiversityTests(TempDirTestCase):
+    """TF-IDF прокси: разные механизмы дают высокую дистанцию, копии — низкую."""
+
+    def test_two_different_variants_exit_0(self) -> None:
+        path = self.write(
+            "options.md",
+            "# Варианты\n\n### Вариант 1: активация онбординга\n\n- Механизм: "
+            "доведение новичка до первой повторной сессии, события продукта.\n\n"
+            "### Вариант 2: автоплатёж\n\n- Механизм: карта по умолчанию, "
+            "миграция электронных чеков, ретраи платежей.\n",
+        )
+        result = run_script(COUNCIL_DIVERSITY, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("proxy", result.stdout)
+        self.assertIn("средняя попарная дистанция", result.stdout)
+
+    def test_identical_variants_low_distance(self) -> None:
+        body = "- Механизм: перевод новичков на автоплатёж картой, миграция чеков.\n"
+        path = self.write(
+            "options.md",
+            f"# Варианты\n\n### Вариант 1: платёж\n\n{body}\n\n### Вариант 2: платёж копия\n\n{body}\n",
+        )
+        result = run_script(COUNCIL_DIVERSITY, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout)
+        self.assertRegex(result.stdout, r"0\.0\d\d|\s—\s")
+
+    def test_single_variant_exit_2(self) -> None:
+        path = self.write("options.md", "# Варианты\n\n### Вариант 1: только один\n\n- Текст.\n")
+        result = run_script(COUNCIL_DIVERSITY, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stderr)
+
+    def test_missing_file_exit_1(self) -> None:
+        result = run_script(COUNCIL_DIVERSITY, str(self.tmp / "нет.md"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(COUNCIL_DIVERSITY)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
 
 
 if __name__ == "__main__":
