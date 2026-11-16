@@ -1,0 +1,12 @@
+[5] easy pass=True ans='NL' $0.025
+[49] easy pass=False ans='A. NL' $0.027
+[70] easy pass=False ans='yes' $0.406
+[1273] hard pass=True ans='0.120132' $0.034
+[1305] hard pass=True ans='0.123217' $0.043
+[1464] hard pass=True ans='1, 2, 5, 6, 8, 9, 10, 12, 14, 15, 20, 21, 22, 23, 25, 30, 34' $0.062
+[1681] hard pass=False ans='36, 53, 64, 107, 123, 163, 231, 249, 286, 347, 381, 384, 394' $0.072
+[1753] hard pass=False ans='36, 51, 53, 64, 65, 107, 123, 150, 163, 231, 249, 276, 286, ' $0.089
+[1871] hard pass=True ans='-0.94810300000000' $0.078
+[2697] hard pass=False ans='B:54.32' $0.261
+итог: 5/10, $1.10, результаты: eval/benchmarks/dabstep/runs/2026-11-17-t7-run3-improved
+RUN3_EXIT=0
