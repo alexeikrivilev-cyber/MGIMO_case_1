@@ -48,6 +48,12 @@ payments-readme.md, fees.json, merchant_data.json,
 merchant_category_codes.csv, acquirer_countries.csv, manual.md).
 
 Правила работы:
+0. СНАЧАЛА проверь применимость (отдельный шаг, без расчётов): применим
+   ли вопрос к ЭТИМ данным — есть ли нужные сущности, поля, период,
+   пороги? Если вопрос к данным неприменим (сущности нет, периода нет,
+   порог не определён) — сразу «FINAL: Not Applicable». Не считай
+   «понаслышке»: неприменимость должна быть видна из схемы данных или
+   документации.
 1. На каждом шаге отвечай ЛИБО одним блоком python-кода (```python ... ```),
    который будет исполнен (его stdout вернётся тебе), ЛИБО строкой
    «FINAL: <ответ>», если ответ известен.
@@ -57,9 +63,24 @@ merchant_category_codes.csv, acquirer_countries.csv, manual.md).
    применим к данным — отвечай «Not Applicable».
 4. Ответ FINAL должен точно соответствовать формату из guidelines
    (число, имя, список и т.п.), без пояснений.
-5. Не более {max_steps} шагов: если не удалось — дай лучший ответ с
-   пометкой неуверенности внутри FINAL.
+5. Не более {max_steps} шагов. Если шаги исчерпаны, а ответ ещё не
+   готов — тебе зададут дополнительный вопрос и попросят дать ЛУЧШИЙ
+   ответ на основе уже полученных результатов: тогда верни
+   «FINAL: <лучший ответ>» БЕЗ нового кода (непроверенную оценку
+   помечай внутри ответа — формату guidelines это не мешает).
 """
+
+
+# Мандат дополнительного вызова при исчерпании шагов (TASK-hermes-7 §3,
+# failure mode task 2697: «12-шаговый лимит исчерпан, ответ не получен»).
+# Код НЕ исполняется — ответ строится только из уже собранного контекста.
+BEST_EFFORT_MANDATE = (
+    "Шаги исчерпаны. Новый код исполняться НЕ будет. Дай "
+    "ЛУЧШИЙ возможный ответ строго формата guidelines на "
+    "основе уже полученных результатов выше — строкой "
+    "«FINAL: <ответ>». Если уверенности нет — укажи лучшую "
+    "оценку с пометкой внутри ответа."
+)
 
 
 def api_chat(messages: list[dict], key: str, base: str, model: str) -> dict:
@@ -202,18 +223,51 @@ def main(argv: list[str]) -> int:
         trace.append({"step": step, "code": code, "output": output[:2000]})
         messages.append({"role": "user", "content": f"Результат исполнения:\n{output}"})
 
+    best_effort = False
+    extra_calls = 0
+    if not final_answer and trace:
+        # Шаги исчерпаны без FINAL — один дополнительный вызов БЕЗ
+        # исполнения кода: лучший ответ по уже собранным результатам
+        # (TASK-hermes-7 §3, failure mode task 2697: «12-шаговый лимит
+        # исчерпан, ответ не получен»). Деградация честная: в трассе
+        # помечено best_effort, в результатах — флаг.
+        messages.append({
+            "role": "user",
+            "content": BEST_EFFORT_MANDATE,
+        })
+        try:
+            response = api_chat(messages, key, base, model)
+            usage = response.get("usage") or {}
+            usage_total["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            usage_total["cached_tokens"] += (usage.get("prompt_tokens_details") or {}).get("cached_tokens", 0)
+            usage_total["completion_tokens"] += usage.get("completion_tokens", 0)
+            reply = extract_reply(response["choices"][0]["message"])
+            final = extract_final(reply)
+            entry = {"step": len(trace) + 1, "best_effort": True, "reply": reply[:2000]}
+            if final is not None:
+                final_answer = final
+                best_effort = True
+                entry["final"] = final
+            trace.append(entry)
+            extra_calls += 1
+        except Exception as exc:  # noqa: BLE001 — трасса важнее причины
+            trace.append({"step": len(trace) + 1, "best_effort": True, "error": str(exc)[:300]})
+            extra_calls += 1
+
     result = {
         "question": args.question,
         "guidelines": args.guidelines,
         "answer": final_answer,
+        "best_effort": best_effort,
         "steps": len(trace),
+        "steps_budget": len(trace) - extra_calls,
         "usage": usage_total,
         "seconds": round(time.time() - started, 1),
         "trace": trace,
     }
     if args.out:
         Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"answer": final_answer, "steps": len(trace), "usage": usage_total}, ensure_ascii=False))
+    print(json.dumps({"answer": final_answer, "best_effort": best_effort, "steps": len(trace), "usage": usage_total}, ensure_ascii=False))
     return EXIT_OK if final_answer else EXIT_API_FAIL
 
 

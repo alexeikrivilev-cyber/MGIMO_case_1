@@ -25,6 +25,7 @@
 | 2026-11-16 | О4: A/B прогоны рук шага 3 — демо + held-out (skill / critic-loop / council-lite, 16 сессий) | step-5-preview (OpenCode, хук) | ~330K in / ~140K out | — | $0.98 (demo $0.53 + held-out $0.45, атрибуция по меткам) | `eval/runs/ab-options-*/`, метрики `metrics.md` |
 | 2026-11-16 | О4: скоринг рук (критик на финалах, 6 сессий) + проба H3 (критик + дайджест) | step-5-preview (OpenCode, хук) | — | — | $0.38 | `eval/runs/ab-options-*/critic-final/`, `eval/runs/h3-probe/` |
 | 2026-11-16 | О4: дизайн навыков — руки lean + hybrid на демо (2 сессии) + скоринг (2) | step-5-preview (OpenCode, хук) | — | — | $0.37 | `eval/runs/ab-skills-demo-retention/` |
+| 2026-11-17 | TASK-hermes-7: бенчмарк DABstep — 3 повтора dev-10 (r2/r3 улучшенный агент best-effort + применимость, r4 база — шум-контроль; прямой вызов API, не через хук) | step-5-preview (API) | 1,730,700 (cache-miss 303,948 + cache-read 1,426,752) | 274,396 | $2.61 | `eval/benchmarks/dabstep/runs/2026-11-17-t7-run2|run3-improved|run4-baseline/results.json` (разбор: r2 $0.86 + r3 $1.10 + r4 $0.66) |
 
 ## Контур прода (prod) — метрика $/прогон для пользователя
 
@@ -182,6 +183,49 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e19893865ffe9TAMb1HfeI9lUI | О4: ab-score-clf-demo-council-lite-flash | step-5-preview | 10807 | 17989 | 0 | 23104 | 0 | 0 | $0.06 |
 | 2026-11-16 | ses_e1987aa6cffepFLSKGanl0HdcM | О4: ab-score-clf-heldout-council-lite-fl | step-5-preview | 9418 | 11673 | 0 | 23104 | 0 | 0 | $0.04 |
 | 2026-11-16 | ses_e198670a0ffewrkXKivhqjBti0 | О4: b11-plainchat-critic | step-5-preview | 2147 | 18269 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e197c605effee5cFZGanHIs02X | О4: t7-opt-demo-skill | step-5-preview | 6612 | 17179 | 0 | 21376 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e197b33acffe9CF3ATmOfTBCU9 | О4: t7-opt-demo-criticloop | step-5-preview | 2745 | 14660 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e197a350dffer0trIdmvRaIMrZ | О4: t7-opt-demo-councillite | step-5-preview | 6796 | 9513 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e197979dcffewmt25WwBptiY4c | О4: t7-opt-heldout-skill | step-5-preview | 6544 | 14295 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e19787e2dffe3jrIQ31R97z6Rz | О4: t7-digest-research | step-5-preview | 10612 | 24048 | 0 | 22720 | 0 | 0 | $0.08 |
+| 2026-11-16 | ses_e1976c571ffeIz57pnaHnXQe2S | О4: t7-opt-heldout-councillite | step-5-preview | 8419 | 12970 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1975c8eeffeGqIfiy4GMB0Fr7 | О4: t7-opt-heldout-councilfull | step-5-preview | 7991 | 26299 | 0 | 22720 | 0 | 0 | $0.08 |
+| 2026-11-16 | ses_e1974110affeH0KjAPfNLiniJT | О4: t7-opt-demo-criticloop2 | step-5-preview | 5512 | 11468 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19732679ffedxHx3QZ9p4eUqc | О4: t7-opt-heldout-criticloop2 | step-5-preview | 7571 | 6699 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1972ab5cffey5DOwgXA4u0bMU | О4: t7-opt-demo-clf | step-5-preview | 10795 | 16671 | 0 | 22720 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e19719954ffeoKDeC51KnpXeTQ | О4: t7-opt-heldout-clf | step-5-preview | 9406 | 13117 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1970aac1ffe6xgE8AcbgixqgI | О4: t7-opt-demo-skills-lean | step-5-preview | 5143 | 12745 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e196faebcffeY0VY7lU0Vjh4So | О4: t7-opt-demo-skills-hybrid | step-5-preview | 5670 | 21150 | 0 | 22720 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e196e3a8cffeK6BUv61kfPxiU7 | О4: t7-res-demo-curation | step-5-preview | 8367 | 27276 | 0 | 21376 | 0 | 0 | $0.08 |
+| 2026-11-16 | ses_e196c756affeB8gGA4m4FzhrzA | О4: t7-res-demo-lean | step-5-preview | 5755 | 12069 | 0 | 22656 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e196b9efcffeM50pUPRgg4RtFG | О4: t7-res-demo-hybrid | step-5-preview | 16380 | 6623 | 0 | 45376 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e196b18daffebAG2mcrryi3j9i | О4: t7-res-heldout-curation | step-5-preview | 8960 | 11111 | 0 | 22656 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e196a574bffeUp9u7aglGGs9Nm | О4: t7-res-heldout-lean | step-5-preview | 10522 | 17096 | 0 | 22656 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e19692790ffeBBYDVObEs71JQR | О4: t7-res-heldout-hybrid | step-5-preview | 9492 | 10259 | 0 | 22656 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19686c7cffeA6mCvVeLiId1ij | О4: t7-b11-plainchat | step-5-preview | 2135 | 23113 | 0 | 22720 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e1966beadffev0pfxDbUXEbPky | О4: t7-cvs-demo-research-self | step-5-preview | 7200 | 12309 | 0 | 21248 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e1965c456ffeFA5TchoiUH1Cua | О4: t7-cvs-demo-options-self | step-5-preview | 7698 | 9457 | 0 | 21248 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19650897ffeF4Papyw5ifFtlF | О4: t7-cvs-heldout-research-critic | step-5-preview | 8267 | 11341 | 0 | 22656 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19644063ffeZSsSYHJeB9qZ6C | О4: t7-cvs-heldout-research-self | step-5-preview | 9552 | 11172 | 0 | 21312 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19634308ffeY1AlGD3q7M6Tan | О4: t7-cvs-heldout-options-critic | step-5-preview | 9171 | 8942 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19628b07ffeSG5R7BZbchdqvz | О4: t7-cvs-heldout-options-self | step-5-preview | 10520 | 10541 | 0 | 21312 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e195fed12ffezxB2rrhRiGXWKt | О4: ab-t7-clc-demo-council-lite-critic-r | step-5-preview | 3024 | 5400 | 0 | 21376 | 0 | 0 | $0.02 |
+| 2026-11-16 | ses_e195f7a84ffelgkrClrAqE66W4 | О4: ab-t7-clc-demo-council-lite-critic-r | step-5-preview | 3159 | 7207 | 0 | 21248 | 0 | 0 | $0.02 |
+| 2026-11-16 | ses_e195eed05ffeDcWeVtQwbl10xf | О4: ab-t7-clc-demo-council-lite-critic-r | step-3.7-flash | 24301 | 10965 | 0 | 0 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e195ddf69ffeT5xm3ONgfljMxt | О4: ab-t7-clc-demo-council-lite-critic-s | step-5-preview | 40023 | 22660 | 0 | 92416 | 0 | 0 | $0.11 |
+| 2026-11-16 | ses_e195c44bbffeDPwumcSuk24XBl | О4: t7-clc-demo-critic | step-5-preview | 9717 | 17345 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e195af750ffe8zDtSXiG1qmei2 | О4: ab-t7-clc-demo-council-lite-critic-r | step-5-preview | 11185 | 3279 | 0 | 21568 | 0 | 0 | $0.02 |
+| 2026-11-16 | ses_e195ab5baffeuhmdA8gdFcWTg9 | О4: ab-t7-clc-heldout-council-lite-criti | step-5-preview | 9249 | 10748 | 0 | 169920 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1959cfacffequJjdLsBlJdTpl | О4: ab-t7-clc-heldout-council-lite-criti | step-5-preview | 4559 | 12430 | 0 | 21376 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e1958f501ffe3WUhjQqhdNn6l0 | О4: ab-t7-clc-heldout-council-lite-criti | step-3.7-flash | 4837 | 6300 | 0 | 20992 | 0 | 0 | $0.02 |
+| 2026-11-16 | ses_e19585e13ffebJ3gggz03dJwAr | О4: ab-t7-clc-heldout-council-lite-criti | step-5-preview | 12063 | 18981 | 0 | 21312 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e195725ccffef3GZDNPK9iPxAC | О4: t7-clc-heldout-critic | step-5-preview | 5902 | 15840 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1956080fffegn2LDPblM8tYFC | О4: ab-t7-clc-heldout-council-lite-criti | step-5-preview | 6961 | 12112 | 0 | 21568 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e195224f6ffehjVqyMTYC3ITZz | О4: ab-score-t7-clc-demo-council-lite-cr | step-5-preview | 10690 | 24420 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-16 | ses_e19509289ffe6a9k25PnY528b7 | О4: ab-score-t7-clc-heldout-council-lite | step-5-preview | 6558 | 14487 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e194f7185ffewQdgZ1gTYxX9Cz | О4: t7-clc-demo-final-typical | step-5-preview | 10678 | 15314 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e194e5f5dffek3bYvbHQUKFwFB | О4: t7-clc-heldout-final-typical | step-5-preview | 6546 | 10840 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e194d9adbffe0tBHEuVXirgcq3 | О4: t7-digest-research | step-5-preview | 13 | 29946 | 0 | 34240 | 0 | 0 | $0.08 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

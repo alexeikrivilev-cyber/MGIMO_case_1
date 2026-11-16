@@ -299,6 +299,17 @@ class CouncilFullArmTests(unittest.TestCase):
         self.assertEqual(models["data"], "stepfun/step-3.7-flash")
         self.assertEqual(self.module.ROLE_MODEL["devil"], "stepfun/step-5-preview")
 
+    def test_council_lite_critic_arm_registered(self) -> None:
+        # council-lite-critic (TASK-hermes-7 §2): совет + точечная
+        # ревизия по критике на финале; 6 сессий (4 совета + критик +
+        # ревизия). Механика ревизии — та же, что у critic-loop2.
+        self.assertIn(("options", "council-lite-critic"), self.module.ARMS)
+        self.assertEqual(self.module.sessions_for("options", "council-lite-critic"), 6)
+        self.assertIs(
+            self.module.ARMS[("options", "council-lite-critic")],
+            self.module.run_arm_council_lite_critic,
+        )
+
     def test_cross_prompt_states_isolation_rule(self) -> None:
         prompt = self.module.CROSS_PROMPT
         for placeholder in ("{role}", "{lens}", "{brief}", "{others}"):
@@ -996,6 +1007,94 @@ class DabstepAgentProtocolTests(unittest.TestCase):
     def test_run_code_timeout_guard(self) -> None:
         with self.assertRaises(subprocess.TimeoutExpired):
             self.agent.run_code("import time; time.sleep(5)", Path("."), timeout=1)
+
+    def test_system_prompt_has_applicability_and_best_effort_rules(self) -> None:
+        # TASK-hermes-7 §3: явная фаза проверки применимости (failure mode
+        # task 70: «yes» при эталоне «Not Applicable») и правило
+        # best-effort при исчерпании шагов (task 2697).
+        text = self.agent.SYSTEM.format(max_steps=12)
+        self.assertIn("проверь применимость", text)
+        self.assertIn("Not Applicable", text)
+        self.assertIn("ЛУЧШИЙ", text)
+
+    def test_best_effort_mandate_contract(self) -> None:
+        # Мандат дополнительного вывода: без нового кода, строго FINAL.
+        mandate = self.agent.BEST_EFFORT_MANDATE
+        self.assertIn("НЕ будет", mandate)
+        self.assertIn("FINAL", mandate)
+
+
+class DabstepRunRowTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.runner = load_module("dabstep_run_under_test", BENCH_DIR / "run.py")
+
+    def test_build_row_defaults_and_flags(self) -> None:
+        task = {"task_id": "2697", "level": "hard", "question": "q?", "answer": "42"}
+        # Старый формат выхода (без best_effort/steps_budget) — совместимость.
+        row = self.runner.build_row(task, {"answer": "42", "steps": 12, "usage": {}}, 0.05)
+        self.assertEqual(row["steps_budget"], 12)
+        self.assertFalse(row["best_effort"])
+        self.assertEqual(row["gold"], "42")
+        # Новый формат: шаги бюджета отделены от best-effort вызова.
+        row = self.runner.build_row(
+            task, {"answer": "43", "steps": 13, "steps_budget": 12, "best_effort": True, "usage": {}}, 0.06
+        )
+        self.assertEqual(row["steps"], 13)
+        self.assertEqual(row["steps_budget"], 12)
+        self.assertTrue(row["best_effort"])
+
+
+class RescoreArmsTests(unittest.TestCase):
+    """Контракт eval/rescore_arms.py (TASK-hermes-7 §1): план реcкоринга
+    должен ссылаться только на существующие файлы, иначе замер молча
+    теряет строку."""
+
+    def setUp(self) -> None:
+        self.module = load_module("rescore_arms_under_test", EVAL_DIR / "rescore_arms.py")
+
+    def test_plan_paths_exist(self) -> None:
+        for bucket, items in self.module.PLAN.items():
+            for item in items:
+                for key in ("artifact", "rubric"):
+                    path = REPO_ROOT / item[key]
+                    self.assertTrue(path.is_file(), f"{bucket}/{item['name']}: нет {key} {path}")
+                if item.get("unified"):
+                    self.assertTrue(
+                        (REPO_ROOT / item["unified"]).is_file(),
+                        f"{bucket}/{item['name']}: нет единорубрикового замера {item['unified']}",
+                    )
+
+    def test_references_exist(self) -> None:
+        for ref in self.module.REFERENCES:
+            for key in ("unified", "typical"):
+                self.assertTrue((REPO_ROOT / ref[key]).is_file(), f"{ref['name']}: нет {key}")
+
+    def test_parse_scores_contract(self) -> None:
+        text = "| 1. Набор вариантов | 5/5 | 4/5 | 8/10 |\nИтого: 36 /40\n[важность: важно] x\n[незначительно] y"
+        parsed = self.module.parse_scores(text)
+        self.assertEqual(parsed["total40"], 36.0)
+        self.assertEqual(parsed["findings_total"], 2)
+        self.assertEqual(parsed["findings_important"], 1)
+
+    def test_parse_scores_table_row_format(self) -> None:
+        # Формат «| Итого | | | **22/40** |» — на прогоне clc-heldout
+        # оценка терялась (дефект парсинга); контракт зафиксирован.
+        text = "| 1. Проработанность | 4/5 | 4/5 | 8/10 |\n| Итого | | | **22/40** (≈5.5/10) |"
+        self.assertEqual(self.module.parse_scores(text)["total40"], 22.0)
+        text2 = "| Критерий | Проход 1 | Проход 2 | Баллы |\n| 4. Качество | 4/5 | 3/5 | 6/10 |\n| Итого | | | 30/40 |"
+        self.assertEqual(self.module.parse_scores(text2)["total40"], 30.0)
+        # Шаблон без числа («Итого: __ /40») не матчится — не выдумываем 0.
+        self.assertIsNone(self.module.parse_scores("Итого: __ /40")["total40"])
+
+    def test_dry_run_lists_all_plan_runs(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(EVAL_DIR / "rescore_arms.py"), "--dry-run"],
+            capture_output=True, text=True, timeout=120,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        expected = sum(len(items) for items in self.module.PLAN.values())
+        self.assertEqual(proc.stdout.count("[dry-run]"), expected)
+        self.assertIn("[reused] demo-research-critic", proc.stdout)
 
 
 if __name__ == "__main__":

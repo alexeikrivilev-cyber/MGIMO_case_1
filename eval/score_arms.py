@@ -66,6 +66,15 @@ ARM_LABELS_BY_RUN = {
     "cl2-heldout": {
         "critic-loop2": ["ab-cl2-heldout-critic-loop2", "cl2-heldout-critic"],
     },
+    # council-lite-critic (TASK-hermes-7 §2): 4 сессии совета + критик +
+    # ревизия; метка совещаний обрезана хуком до 40 символов, поэтому
+    # фрагмент — префиксный, метка критика — отдельным фрагментом.
+    "t7-clc-demo": {
+        "council-lite-critic": ["ab-t7-clc-demo-council-lite-critic", "t7-clc-demo-critic"],
+    },
+    "t7-clc-heldout": {
+        "council-lite-critic": ["ab-t7-clc-heldout-council-lite-critic", "t7-clc-heldout-critic"],
+    },
 }
 
 
@@ -95,11 +104,19 @@ def parse_critic_scores(text: str) -> dict:
             "pass2": float(p2),
             "points": float(pts),
         }
-    total = re.search(r"Итого:\s*(?:\*\*)?\s*([\d.]+)\s*(?:\*\*)?\s*/\s*40", text)
+    total = re.search(
+        r"Итого\s*:\s*(?:\*\*)?\s*([\d.]+)\s*(?:\*\*)?\s*/\s*40"
+        r"|\|\s*Итого\s*\|[^|\n]*\|[^|\n]*\|\s*(?:\*\*)?\s*([\d.]+)\s*/\s*40",
+        text,
+    )
+    # Два формата «Итого»: строка «Итого: 36 /40» и табличная строка
+    # «| Итого | | | **22/40** |» (дефект парсинга найден на прогоне
+    # clc-heldout: оценка терялась, хотя критик её вернул).
+    value = total.group(1) or total.group(2) if total else None
     findings = len(re.findall(r"\[(?:важность:\s*)?(?:критично|важно|незначительно)\]", text))
     return {
         "criteria": scores,
-        "total40": float(total.group(1)) if total else None,
+        "total40": float(value) if value else None,
         "findings": findings,
     }
 

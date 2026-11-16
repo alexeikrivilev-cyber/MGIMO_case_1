@@ -27,6 +27,11 @@
   council-lite-flash — council-lite с ролью devil на step-3.7-flash
                  (итерация О5, prod-council-lite.md §5 п.1: та же
                  схема, модель роли devil — дешёвое семейство);
+  council-lite-critic — council-lite + точечная ревизия по находкам
+                 критика на финале (итерация TASK-hermes-7 §2: два
+                 механизма, каждый из которых бьёт базу по отдельности,
+                 в комбинации; внутренний критик — единая рубрика, как
+                 в critic-loop2, чтобы сравнение механизмов было честным);
   council-full — полный протокол council-design §4, 12 сессий: Phase 1
                  независимая дивергенция 5 линз, Phase 2 кросс-критика
                  (линза видит четыре чужих выхода, свой — нет), Phase 3
@@ -816,6 +821,86 @@ def run_arm_council_lite_flash(
     )
 
 
+def run_arm_council_lite_critic(
+    feature: str, brief: str, arm_dir: Path, timeout: int, evidence: str = ""
+) -> int:
+    """Рука council-lite-critic (итерация TASK-hermes-7 §2): council-lite
+    (3 роли + синтез) + точечная ревизия по находкам критика НА ФИНАЛЕ
+    (механика critic-loop2 §17: JSON-правок, apply_revision.py,
+    integrity-гейт, честный откат к черновику).
+
+    Гипотеза (§17, «комбинация council-lite + critic на финале»): каждый
+    механизм по отдельности бьёт базу (council-lite +4/+4 §14,
+    critic-loop2 +6/+4 §17). Вопрос: даёт ли критика-ревизия СВЕРХ
+    совета измеримый прирост, или синтез уже учел возражения линз и
+    добавка находится в пределах шума. Внутренний критик — на ЕДИНОЙ
+    рубрике (как в §14/§17): меняется только база ревизии (выход совета
+    вместо черновика навыка), иначе сравнение механизмов некорректно.
+    """
+    code = run_arm_council_lite(feature, brief, arm_dir, timeout, evidence)
+    if code != 0:
+        return code
+    draft = (arm_dir / "final.md").read_text(encoding="utf-8", errors="replace")
+    (arm_dir / "draft.md").write_text(draft, encoding="utf-8")
+    critic_dir = arm_dir / "critic"
+    code = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "run_critic.py"),
+            "--artifact", str(arm_dir / "draft.md"),
+            "--rubric", "eval/rubrics/hackathon-criteria.md",
+            "--mode", "critic",
+            "--out", str(critic_dir),
+            # Короткая метка (хук режет до 40 символов); фрагмент для
+            # атрибуции $ — в score_arms.ARM_LABELS_BY_RUN.
+            "--tag", f"{arm_dir.parent.name}-critic",
+            "--timeout", str(timeout),
+        ],
+        cwd=REPO_ROOT,
+    ).returncode
+    if code != 0:
+        return code
+    findings = (critic_dir / "critic.out").read_text(encoding="utf-8", errors="replace")
+    (arm_dir / "findings.md").write_text(findings, encoding="utf-8")
+    code, patch_reply = run_session(
+        PATCH_REVISION_PROMPT.format(draft=draft, findings=findings),
+        arm_dir,
+        "revision",
+        MODEL,
+        timeout,
+    )
+    if code != 0:
+        return code
+    patches = parse_patch_json(patch_reply)
+    if patches is None:
+        (arm_dir / "final.md").write_text(draft, encoding="utf-8")
+        (arm_dir / "revision-report.md").write_text(
+            "# Отчёт по точечным правкам (council-lite-critic)\n\n"
+            f"{fallback_summary_line()}\n\n"
+            "JSON правок из ответа модели разобрать не удалось — применять "
+            "нечего. Финальный артефакт = выход совета дословно (fallback).\n",
+            encoding="utf-8",
+        )
+        return code
+    edits = [edit for edit in patches.get("edits", []) if isinstance(edit, dict)]
+    patches["edits"] = edits[:MAX_PATCH_EDITS]
+    (arm_dir / "patches.json").write_text(
+        json.dumps(patches, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    applier = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "apply_revision.py"),
+            "--draft", str(arm_dir / "draft.md"),
+            "--patches", str(arm_dir / "patches.json"),
+            "--out", str(arm_dir / "final.md"),
+            "--report", str(arm_dir / "revision-report.md"),
+        ],
+        cwd=REPO_ROOT,
+    )
+    return code or applier.returncode
+
+
 def run_arm_council_full(
     feature: str, brief: str, arm_dir: Path, timeout: int, evidence: str = ""
 ) -> int:
@@ -982,6 +1067,7 @@ ARMS = ArmRegistry(
         ("options", "critic-loop2"): run_arm_critic_loop2,
         ("options", "council-lite"): run_arm_council_lite,
         ("options", "council-lite-flash"): run_arm_council_lite_flash,
+        ("options", "council-lite-critic"): run_arm_council_lite_critic,
         ("options", "council-full"): run_arm_council_full,
         ("research", "curation"): run_arm_research_curation,
         ("research", "lean"): run_arm_research_lean,
@@ -999,6 +1085,7 @@ SESSIONS = {
     ("options", "critic-loop2"): 3,  # черновик + критик + точечная ревизия
     ("options", "council-lite"): 4,  # 3 роли + синтез
     ("options", "council-lite-flash"): 4,  # 3 роли (devil на flash) + синтез
+    ("options", "council-lite-critic"): 6,  # 4 сессии совета + критик + ревизия
     ("options", "council-full"): 12,  # 5 + 5 + 1 + 1
     ("research", "curation"): 1,
     ("research", "lean"): 1,

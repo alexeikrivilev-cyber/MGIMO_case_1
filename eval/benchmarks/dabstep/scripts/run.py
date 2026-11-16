@@ -44,6 +44,26 @@ def estimate_usd(usage: dict) -> float:
     ) / 1_000_000
 
 
+def build_row(task: dict, summary: dict, usd: float) -> dict:
+    """Строка результата по задаче: ответ, pass-статус считает вызывающий
+    (нужен scorer), шаги бюджета и флаг best-effort — из вывода агента.
+    best_effort по умолчанию False, steps_budget откатывается на steps,
+    если агент их не отдал (совместимость со старыми трассами)."""
+    steps = summary.get("steps", 0)
+    return {
+        "task_id": task["task_id"],
+        "level": task["level"],
+        "question": task["question"],
+        "gold": task["answer"],
+        "answer": summary.get("answer", ""),
+        "steps": steps,
+        "steps_budget": summary.get("steps_budget", steps),
+        "best_effort": bool(summary.get("best_effort", False)),
+        "usage": summary.get("usage", {}),
+        "usd": round(usd, 4),
+    }
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="run.py")
     parser.add_argument("--data", required=True, help="каталог с context-файлами")
@@ -94,17 +114,8 @@ def main(argv: list[str]) -> int:
         usd = estimate_usd(usage)
         total_usd += usd
         passed = question_scorer(answer, task["answer"]) if answer else False
-        rows.append({
-            "task_id": task["task_id"],
-            "level": task["level"],
-            "question": task["question"],
-            "gold": task["answer"],
-            "answer": answer,
-            "pass": passed,
-            "steps": summary.get("steps", 0),
-            "usage": usage,
-            "usd": round(usd, 4),
-        })
+        rows.append(build_row(task, summary, usd))
+        rows[-1]["pass"] = passed
         print(f"[{task['task_id']}] {task['level']:4s} pass={passed} ans={answer[:60]!r} ${usd:.3f}")
 
     passed_n = sum(1 for r in rows if r["pass"])
@@ -116,6 +127,7 @@ def main(argv: list[str]) -> int:
         "passed": passed_n,
         "total": len(rows),
         "accuracy": round(passed_n / len(rows), 3),
+        "best_effort_answers": sum(1 for r in rows if r["best_effort"]),
         "total_usd": round(total_usd, 3),
         "rows": rows,
     }
@@ -125,24 +137,26 @@ def main(argv: list[str]) -> int:
         "# DABstep (dev) — прогон на step-5 (стенд О4)",
         "",
         f"Дата (UTC): {result['date_utc']}",
-        "Артефакт прогона: `eval/benchmarks/dabstep/runs/2026-11-16-dev10/results.json`",
+        f"Артефакт прогона: `{out_dir}/results.json`",
         "(полные трассы — `trace-*.json` того же каталога).",
         f"Модель: {result['model']}",
         f"Итог: {passed_n}/{len(rows)} (accuracy {result['accuracy']:.1%}), стоимость ${total_usd:.2f}",
+        f"Best-effort ответов (шаги исчерпаны): {result['best_effort_answers']}",
         "",
         "## Результаты",
         "",
         "Числа — из `results.json` и `trace-*.json` этого каталога.",
         "",
-        "| task | level | ответ агента | эталон | pass | шагов | $ |",
-        "|---|---|---|---|---|---|---|",
+        "| task | level | ответ агента | эталон | pass | шагов (бюджет) | best-effort | $ |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
         ans = (r["answer"] or "—").replace("|", "\\|")[:40]
         gold = str(r["gold"]).replace("|", "\\|")[:40]
         lines.append(
             f"| {r['task_id']} | {r['level']} | {ans} | {gold} | "
-            f"{'да' if r['pass'] else 'нет'} | {r['steps']} | {r['usd']:.3f} |"
+            f"{'да' if r['pass'] else 'нет'} | {r['steps_budget']} | "
+            f"{'да' if r['best_effort'] else '—'} | {r['usd']:.3f} |"
         )
     (out_dir / "results.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"итог: {passed_n}/{len(rows)}, ${total_usd:.2f}, результаты: {out_dir}")
