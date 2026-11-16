@@ -34,6 +34,7 @@ EXIT_VIOLATION = 2
 EXIT_NETWORK = 2
 EXIT_FAULT_INJECTED = 3
 EXIT_FAILED = 2
+EXIT_UNRESOLVED = 2
 
 PLACEHOLDER = "(пока нет)"
 
@@ -1446,6 +1447,87 @@ class CheckDecisionsTests(TempDirTestCase):
     def test_repo_decisions_file_passes(self) -> None:
         """Критерий приёмки: реальный project/decisions.md проходит."""
         result = run_script(CHECK_DECISIONS, "project/decisions.md")
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 12) check_citations.py — резолвимость ссылок (proxy citation accuracy)
+# --------------------------------------------------------------------------
+
+CHECK_CITATIONS = "check_citations.py"
+
+
+class CheckCitationsTests(TempDirTestCase):
+    """Контракт: 0 все резолвятся / нет URL, 2 не резолвится, 1 использование."""
+
+    def start_server(self, body: bytes = b"page") -> str:
+        import http.server
+        import threading
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_HEAD(self) -> None:  # noqa: N802
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+
+            def log_message(self, format: str, *args: object) -> None:
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.shutdown)
+        return f"http://127.0.0.1:{server.server_address[1]}/page"
+
+    def test_live_url_exit_0(self) -> None:
+        url = self.start_server()
+        path = self.write("project/evidence/ev-001.md", f"# ev\n\n- URL: {url}\n")
+        result = run_script(CHECK_CITATIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("1/1", result.stdout)
+
+    def test_dead_url_exit_2(self) -> None:
+        path = self.write(
+            "project/evidence/ev-002.md",
+            "# ev\n\n- URL: http://127.0.0.1:1/dead\n",
+        )
+        result = run_script(
+            CHECK_CITATIONS, str(path), "--timeout", "5"
+        )
+        self.assertEqual(result.returncode, EXIT_UNRESOLVED, result.stdout)
+        self.assertIn("НЕ РЕЗОЛВИТСЯ", result.stdout)
+
+    def test_file_without_urls_exit_0(self) -> None:
+        path = self.write("project/evidence/ev-003.md", "# ev\n\n- Без ссылок.\n")
+        result = run_script(CHECK_CITATIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("URL не найдены", result.stdout)
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(CHECK_CITATIONS)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_missing_file_exit_1(self) -> None:
+        result = run_script(CHECK_CITATIONS, str(self.tmp / "нет.md"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_repo_citations_all_resolve(self) -> None:
+        """Критерий приёмки: ссылки доказательств репозитория резолвятся."""
+        result = run_script(
+            CHECK_CITATIONS,
+            "project/brief.md",
+            "project/evidence/ev-001-mixpanel-benchmarks.md",
+            "project/evidence/ev-002-telco-dataset-stats.md",
+            "project/evidence/ev-003-arxiv-churn-drivers.md",
+        )
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
 
 
