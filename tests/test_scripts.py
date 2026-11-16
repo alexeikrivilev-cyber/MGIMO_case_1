@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -30,6 +31,10 @@ COST_REPORT = "cost_report.py"
 EXIT_OK = 0
 EXIT_USAGE = 1
 EXIT_VIOLATION = 2
+EXIT_NETWORK = 2
+EXIT_FAULT_INJECTED = 3
+EXIT_FAILED = 2
+EXIT_UNRESOLVED = 2
 
 PLACEHOLDER = "(пока нет)"
 
@@ -273,6 +278,18 @@ class CheckSourcesArtifactTests(TempDirTestCase):
         result = run_script(CHECK_SOURCES, str(path))
         self.assertEqual(result.returncode, EXIT_OK, result.stdout)
 
+    def test_rubrika_word_is_not_a_currency_claim(self) -> None:
+        # «руб» внутри «рубрика» — не денежное утверждение (ложный позитив
+        # чекера, найден на decisions.md 2026-11-16).
+        path = self.write(
+            "project/research.md",
+            artifact("## Оценка\n- Рубрика качества: возражения сильные.\n"),
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        # нарушение одно — секция без ссылки; числового утверждения нет
+        self.assertEqual(result.stdout.count("числовое утверждение"), 0)
+
     def test_violation_reports_file_and_line(self) -> None:
         path = self.write(
             "project/research.md",
@@ -281,6 +298,69 @@ class CheckSourcesArtifactTests(TempDirTestCase):
         result = run_script(CHECK_SOURCES, str(path))
         self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
         self.assertRegex(result.stdout, r"project/research\.md:\d+: .+")
+
+
+class CheckSourcesMeasurementLogTests(TempDirTestCase):
+    """Правило C: журналы измерений/прогонов — основание-артефакт."""
+
+    def test_council_run_log_with_artifact_ref_exit_0(self) -> None:
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Стоимость прогона\n\n"
+            "- Итог: in 163 297 / out 161 284; оценка §1.8 — $0.68 "
+            "(строки в `COST.md`, БД OpenCode).\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_council_run_log_bare_number_exit_2(self) -> None:
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Стоимость прогона\n\n"
+            "- Итог: in 163 297 / out 161 284; оценка §1.8 — $0.68.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_measurements_md_by_name_is_measurement_log(self) -> None:
+        path = self.write(
+            "docs/research/measurements.md",
+            "# Измерения\n\n## 1. Рука A1\n\n"
+            "- Стоимость $0.05; сессия ses_e1ae82643ffe7CsjWCB7D73j4c.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_ordinary_artifact_path_ref_does_not_ground(self) -> None:
+        # Правило C не протекает в обычные артефакты: путь в бэктиках
+        # не является основанием для research.md.
+        path = self.write(
+            "project/research.md",
+            artifact("## Анализ\n- Выручка выросла на 12% (`scripts/x.py`).\n"),
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_hash_reference_grounds_measurement_log(self) -> None:
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Phase 0\n\n"
+            "- Бриф заморожен: sha256 231e8722226fd5ac8b62bec5b1a1ab565824f6bc770875ad776a926996d12ba6.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_section_reference_grounds_table_numbers(self) -> None:
+        # Числа в таблице секции обоснованы ссылкой на артефакт в теле секции
+        # (процедура измерения документирована в секции).
+        path = self.write(
+            "project/council/run-001/run-log.md",
+            "# Лог\n\n## Дистанции\n\n"
+            "Замер — `scripts/council_diversity.py` по выходам рук.\n\n"
+            "| Рука | Дистанция |\n|---|---|\n| A0 | 0.960 |\n| A1 | 0.963 |\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
 
 
 class CheckSourcesCliTests(TempDirTestCase):
@@ -876,6 +956,588 @@ class TemplatesStructureTests(unittest.TestCase):
         for name in self.NEW_TEMPLATES:
             path = REPO_ROOT / "templates" / name
             self.assertTrue(path.is_file(), f"нет шаблона {name}: {path}")
+
+
+# --------------------------------------------------------------------------
+# 7) council_quota.py — квоты протокола Консилиума ( council-design.md §4 )
+# --------------------------------------------------------------------------
+
+COUNCIL_QUOTA = "council_quota.py"
+
+
+def council_phase2_text(addressed: list[int], silent: list[int] | None = None,
+                        positions: bool = True) -> str:
+    """Фикстура выхода Phase 2: адресные строки по вариантам инвентаря."""
+    silent = silent or []
+    lines = []
+    for number in addressed:
+        if number in silent:
+            lines.append(f"O{number} — возражений нет: механизм устойчив к этой линзе")
+        else:
+            lines.append(f"O{number} — возражение с основанием ev-002 [гипотеза]")
+    if positions:
+        lines.append("\n## ИЗМЕНЕНИЯ ПОЗИЦИЙ (Round-0 → Phase 2)\n\nДа, сузил окно механики.")
+    return "\n".join(lines) + "\n"
+
+
+class CouncilQuotaTests(TempDirTestCase):
+    """R1 покрытие, R2 квота ≥2 линз, R3 позиции, R4 dissent в синтезе."""
+
+    ALL = list(range(1, 15))
+
+    def make_run(self, *, addressed=None, silent=None, positions=True,
+                 with_synthesis=True, synthesis_text=None) -> Path:
+        run_dir = self.tmp / "run-001"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        for role in ("product", "comms", "data", "devil", "user"):
+            text = council_phase2_text(
+                addressed if addressed is not None else self.ALL,
+                silent,
+                positions,
+            )
+            (run_dir / f"phase2-{role}.out").write_text(text, encoding="utf-8")
+        if with_synthesis:
+            (run_dir / "synthesis.md").write_text(
+                synthesis_text or "# Синтез\n\n## 5. Разногласия\n\n- Спор сохранён.\n",
+                encoding="utf-8",
+            )
+        return run_dir
+
+    def test_full_run_exit_0(self) -> None:
+        run_dir = self.make_run()
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("ok", result.stdout.lower())
+
+    def test_role_missing_option_exit_2(self) -> None:
+        run_dir = self.make_run(addressed=self.ALL[:-1])
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("R1", result.stdout)
+
+    def test_single_lens_objection_without_reason_exit_2(self) -> None:
+        # По O7 Objectует только product; остальные роли адресуют вариант
+        # строкой без возражения и без причины «возражений нет» —
+        # «молчание» не считается ни возражением, ни unchallenged (R2).
+        run_dir = self.make_run()
+        for role in ("comms", "data", "devil", "user"):
+            path = run_dir / f"phase2-{role}.out"
+            text = path.read_text(encoding="utf-8")
+            text = text.replace(
+                "O7 — возражение с основанием ev-002 [гипотеза]",
+                "O7 — учтено.",
+            )
+            path.write_text(text, encoding="utf-8")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("O7", result.stdout)
+        self.assertIn("R2", result.stdout)
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(COUNCIL_QUOTA)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_unchallenged_with_reason_exit_0(self) -> None:
+        # «возражений нет» с причиной у двух линз — вариант «unchallenged»
+        run_dir = self.make_run(silent=[7, 8])
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_missing_positions_block_exit_2(self) -> None:
+        run_dir = self.make_run()
+        for role in ("product", "comms", "data", "devil", "user"):
+            path = run_dir / f"phase2-{role}.out"
+            path.write_text(path.read_text(encoding="utf-8").replace("ИЗМЕНЕНИЯ ПОЗИЦИЙ", ""), encoding="utf-8")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("R3", result.stdout)
+
+    def test_synthesis_without_dissent_exit_2(self) -> None:
+        run_dir = self.make_run(synthesis_text="# Синтез\n\n- Без секции разногласий.\n")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("R4", result.stdout)
+
+    def test_missing_run_dir_exit_1(self) -> None:
+        result = run_script(COUNCIL_QUOTA, str(self.tmp / "no-such-run"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_real_council_run_passes(self) -> None:
+        """Критерий приёмки: реальный прогон Консилиума репозитория проходит."""
+        run_dir = REPO_ROOT / "project" / "council" / "run-2026-11-16-01"
+        if not run_dir.is_dir():
+            self.skipTest("прогон Консилиума не найден")
+        result = run_script(COUNCIL_QUOTA, str(run_dir))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 8) council_diversity.py — proxy-разнообразие набора вариантов
+# --------------------------------------------------------------------------
+
+COUNCIL_DIVERSITY = "council_diversity.py"
+
+
+class CouncilDiversityTests(TempDirTestCase):
+    """TF-IDF прокси: разные механизмы дают высокую дистанцию, копии — низкую."""
+
+    def test_two_different_variants_exit_0(self) -> None:
+        path = self.write(
+            "options.md",
+            "# Варианты\n\n### Вариант 1: активация онбординга\n\n- Механизм: "
+            "доведение новичка до первой повторной сессии, события продукта.\n\n"
+            "### Вариант 2: автоплатёж\n\n- Механизм: карта по умолчанию, "
+            "миграция электронных чеков, ретраи платежей.\n",
+        )
+        result = run_script(COUNCIL_DIVERSITY, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("proxy", result.stdout)
+        self.assertIn("средняя попарная дистанция", result.stdout)
+
+    def test_identical_variants_low_distance(self) -> None:
+        body = "- Механизм: перевод новичков на автоплатёж картой, миграция чеков.\n"
+        path = self.write(
+            "options.md",
+            f"# Варианты\n\n### Вариант 1: платёж\n\n{body}\n\n### Вариант 2: платёж копия\n\n{body}\n",
+        )
+        result = run_script(COUNCIL_DIVERSITY, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout)
+        self.assertRegex(result.stdout, r"0\.0\d\d|\s—\s")
+
+    def test_single_variant_exit_2(self) -> None:
+        path = self.write("options.md", "# Варианты\n\n### Вариант 1: только один\n\n- Текст.\n")
+        result = run_script(COUNCIL_DIVERSITY, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stderr)
+
+    def test_missing_file_exit_1(self) -> None:
+        result = run_script(COUNCIL_DIVERSITY, str(self.tmp / "нет.md"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(COUNCIL_DIVERSITY)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+
+# --------------------------------------------------------------------------
+# 9) fetch_with_retry.py — retry/backoff + деградация (PRD §12)
+# --------------------------------------------------------------------------
+
+FETCH_RETRY = "fetch_with_retry.py"
+
+
+class FetchRetryTests(TempDirTestCase):
+    """Контракт: 0 сохранено, 2 деградация (gap-record), 3 fault-injection."""
+
+    def start_server(self, body: bytes = b"hello source") -> str:
+        """Локальный HTTP-сервер на случайном порту (детерминированно)."""
+        import http.server
+        import threading
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, format: str, *args: object) -> None:  # тишина в логах теста
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.shutdown)
+        return f"http://127.0.0.1:{server.server_address[1]}/source"
+
+    def test_success_saves_file_exit_0(self) -> None:
+        url = self.start_server()
+        out = self.tmp / "materials" / "source.txt"
+        result = run_script(FETCH_RETRY, url, str(out))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertTrue(out.is_file())
+        text = out.read_text(encoding="utf-8")
+        self.assertIn(url, text)
+        self.assertIn("hello source", text)
+
+    def test_all_attempts_fail_exit_2_with_gap_record(self) -> None:
+        # порт 1 — соединение отказано быстро и детерминированно
+        out = self.tmp / "materials" / "dead.txt"
+        result = run_script(
+            FETCH_RETRY,
+            "http://127.0.0.1:1/dead",
+            str(out),
+            "--attempts",
+            "2",
+            "--backoff-base",
+            "0.01",
+        )
+        self.assertEqual(result.returncode, EXIT_NETWORK, result.stdout)
+        self.assertFalse(out.exists())
+        self.assertIn("gap — источник недоступен", result.stdout)
+        self.assertIn("НЕ ПРОВЕРЕН", result.stdout)
+
+    def test_fault_injection_recovers_on_last_attempt_exit_0(self) -> None:
+        # STRATEGY_FAULT_INJECT=net: первые попытки падают принудительно,
+        # последняя — настоящая; путь продолжается и сохраняет источник.
+        url = self.start_server()
+        out = self.tmp / "materials" / "recovered.txt"
+        env_path = os.environ.copy()
+        env_path["STRATEGY_FAULT_INJECT"] = "net"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / FETCH_RETRY),
+                url,
+                str(out),
+                "--attempts",
+                "3",
+                "--backoff-base",
+                "0.01",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("попытка 1/3 упала", result.stderr)
+        self.assertIn("fault-injection", result.stderr)
+        self.assertTrue(out.is_file())
+
+    def test_fault_injection_dead_url_exit_3(self) -> None:
+        env_path = os.environ.copy()
+        env_path["STRATEGY_FAULT_INJECT"] = "net"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / FETCH_RETRY),
+                "http://127.0.0.1:1/dead",
+                str(self.tmp / "x.txt"),
+                "--attempts",
+                "2",
+                "--backoff-base",
+                "0.01",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+        self.assertEqual(result.returncode, EXIT_FAULT_INJECTED, result.stdout)
+        self.assertIn("режиме деградации", result.stderr)
+
+    def test_non_http_url_exit_1(self) -> None:
+        result = run_script(FETCH_RETRY, "ftp://example.com/x", str(self.tmp / "y"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(FETCH_RETRY)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+
+# --------------------------------------------------------------------------
+# 10) recover_state.py — восстановление STATE.md из git (PRD §12)
+# --------------------------------------------------------------------------
+
+RECOVER_STATE = "recover_state.py"
+
+
+class RecoverStateTests(TempDirTestCase):
+    """Восстановление из последней ВАЛИДНОЙ git-версии (не просто последней)."""
+
+    STATE_FIXTURE = (
+        "# STATE.md — фикстура\n\n## objective\n\nЗадача.\n\n## шаг\n\nШаг 1.\n\n"
+        "## завершённые шаги\n\n(пока нет)\n\n## решения и причины\n\n(пока нет)\n\n"
+        "## открытые вопросы\n\n(пока нет)\n\n## обязательства\n\n(пока нет)\n\n"
+        "## ключевые файлы\n\n- `scripts/check_state.py` — фикстура\n\n"
+        "## провалившиеся подходы\n\n(пока нет)\n\n## стоимость на сейчас\n\nСм. COST.md.\n"
+    )
+
+    def make_git_repo(self) -> Path:
+        """Временный git-репозиторий со scripts/check_state.py и STATE.md."""
+        repo = self.tmp / "repo"
+        (repo / "scripts").mkdir(parents=True)
+        (repo / "scripts" / "check_state.py").write_bytes(
+            (REPO_ROOT / "scripts" / "check_state.py").read_bytes()
+        )
+        (repo / "STATE.md").write_text(self.STATE_FIXTURE, encoding="utf-8")
+        for command in (
+            ["git", "init", "-q"],
+            ["git", "config", "user.email", "test@example.invalid"],
+            ["git", "config", "user.name", "test"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-q", "-m", "valid state"],
+        ):
+            subprocess.run(command, cwd=str(repo), check=True, capture_output=True)
+        return repo
+
+    def run_recover(self, repo: Path) -> subprocess.CompletedProcess:
+        env_path = os.environ.copy()
+        env_path["STRATEGY_AGENT_ROOT"] = str(repo)
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / RECOVER_STATE)],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+
+    def test_valid_state_exit_0_no_changes(self) -> None:
+        repo = self.make_git_repo()
+        before = (repo / "STATE.md").read_text(encoding="utf-8")
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertEqual((repo / "STATE.md").read_text(encoding="utf-8"), before)
+
+    def test_broken_state_recovered_from_git_exit_0(self) -> None:
+        repo = self.make_git_repo()
+        (repo / "STATE.md").write_text("# сломано\n\nнет секций\n", encoding="utf-8")
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("восстановлен", result.stdout)
+        self.assertIn("## objective", (repo / "STATE.md").read_text(encoding="utf-8"))
+
+    def test_skips_invalid_git_versions(self) -> None:
+        # В git две версии: старая валидная, новая битая. Восстанавливаться
+        # должна валидная (проверка каждой версии, не «последний коммит»).
+        repo = self.make_git_repo()
+        (repo / "STATE.md").write_text("# битая\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=str(repo), check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-q", "-m", "broken"], cwd=str(repo), check=True, capture_output=True
+        )
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("## шаг", (repo / "STATE.md").read_text(encoding="utf-8"))
+
+    def test_no_git_history_exit_2(self) -> None:
+        repo = self.tmp / "plain"
+        (repo / "scripts").mkdir(parents=True)
+        (repo / "scripts" / "check_state.py").write_bytes(
+            (REPO_ROOT / "scripts" / "check_state.py").read_bytes()
+        )
+        (repo / "STATE.md").write_text("# битый\n", encoding="utf-8")
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_FAILED, result.stdout + result.stderr)
+
+    def test_dry_run_does_not_write(self) -> None:
+        repo = self.make_git_repo()
+        (repo / "STATE.md").write_text("# сломано\n", encoding="utf-8")
+        env_path = os.environ.copy()
+        env_path["STRATEGY_AGENT_ROOT"] = str(repo)
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / RECOVER_STATE), "--dry-run"],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("dry-run", result.stdout)
+        self.assertEqual((repo / "STATE.md").read_text(encoding="utf-8"), "# сломано\n")
+
+    def test_real_repo_state_recovers_or_valid(self) -> None:
+        """Критерий приёмки: на валидном STATE.md репозитория — exit 0."""
+        result = run_script(RECOVER_STATE)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 11) check_decisions.py — реестр решений полон (B6, PRD §11)
+# --------------------------------------------------------------------------
+
+CHECK_DECISIONS = "check_decisions.py"
+
+DECISIONS_OK = """# Решения (фикстура)
+
+## Реестр решений
+
+| ID | Решение | Владелец | Дата | Метрика | Условие пересмотра | Статус |
+|---|---|---|---|---|---|---|
+| D1 | Комбинация вариантов 1 и 3 | РП (оператор, репетиция) | 2026-11-16 | 30-дневное удержание | зона «не работает» 2 недели | принято |
+| D2 | Вариант 2 отвергнут | РП (оператор) | 2026-11-16 | не применимо | снятие ограничения рамки | отвергнут |
+
+## Основания каждого решения
+
+- D1: выбор на чекпоинте — `project/options.md`; основания вариантов —
+  ev-002 (отток по контрактам) и ev-003 (SHAP-сигналы).
+
+## История пересмотров (append-only)
+
+(пока нет)
+"""
+
+
+class CheckDecisionsTests(TempDirTestCase):
+    """R1 реестр, R2 полнота полей, R3 основания, R4 история."""
+
+    def test_valid_registry_exit_0(self) -> None:
+        path = self.write("project/decisions.md", DECISIONS_OK)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("решений 2", result.stdout)
+
+    def test_missing_owner_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("| РП (оператор, репетиция) |", "| … |")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("владелец", result.stdout)
+
+    def test_missing_revision_condition_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("| зона «не работает» 2 недели |", "| — |")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("условие пересмотра", result.stdout)
+
+    def test_bad_date_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("2026-11-16", "2026-13-45")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("дата", result.stdout)
+
+    def test_no_decision_rows_exit_2(self) -> None:
+        text = DECISIONS_OK.replace(
+            "| D1 | Комбинация вариантов 1 и 3 | РП (оператор, репетиция) | 2026-11-16 | 30-дневное удержание | зона «не работает» 2 недели | принято |\n",
+            "",
+        ).replace(
+            "| D2 | Вариант 2 отвергнут | РП (оператор) | 2026-11-16 | не применимо | снятие ограничения рамки | отвергнут |\n",
+            "",
+        )
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("реестр", result.stdout.lower())
+
+    def test_missing_history_section_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("## История пересмотров (append-only)\n\n(пока нет)\n", "")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("История пересмотров", result.stdout)
+
+    def test_grounds_without_references_exit_2(self) -> None:
+        text = DECISIONS_OK.replace(
+            "- D1: выбор на чекпоинте — `project/options.md`; основания вариантов —\n  ev-002 (отток по контрактам) и ev-003 (SHAP-сигналы).",
+            "- D1: выбор на чекпоинте; основания вариантов — внутренний анализ.",
+        )
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("Основания", result.stdout)
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(CHECK_DECISIONS)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_missing_file_exit_1(self) -> None:
+        result = run_script(CHECK_DECISIONS, str(self.tmp / "нет.md"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_repo_decisions_file_passes(self) -> None:
+        """Критерий приёмки: реальный project/decisions.md проходит."""
+        result = run_script(CHECK_DECISIONS, "project/decisions.md")
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 12) check_citations.py — резолвимость ссылок (proxy citation accuracy)
+# --------------------------------------------------------------------------
+
+CHECK_CITATIONS = "check_citations.py"
+
+
+class CheckCitationsTests(TempDirTestCase):
+    """Контракт: 0 все резолвятся / нет URL, 2 не резолвится, 1 использование."""
+
+    def start_server(self, body: bytes = b"page") -> str:
+        import http.server
+        import threading
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_HEAD(self) -> None:  # noqa: N802
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+
+            def log_message(self, format: str, *args: object) -> None:
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.shutdown)
+        return f"http://127.0.0.1:{server.server_address[1]}/page"
+
+    def test_live_url_exit_0(self) -> None:
+        url = self.start_server()
+        path = self.write("project/evidence/ev-001.md", f"# ev\n\n- URL: {url}\n")
+        result = run_script(CHECK_CITATIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("1/1", result.stdout)
+
+    def test_dead_url_exit_2(self) -> None:
+        path = self.write(
+            "project/evidence/ev-002.md",
+            "# ev\n\n- URL: http://127.0.0.1:1/dead\n",
+        )
+        result = run_script(
+            CHECK_CITATIONS, str(path), "--timeout", "5"
+        )
+        self.assertEqual(result.returncode, EXIT_UNRESOLVED, result.stdout)
+        self.assertIn("НЕ РЕЗОЛВИТСЯ", result.stdout)
+
+    def test_file_without_urls_exit_0(self) -> None:
+        path = self.write("project/evidence/ev-003.md", "# ev\n\n- Без ссылок.\n")
+        result = run_script(CHECK_CITATIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("URL не найдены", result.stdout)
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(CHECK_CITATIONS)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_missing_file_exit_1(self) -> None:
+        result = run_script(CHECK_CITATIONS, str(self.tmp / "нет.md"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_repo_citations_all_resolve(self) -> None:
+        """Критерий приёмки: ссылки доказательств репозитория резолвятся.
+
+        Живой сетевой тест: разовая осечка (таймаут/rate-limit) не должна
+        ронять прогон — две попытки, потом вердикт.
+        """
+        result = None
+        for _ in range(2):
+            result = run_script(
+                CHECK_CITATIONS,
+                "project/brief.md",
+                "project/evidence/ev-001-mixpanel-benchmarks.md",
+                "project/evidence/ev-002-telco-dataset-stats.md",
+                "project/evidence/ev-003-arxiv-churn-drivers.md",
+            )
+            if result.returncode == EXIT_OK:
+                break
+        assert result is not None
+        self.assertEqual(EXIT_OK, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

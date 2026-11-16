@@ -294,8 +294,21 @@ export const StrategyHooks: Plugin = async () => {
         if (!snap) return;
 
         const agg: SessionAggregate =
-          sessions.get(sessionID) ??
-          { ...snap, searches: 0, model: String(info.modelID ?? "—") };
+          sessions.get(sessionID) ?? {
+            // База агрегата — НУЛИ, не снимок: снимок добавляется ниже
+            // через counted-дельту. Дефект (найден 2026-11-16, О3):
+            // инициализация `{...snap}` плюс `+= snap` на первом
+            // сообщении считала его дважды — строка COST.md для сессии
+            // с одним ассистентским сообщением была 2× истины, для
+            // многосообщений сессий раздутие (N+1)/N ≈ 1–5%.
+            input: 0,
+            output: 0,
+            reasoning: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            searches: 0,
+            model: String(info.modelID ?? "—"),
+          };
         // сообщение могло обновиться стримингом — пересчитываем вклад
         const previous = counted.get(messageID);
         if (previous) {

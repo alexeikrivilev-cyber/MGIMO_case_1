@@ -22,20 +22,26 @@
 | [docs/research/council-design.md](docs/research/council-design.md) | Фича «Консилиум»: роли, протокол, два контура (dev/prod), план измерений |
 | [docs/research/agentic-ecosystem.md](docs/research/agentic-ecosystem.md) | Экосистема «агент-как-папка» 2025–2026: AGENTS.md, skills, hooks, subagents, MCP — что оправдано |
 | [docs/research/llm-pricing-agent-costs.md](docs/research/llm-pricing-agent-costs.md) | Актуальные цены API и стоимость агентных прогонов (для двухконтурной модели стоимости) |
+| [docs/research/measurements.md](docs/research/measurements.md) | Измерения фич (Консилиум, устойчивость, решения, портируемость, held-out, MCP): «фича → метрика → результат → решение» + структура под О4/О5 |
+| [docs/routing.md](docs/routing.md) | Маршрутные решения: процесс/модель/инструмент по шагу + лог решений с причинами |
+| [docs/portability.md](docs/portability.md) | Портируемость: smoke-матрица сред, лимит Codex, адаптеры (GigaCode, Gemini CLI) |
 
 ## Статус
 
 **День 1 (16.11.2026) — завершён:** исследование, PRD, ROADMAP, research-документы.
 **День 2 (16.11.2026) — завершён:** скелет агента, навыки framing/evidence/resume,
-скрипты-проверки (44/44 тестов зелёные), 3 хука OpenCode, прогон шагов 0–1
-на демо-задаче `demo-retention` с ЧЕКПОИНТОМ 1, прерыванием и возобновлением
-из STATE.md.
-**Очередь О2 — в работе:** навыки шагов 2–4 (`options`, `strategy-product`,
-`strategy-comms`, `verification` + раздел «Шаг 2» в навыке `evidence`),
-шаблоны артефактов шагов 2–4, проверка `check_options.py` (67/67 тестов
-зелёные). Дальше — по [ROADMAP.md](ROADMAP.md): полный прогон демо-задачи
-(`research.md` → `options.md` → `strategy-product.md` → `strategy-comms.md`
-→ `verification-plan.md`), затем очередь О3.
+скрипты-проверки, 3 хука OpenCode, прогон шагов 0–1 на демо-задаче
+`demo-retention` с ЧЕКПОИНТОМ 1, прерыванием и возобновлением из STATE.md.
+**О2 — завершён:** полный обязательный путь на демо-задаче (research →
+options → 3 стратегии), 67/67 тестов на момент приёмки.
+**О3 — завершён (ветка `feat/o3-extra-level`):** Консилиум полной версией
+(протокол + лог фаз + замеры; прод-кандидат — мульти-линза одним вызовом),
+routing-таблица, устойчивость (retry/деградация/восстановление STATE) +
+3 fault-injection прогона, портируемость (адаптеры, матрица сред),
+`project/decisions.md` + навык `decisions`, held-out задача
+«ДомКниг» (полный путь, $3.35), решение по MCP web-search (осознанный
+отказ с данными). 116/116 тестов зелёные. Следующие очереди — О4
+(стенд измерений) и О5 (оптимизация прода) по [ROADMAP.md](ROADMAP.md).
 
 ## Быстрый старт (целевая среда — OpenCode)
 
@@ -60,13 +66,20 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 Проверки вручную:
 
 ```bash
-python3 tests/test_scripts.py                  # 67/67 (stdlib, без зависимостей)
-uv run --with pytest python -m pytest tests/ -q # то же через pytest
-python3 scripts/check_sources.py project/evidence/*.md
+python3 -m pytest tests/ -q                        # 116/116 (или: python3 tests/test_scripts.py)
+python3 scripts/check_sources.py project/brief.md project/evidence/*.md project/decisions.md
 python3 scripts/check_options.py project/options.md  # шаг 3: варианты и возражения
-python3 scripts/check_state.py
+python3 scripts/check_decisions.py project/decisions.md  # шаг 5: реестр решений
+python3 scripts/council_quota.py project/council/run-*/  # протокол Консилиума
+python3 scripts/check_citations.py project/evidence/*.md  # резолвимость ссылок
+python3 scripts/check_state.py                     # демо-задача
+python3 scripts/recover_state.py                   # если STATE.md битый — восстановит из git
 python3 scripts/cost_report.py
 ```
+
+Проверки held-out задачи (артефакты в `eval/tasks/heldout-growth-segment/artifacts/`):
+`check_sources.py` по каждому артефакту, `check_options.py` по options.md,
+`check_state.py` по `artifacts/STATE.md`.
 
 Прерывание и возобновление: остановите прогон на середине шага (Ctrl-C или
 внешний kill) — затем новый чат: `opencode run "Прочитай STATE.md и LOG.md
@@ -79,3 +92,21 @@ python3 scripts/cost_report.py
 | Проверка вариантов | `scripts/check_options.py` | ≥3 варианта, среди них «оставить как есть»; у каждого возражение и маркер типа утверждения |
 | Навыки шагов 3–4 | `knowledge/skills/options|strategy-product|strategy-comms|verification/SKILL.md` | методика шага; карта «вопрос → навык» — `knowledge/index.md` |
 | Шаблоны шагов 2–4 | `templates/research.md`, `options.md`, `strategy-product.md`, `strategy-comms.md`, `verification-plan.md` | копия файла → `project/<артефакт>.md`; шапка каждого шаблона указывает навык и проверки |
+
+## Портируемость (Cursor / Claude Code / Codex / GigaCode / Gemini CLI)
+
+Единый источник истины — `AGENTS.md` (стандарт agents.md). Матрица сред,
+замер лимита Codex и адаптеры — `docs/portability.md`. Навыки видны
+средам через симлинки `.claude/skills` и `.agents/skills` →
+`knowledge/skills`.
+
+**Gemini CLI** (не в целевом списке, но документируется): по умолчанию
+грузит `GEMINI.md` и игнорирует `AGENTS.md`. Однострочная настройка —
+добавить наш файл в список имён контекста:
+
+```json
+{ "context": { "fileName": ["AGENTS.md", "GEMINI.md"] } }
+```
+
+(источник: документация Gemini CLI + issue google-gemini/gemini-cli#28227,
+проверено 2026-11-16).

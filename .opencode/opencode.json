@@ -13,6 +13,9 @@
       "models": {
         "step-5-preview": {
           "name": "Step 5 Preview"
+        },
+        "step-3.7-flash": {
+          "name": "Step 3.7 Flash"
         }
       }
     }
