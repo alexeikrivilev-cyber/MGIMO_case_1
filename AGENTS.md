@@ -54,6 +54,7 @@
 | Методические знания | `knowledge/skills/*` (progressive disclosure) | по задаче, см. `knowledge/index.md` |
 | Материалы проекта | `project/materials/`, `project/evidence/` | just-in-time по ссылке из артефакта |
 | Состояние задачи | `STATE.md` + `project/*.md` | перечитывается на каждом шаге |
+| Маршрутные решения | `docs/routing.md` (процесс/модель/инструмент по шагу + лог решений) | начало работы; выбор модели/инструмента; триггер Консилиума |
 
 Артефакты пиши в `project/`: `brief.md` → `evidence/` → `research.md` →
 `options.md` → `strategy-product.md` → `strategy-comms.md` →
