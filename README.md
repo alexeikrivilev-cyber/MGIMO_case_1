@@ -22,7 +22,8 @@
 | [docs/research/council-design.md](docs/research/council-design.md) | Фича «Консилиум»: роли, протокол, два контура (dev/prod), план измерений |
 | [docs/research/agentic-ecosystem.md](docs/research/agentic-ecosystem.md) | Экосистема «агент-как-папка» 2025–2026: AGENTS.md, skills, hooks, subagents, MCP — что оправдано |
 | [docs/research/llm-pricing-agent-costs.md](docs/research/llm-pricing-agent-costs.md) | Актуальные цены API и стоимость агентных прогонов (для двухконтурной модели стоимости) |
-| [docs/research/measurements.md](docs/research/measurements.md) | Измерения фич (Консилиум, устойчивость, решения, портируемость, held-out, MCP): «фича → метрика → результат → решение» + структура под О4/О5 |
+| [docs/research/measurements.md](docs/research/measurements.md) | Измерения фич (Консилиум, устойчивость, решения, портируемость, held-out, MCP): «фича → метрика → результат → решение» + стенд О4/О5 |
+| [docs/research/prod-council-lite.md](docs/research/prod-council-lite.md) | Прод-конфигурация Консилиума (council-lite): триггер, роли, $/run по шагам, сверка оценки с metered |
 | [docs/routing.md](docs/routing.md) | Маршрутные решения: процесс/модель/инструмент по шагу + лог решений с причинами |
 | [docs/portability.md](docs/portability.md) | Портируемость: smoke-матрица сред, лимит Codex, адаптеры (GigaCode, Gemini CLI) |
 

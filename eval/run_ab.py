@@ -77,6 +77,36 @@ DEFAULT_FEATURE = "options"
 # реально попадает в файл патчей (контракт промпта — не более 15).
 MAX_PATCH_EDITS = 15
 
+# Linux ограничивает ОДИН аргумент exec до 128 КБ (MAX_ARG_STRLEN).
+# Промпт сессии council-full на held-out (бриф + 5 выходов Phase 1 +
+# 5 выходов Phase 2) — 133 КБ: одним argv он не влезает и процесс
+# падал с OSError E2BIG (внешне выглядело как «тихое убийство»).
+# Поэтому промпт режется по границам UTF-8 на части и передаётся
+# несколькими позиционными аргументами `opencode run` (склейка
+#message через пробел — проверено).
+ARG_LIMIT_BYTES = 120_000
+
+
+def chunk_prompt(prompt: str, limit_bytes: int = ARG_LIMIT_BYTES) -> list[str]:
+    """Промпт → части, каждая ≤ limit_bytes байт и валидный UTF-8.
+
+    Граница реза никогда не рассекает многобайтовый символ (откат до
+    lead-byte). Промпт в пределах лимита возвращается как есть.
+    """
+    data = prompt.encode("utf-8")
+    if len(data) <= limit_bytes:
+        return [prompt]
+    chunks: list[bytes] = []
+    start = 0
+    while start < len(data):
+        end = min(start + limit_bytes, len(data))
+        if end < len(data):
+            while end > start and (data[end] & 0xC0) == 0x80:
+                end -= 1  # откат из середины многобайтового символа
+        chunks.append(data[start:end])
+        start = end
+    return [chunk.decode("utf-8") for chunk in chunks]
+
 TASKS = {
     "demo-retention": {
         "brief": "project/council/run-2026-11-16-01/frozen-brief.md",
@@ -555,7 +585,7 @@ def run_session(prompt: str, out_dir: Path, name: str, model: str, timeout: int)
     previous = set_state_step(f"О4: ab-{out_dir.parent.name}-{out_dir.name}-{name}")
     try:
         proc = subprocess.run(
-            ["opencode", "run", "--model", model, prompt],
+            ["opencode", "run", "--model", model, *chunk_prompt(prompt)],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,

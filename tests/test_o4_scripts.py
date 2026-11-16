@@ -165,6 +165,26 @@ class RunAbCliTests(unittest.TestCase):
         self.assertIn("stepfun/step-3.7-flash", module.ROLE_MODEL.values())
         self.assertIn("stepfun/step-5-preview", module.ROLE_MODEL.values())
 
+    def test_chunk_prompt_splits_over_exec_arg_limit(self) -> None:
+        # Промпт >128 КБ одним argv не влезает в лимит exec (E2BIG):
+        # chunk_prompt режет его на части ≤120 КБ, не рассекая UTF-8.
+        module = load_module("run_ab_chunk_test", EVAL_DIR / "run_ab.py")
+        small = "короткий промпт"
+        self.assertEqual(module.chunk_prompt(small), [small])
+        big = "я" * 200_000  # кириллица — 2 байта на символ, 400 КБ
+        chunks = module.chunk_prompt(big)
+        self.assertGreater(len(chunks), 1)
+        for chunk in chunks:
+            self.assertLessEqual(len(chunk.encode("utf-8")), module.ARG_LIMIT_BYTES)
+        # склейка частей восстанавливает исходный текст (потерь нет)
+        self.assertEqual("".join(chunks), big)
+        # граница реза не рассекает многобайтовый символ
+        emoji = "😀" * 60_000  # 4 байта на символ, 240 КБ
+        chunks_emoji = module.chunk_prompt(emoji)
+        self.assertEqual("".join(chunks_emoji), emoji)
+        for chunk in chunks_emoji:
+            chunk.encode("utf-8")  # не бросает decode/encode ошибок
+
 
 # --------------------------------------------------------------------------
 # 2b) eval/run_ab.py — новые руки: council-full, critic-loop2, research
