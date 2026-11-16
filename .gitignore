@@ -1,0 +1,26 @@
+# --- Окружение и секреты ---
+.env
+*.env
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- Node (если появятся локальные зависимости плагинов) ---
+node_modules/
+
+# --- ОС и редакторы ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# --- Кэш проверок и прогонов ---
+.pytest_cache/
+.cache/
+.opencode/
