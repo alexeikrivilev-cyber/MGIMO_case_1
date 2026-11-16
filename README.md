@@ -50,10 +50,9 @@ cd .opencode && npm install && cd ..
 opencode run "Выполни шаг 0 (рамка) по демо-задаче eval/tasks/demo-retention/task.md"
 ```
 
-Что происходит внутри: инструкции агента грузятся из `docs/agents-md-staged.md`
-(готовое содержимое `AGENTS.md`; перенос в корневом файле согласуется с
-владельцем — прямая запись `AGENTS.md` заблокирована политикой
-`protected_instruction_files`). Хуки (`.opencode/plugins/strategy-hooks.ts`):
+Что происходит внутри: инструкции агента грузятся из `AGENTS.md`
+(постоянные инструкции; рабочий черновик, из которого он размещён, — в
+`docs/agents-md-staged.md`). Хуки (`.opencode/plugins/strategy-hooks.ts`):
 после записи `project/*.md` — `check_sources.py`; после записи `STATE.md` и в
 конце сеанса — `check_state.py`; на каждом ассистентском сообщении — строка
 учёта в прод-таблицу `COST.md`. Лог хуков — `.opencode/hooks.log` (вне git).
