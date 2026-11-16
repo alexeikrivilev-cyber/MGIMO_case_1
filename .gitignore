@@ -24,3 +24,5 @@ Thumbs.db
 .pytest_cache/
 .cache/
 .opencode/
+__pycache__/
+*.pyc
