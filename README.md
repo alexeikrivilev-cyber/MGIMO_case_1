@@ -79,3 +79,21 @@ python3 scripts/cost_report.py
 | Проверка вариантов | `scripts/check_options.py` | ≥3 варианта, среди них «оставить как есть»; у каждого возражение и маркер типа утверждения |
 | Навыки шагов 3–4 | `knowledge/skills/options|strategy-product|strategy-comms|verification/SKILL.md` | методика шага; карта «вопрос → навык» — `knowledge/index.md` |
 | Шаблоны шагов 2–4 | `templates/research.md`, `options.md`, `strategy-product.md`, `strategy-comms.md`, `verification-plan.md` | копия файла → `project/<артефакт>.md`; шапка каждого шаблона указывает навык и проверки |
+
+## Портируемость (Cursor / Claude Code / Codex / GigaCode / Gemini CLI)
+
+Единый источник истины — `AGENTS.md` (стандарт agents.md). Матрица сред,
+замер лимита Codex и адаптеры — `docs/portability.md`. Навыки видны
+средам через симлинки `.claude/skills` и `.agents/skills` →
+`knowledge/skills`.
+
+**Gemini CLI** (не в целевом списке, но документируется): по умолчанию
+грузит `GEMINI.md` и игнорирует `AGENTS.md`. Однострочная настройка —
+добавить наш файл в список имён контекста:
+
+```json
+{ "context": { "fileName": ["AGENTS.md", "GEMINI.md"] } }
+```
+
+(источник: документация Gemini CLI + issue google-gemini/gemini-cli#28227,
+проверено 2026-11-16).
