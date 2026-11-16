@@ -24,6 +24,7 @@
 | 2026-11-16 | О4: бенчмарк DABstep dev-10 в Docker (прямой вызов API, не через хук) | step-5-preview (API) | 1,437,351 (cache-miss 794,343 + cache-read 643,008) | 150,746 | $1.27 | `eval/benchmarks/dabstep/runs/2026-11-16-dev10/results.json` |
 | 2026-11-16 | О4: A/B прогоны рук шага 3 — демо + held-out (skill / critic-loop / council-lite, 16 сессий) | step-5-preview (OpenCode, хук) | ~330K in / ~140K out | — | $0.98 (demo $0.53 + held-out $0.45, атрибуция по меткам) | `eval/runs/ab-options-*/`, метрики `metrics.md` |
 | 2026-11-16 | О4: скоринг рук (критик на финалах, 6 сессий) + проба H3 (критик + дайджест) | step-5-preview (OpenCode, хук) | — | — | $0.38 | `eval/runs/ab-options-*/critic-final/`, `eval/runs/h3-probe/` |
+| 2026-11-16 | О4: дизайн навыков — руки lean + hybrid на демо (2 сессии) + скоринг (2) | step-5-preview (OpenCode, хук) | — | — | $0.37 | `eval/runs/ab-skills-demo-retention/` |
 
 ## Контур прода (prod) — метрика $/прогон для пользователя
 
@@ -120,6 +121,10 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e1a49cdf2ffe2KLf09uxTuW48J | О4: ab-score-ab-options-heldout-growth-s | step-5-preview | 10624 | 10711 | 0 | 23104 | 0 | 0 | $0.04 |
 | 2026-11-16 | ses_e1a48b01bffeVt3rSdzUxJhPX0 | О4: ab-score-ab-options-heldout-growth-s | step-5-preview | 6556 | 19631 | 0 | 23104 | 0 | 0 | $0.06 |
 | 2026-11-16 | ses_e1a3b2de4ffe6fr61VHNbyOmro | О4: h3-research-citations | step-5-preview | 8930 | 23240 | 0 | 21248 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e1a3595b2ffe1dP8sXxs7PD29O | О4: ab-ab-skills-demo-retention-lean-ses | step-5-preview | 3199 | 9538 | 0 | 21248 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1a34b27dffeItOXQ1bpNRocQg | О4: ab-ab-skills-demo-retention-hybrid-s | step-5-preview | 28286 | 35936 | 0 | 1081984 | 0 | 0 | $0.23 |
+| 2026-11-16 | ses_e1a2f98deffetllu0n0K84EeUZ | О4: ab-score-ab-skills-demo-retention-hy | step-5-preview | 5682 | 21890 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e1a2e036bffeKYBHF7w1Hbhv5v | О4: ab-score-ab-skills-demo-retention-le | step-5-preview | 5155 | 11539 | 0 | 23104 | 0 | 0 | $0.04 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
