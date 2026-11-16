@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -30,6 +31,9 @@ COST_REPORT = "cost_report.py"
 EXIT_OK = 0
 EXIT_USAGE = 1
 EXIT_VIOLATION = 2
+EXIT_NETWORK = 2
+EXIT_FAULT_INJECTED = 3
+EXIT_FAILED = 2
 
 PLACEHOLDER = "(пока нет)"
 
@@ -1103,6 +1107,232 @@ class CouncilDiversityTests(TempDirTestCase):
         result = run_script(COUNCIL_DIVERSITY)
         self.assertEqual(result.returncode, EXIT_USAGE)
         self.assertTrue(result.stderr.strip())
+
+
+# --------------------------------------------------------------------------
+# 9) fetch_with_retry.py — retry/backoff + деградация (PRD §12)
+# --------------------------------------------------------------------------
+
+FETCH_RETRY = "fetch_with_retry.py"
+
+
+class FetchRetryTests(TempDirTestCase):
+    """Контракт: 0 сохранено, 2 деградация (gap-record), 3 fault-injection."""
+
+    def start_server(self, body: bytes = b"hello source") -> str:
+        """Локальный HTTP-сервер на случайном порту (детерминированно)."""
+        import http.server
+        import threading
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, format: str, *args: object) -> None:  # тишина в логах теста
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.shutdown)
+        return f"http://127.0.0.1:{server.server_address[1]}/source"
+
+    def test_success_saves_file_exit_0(self) -> None:
+        url = self.start_server()
+        out = self.tmp / "materials" / "source.txt"
+        result = run_script(FETCH_RETRY, url, str(out))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertTrue(out.is_file())
+        text = out.read_text(encoding="utf-8")
+        self.assertIn(url, text)
+        self.assertIn("hello source", text)
+
+    def test_all_attempts_fail_exit_2_with_gap_record(self) -> None:
+        # порт 1 — соединение отказано быстро и детерминированно
+        out = self.tmp / "materials" / "dead.txt"
+        result = run_script(
+            FETCH_RETRY,
+            "http://127.0.0.1:1/dead",
+            str(out),
+            "--attempts",
+            "2",
+            "--backoff-base",
+            "0.01",
+        )
+        self.assertEqual(result.returncode, EXIT_NETWORK, result.stdout)
+        self.assertFalse(out.exists())
+        self.assertIn("gap — источник недоступен", result.stdout)
+        self.assertIn("НЕ ПРОВЕРЕН", result.stdout)
+
+    def test_fault_injection_recovers_on_last_attempt_exit_0(self) -> None:
+        # STRATEGY_FAULT_INJECT=net: первые попытки падают принудительно,
+        # последняя — настоящая; путь продолжается и сохраняет источник.
+        url = self.start_server()
+        out = self.tmp / "materials" / "recovered.txt"
+        env_path = os.environ.copy()
+        env_path["STRATEGY_FAULT_INJECT"] = "net"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / FETCH_RETRY),
+                url,
+                str(out),
+                "--attempts",
+                "3",
+                "--backoff-base",
+                "0.01",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("попытка 1/3 упала", result.stderr)
+        self.assertIn("fault-injection", result.stderr)
+        self.assertTrue(out.is_file())
+
+    def test_fault_injection_dead_url_exit_3(self) -> None:
+        env_path = os.environ.copy()
+        env_path["STRATEGY_FAULT_INJECT"] = "net"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / FETCH_RETRY),
+                "http://127.0.0.1:1/dead",
+                str(self.tmp / "x.txt"),
+                "--attempts",
+                "2",
+                "--backoff-base",
+                "0.01",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+        self.assertEqual(result.returncode, EXIT_FAULT_INJECTED, result.stdout)
+        self.assertIn("режиме деградации", result.stderr)
+
+    def test_non_http_url_exit_1(self) -> None:
+        result = run_script(FETCH_RETRY, "ftp://example.com/x", str(self.tmp / "y"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(FETCH_RETRY)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+
+# --------------------------------------------------------------------------
+# 10) recover_state.py — восстановление STATE.md из git (PRD §12)
+# --------------------------------------------------------------------------
+
+RECOVER_STATE = "recover_state.py"
+
+
+class RecoverStateTests(TempDirTestCase):
+    """Восстановление из последней ВАЛИДНОЙ git-версии (не просто последней)."""
+
+    STATE_FIXTURE = (
+        "# STATE.md — фикстура\n\n## objective\n\nЗадача.\n\n## шаг\n\nШаг 1.\n\n"
+        "## завершённые шаги\n\n(пока нет)\n\n## решения и причины\n\n(пока нет)\n\n"
+        "## открытые вопросы\n\n(пока нет)\n\n## обязательства\n\n(пока нет)\n\n"
+        "## ключевые файлы\n\n- `scripts/check_state.py` — фикстура\n\n"
+        "## провалившиеся подходы\n\n(пока нет)\n\n## стоимость на сейчас\n\nСм. COST.md.\n"
+    )
+
+    def make_git_repo(self) -> Path:
+        """Временный git-репозиторий со scripts/check_state.py и STATE.md."""
+        repo = self.tmp / "repo"
+        (repo / "scripts").mkdir(parents=True)
+        (repo / "scripts" / "check_state.py").write_bytes(
+            (REPO_ROOT / "scripts" / "check_state.py").read_bytes()
+        )
+        (repo / "STATE.md").write_text(self.STATE_FIXTURE, encoding="utf-8")
+        for command in (
+            ["git", "init", "-q"],
+            ["git", "config", "user.email", "test@example.invalid"],
+            ["git", "config", "user.name", "test"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-q", "-m", "valid state"],
+        ):
+            subprocess.run(command, cwd=str(repo), check=True, capture_output=True)
+        return repo
+
+    def run_recover(self, repo: Path) -> subprocess.CompletedProcess:
+        env_path = os.environ.copy()
+        env_path["STRATEGY_AGENT_ROOT"] = str(repo)
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / RECOVER_STATE)],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+
+    def test_valid_state_exit_0_no_changes(self) -> None:
+        repo = self.make_git_repo()
+        before = (repo / "STATE.md").read_text(encoding="utf-8")
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertEqual((repo / "STATE.md").read_text(encoding="utf-8"), before)
+
+    def test_broken_state_recovered_from_git_exit_0(self) -> None:
+        repo = self.make_git_repo()
+        (repo / "STATE.md").write_text("# сломано\n\nнет секций\n", encoding="utf-8")
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("восстановлен", result.stdout)
+        self.assertIn("## objective", (repo / "STATE.md").read_text(encoding="utf-8"))
+
+    def test_skips_invalid_git_versions(self) -> None:
+        # В git две версии: старая валидная, новая битая. Восстанавливаться
+        # должна валидная (проверка каждой версии, не «последний коммит»).
+        repo = self.make_git_repo()
+        (repo / "STATE.md").write_text("# битая\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=str(repo), check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-q", "-m", "broken"], cwd=str(repo), check=True, capture_output=True
+        )
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("## шаг", (repo / "STATE.md").read_text(encoding="utf-8"))
+
+    def test_no_git_history_exit_2(self) -> None:
+        repo = self.tmp / "plain"
+        (repo / "scripts").mkdir(parents=True)
+        (repo / "scripts" / "check_state.py").write_bytes(
+            (REPO_ROOT / "scripts" / "check_state.py").read_bytes()
+        )
+        (repo / "STATE.md").write_text("# битый\n", encoding="utf-8")
+        result = self.run_recover(repo)
+        self.assertEqual(result.returncode, EXIT_FAILED, result.stdout + result.stderr)
+
+    def test_dry_run_does_not_write(self) -> None:
+        repo = self.make_git_repo()
+        (repo / "STATE.md").write_text("# сломано\n", encoding="utf-8")
+        env_path = os.environ.copy()
+        env_path["STRATEGY_AGENT_ROOT"] = str(repo)
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / RECOVER_STATE), "--dry-run"],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env_path,
+        )
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("dry-run", result.stdout)
+        self.assertEqual((repo / "STATE.md").read_text(encoding="utf-8"), "# сломано\n")
+
+    def test_real_repo_state_recovers_or_valid(self) -> None:
+        """Критерий приёмки: на валидном STATE.md репозитория — exit 0."""
+        result = run_script(RECOVER_STATE)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
