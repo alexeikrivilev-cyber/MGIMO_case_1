@@ -1520,15 +1520,24 @@ class CheckCitationsTests(TempDirTestCase):
         self.assertTrue(result.stderr.strip())
 
     def test_repo_citations_all_resolve(self) -> None:
-        """Критерий приёмки: ссылки доказательств репозитория резолвятся."""
-        result = run_script(
-            CHECK_CITATIONS,
-            "project/brief.md",
-            "project/evidence/ev-001-mixpanel-benchmarks.md",
-            "project/evidence/ev-002-telco-dataset-stats.md",
-            "project/evidence/ev-003-arxiv-churn-drivers.md",
-        )
-        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        """Критерий приёмки: ссылки доказательств репозитория резолвятся.
+
+        Живой сетевой тест: разовая осечка (таймаут/rate-limit) не должна
+        ронять прогон — две попытки, потом вердикт.
+        """
+        result = None
+        for _ in range(2):
+            result = run_script(
+                CHECK_CITATIONS,
+                "project/brief.md",
+                "project/evidence/ev-001-mixpanel-benchmarks.md",
+                "project/evidence/ev-002-telco-dataset-stats.md",
+                "project/evidence/ev-003-arxiv-churn-drivers.md",
+            )
+            if result.returncode == EXIT_OK:
+                break
+        assert result is not None
+        self.assertEqual(EXIT_OK, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
