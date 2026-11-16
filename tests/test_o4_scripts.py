@@ -106,6 +106,22 @@ class RunCriticCliTests(unittest.TestCase):
             self_plain = module.build_prompt("АРТ", "РУБ", "self", digest.read_text(encoding="utf-8"))
             self.assertNotIn("ДОПОЛНИТЕЛЬНЫЙ МАНДАТ", self_plain)
 
+    def test_package_mode_prompt(self) -> None:
+        # Пакетный режим (H4): несколько артефактов одним прогоном,
+        # роль и формат выхода требуют межартефактных находок.
+        module = load_module("run_critic_package_test", SCRIPTS_DIR / "run_critic.py")
+        package = [("brief.md", "РАМКА"), ("options.md", "ВАРИАНТЫ")]
+        prompt = module.build_prompt("", "РУБ", "critic", package=package)
+        self.assertIn("=== АРТЕФАКТ: brief.md ===", prompt)
+        self.assertIn("=== АРТЕФАКТ: options.md ===", prompt)
+        self.assertIn("ПАКЕТ артефактов", prompt)
+        self.assertIn("МЕЖДУ артефактами", prompt)
+        self.assertIn("А против Б", prompt)
+        # одиночный режим не менялся: пакетных маркеров нет
+        plain = module.build_prompt("АРТ", "РУБ", "critic")
+        self.assertNotIn("АРТЕФАКТ:", plain)
+        self.assertIn("место\n(цитата/раздел артефакта)", plain)
+
 
 class RunLabelTests(unittest.TestCase):
     """Метка прогона для хука cost-append: отдельный файл, STATE.md не трогается.
@@ -271,6 +287,17 @@ class CouncilFullArmTests(unittest.TestCase):
             self.assertEqual(self.module.ROLE_MODEL[role], "stepfun/step-5-preview", role)
         for role in ("data", "user"):
             self.assertEqual(self.module.ROLE_MODEL[role], "stepfun/step-3.7-flash", role)
+
+    def test_council_lite_flash_devil_on_flash(self) -> None:
+        # council-lite-flash (О5 итерация 1): devil переведён на flash,
+        # product остаётся на step-5 — отличие РОВНО в одной роли.
+        self.assertIn(("options", "council-lite-flash"), self.module.ARMS)
+        self.assertEqual(self.module.sessions_for("options", "council-lite-flash"), 4)
+        models = self.module.ROLE_MODEL_FLASH_DEVIL
+        self.assertEqual(models["devil"], "stepfun/step-3.7-flash")
+        self.assertEqual(models["product"], "stepfun/step-5-preview")
+        self.assertEqual(models["data"], "stepfun/step-3.7-flash")
+        self.assertEqual(self.module.ROLE_MODEL["devil"], "stepfun/step-5-preview")
 
     def test_cross_prompt_states_isolation_rule(self) -> None:
         prompt = self.module.CROSS_PROMPT
@@ -853,7 +880,86 @@ class ScoreArmsTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# 5) Бенчмарк DABstep — вендор-scorer и протокол агента
+# 5b) eval/trigger_audit.py — аудит триггера council (О5 итерация 3)
+# --------------------------------------------------------------------------
+
+
+class TriggerAuditTests(unittest.TestCase):
+    """Аудит триггера: 10 кейсов, парсинг JSON, счётчики вердикта."""
+
+    def setUp(self) -> None:
+        self.module = load_module("trigger_audit_under_test", EVAL_DIR / "trigger_audit.py")
+
+    def test_ten_cases_five_per_task(self) -> None:
+        self.assertEqual(len(self.module.CASES), 10)
+        demo = [c for c in self.module.CASES if c["task"] == "demo-retention"]
+        heldout = [c for c in self.module.CASES if c["task"] == "heldout-growth-segment"]
+        self.assertEqual((len(demo), len(heldout)), (5, 5))
+        # ожидания обоих классов представлены (триггер различает)
+        expected = {c["expected"] for c in self.module.CASES}
+        self.assertEqual(expected, {"high", "low"})
+        # id уникальны
+        ids = [c["id"] for c in self.module.CASES]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_prompt_mentions_trigger_rule(self) -> None:
+        prompt = self.module.AUDIT_PROMPT.format(cases="КЕЙСЫ")
+        self.assertIn("НЕОБРАТИМО", prompt)
+        self.assertIn("КРОСС-ФУНКЦИОНАЛЬНО", prompt)
+        self.assertIn("ВЫШЕ ПОРОГА", prompt)
+        self.assertIn("КЕЙСЫ", prompt)
+
+    def test_parse_audit_json(self) -> None:
+        text = 'Вот ответ:\n[{"id": "demo-1", "class": "high", "confidence": 0.9, "reason": "необратимо"}]\nготово'
+        parsed = self.module.parse_audit(text)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed[0]["id"], "demo-1")
+        self.assertIsNone(self.module.parse_audit("без json"))
+        self.assertIsNone(self.module.parse_audit("{}"))
+
+
+# --------------------------------------------------------------------------
+# 5c) eval/run_plainchat.py — рука B11(b): обычный чат той же модели
+# --------------------------------------------------------------------------
+
+
+class PlainChatArmTests(unittest.TestCase):
+    """B11(b): дословный запрос РП, один диалог, без папки/навыков."""
+
+    def setUp(self) -> None:
+        self.module = load_module("run_plainchat_under_test", EVAL_DIR / "run_plainchat.py")
+
+    def test_extract_request_is_verbatim_quote(self) -> None:
+        request = self.module.extract_request(REPO_ROOT / "eval/tasks/demo-retention/task.md")
+        self.assertIn("МегаТВ Онлайн", request)
+        self.assertIn("удержание на 30-й день упало с 34% до 21%", request)
+        self.assertFalse(request.startswith(">"))  # цитата развёрнута в текст
+
+    def test_prompt_adds_chat_instruction_only(self) -> None:
+        request = self.module.extract_request(REPO_ROOT / "eval/tasks/demo-retention/task.md")
+        prompt = request + self.module.CHAT_INSTRUCTION
+        self.assertTrue(prompt.startswith(request))
+        self.assertIn("ОДНИМ сообщением", prompt)
+        self.assertIn("как обычный чат-ассистент", prompt)
+        # промпт НЕ отсылает к навыкам/папке — иначе это не plain-chat
+        self.assertNotIn("навык", prompt)
+        self.assertNotIn("STATE.md", prompt)
+
+    def test_dry_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = run_script(
+                EVAL_DIR / "run_plainchat.py",
+                "--task", "demo-retention",
+                "--dry-run",
+                "--out", tmp,
+            )
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("[dry-run]", proc.stdout)
+            self.assertIn("sha256", proc.stdout)
+
+
+# --------------------------------------------------------------------------
+# 6) Бенчмарк DABstep — вендор-scorer и протокол агента
 # --------------------------------------------------------------------------
 
 

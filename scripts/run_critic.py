@@ -9,9 +9,14 @@
 печатается.
 
 Контракт CLI:
-    python3 scripts/run_critic.py --artifact FILE --rubric FILE
-        --mode critic|self [--out DIR] [--tag TAG] [--model MODEL]
-        [--timeout SEC]
+    python3 scripts/run_critic.py --artifact FILE1[,FILE2,...]
+        --rubric FILE --mode critic|self [--out DIR] [--tag TAG]
+        [--model MODEL] [--timeout SEC]
+
+Несколько файлов в --artifact (через запятую) — пакетный режим (H4):
+один прогон на весь набор артефактов с мандатом межартефактных
+находок. Метка прогона для хука cost-append пишется в отдельный
+файл eval/.cost-label (STATE.md агенту не трогается).
 
 Коды возврата:
     0 — прогон завершён, выход записан;
@@ -79,6 +84,35 @@ OUTPUT_FORMAT = """\
 ## Что сделано хорошо
 1–3 пункта с доказательством из артефакта."""
 
+PACKAGE_OUTPUT_FORMAT = """\
+Формат ответа (строго):
+
+## Оценки (один набор на ВЕСЬ пакет)
+| Критерий | Проход 1 | Проход 2 | Баллы (×2, проход 2) |
+| 1. Проработанность | _/5 | _/5 | _/10 |
+| 2. Масштаб использования нейротехнологий | _/5 | _/5 | _/10 |
+| 3. Имплементация | _/5 | _/5 | _/10 |
+| 4. Качество | _/5 | _/5 | _/10 |
+Итого: _ /40
+
+## Findings
+Каждая находка: [важность: критично|важно|незначительно] место
+(АРТЕФАКТ + раздел/цитата; для межартефактных — «А против Б») →
+что не так → почему это важно → что починит. ОБЯЗАТЕЛЬНО проверь
+согласованность МЕЖДУ артефактами: выбор, метрики, экономика,
+пороги. Если находок нет — так и напиши, не выдумывай.
+
+## Что сделано хорошо
+1–3 пункта с доказательством из артефактов."""
+
+PACKAGE_ROLE_SUFFIX = (
+    " Ниже дан ПАКЕТ артефактов задачи (несколько файлов под "
+    "заголовками «=== АРТЕФАКТ: имя ===»). Оцени пакет целиком по "
+    "рубрике; отдельно ищи несоответствия МЕЖДУ артефактами "
+    "(выбор, метрики, экономика, пороги) — этого пофайловая "
+    "оценка не видит."
+)
+
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -112,8 +146,18 @@ def build_prompt(
     rubric_text: str,
     mode: str,
     evidence_digest: str | None = None,
+    package: list[tuple[str, str]] | None = None,
 ) -> str:
     role = CRITIC_ROLE if mode == "critic" else SELF_ROLE
+    if package:
+        role = role + PACKAGE_ROLE_SUFFIX
+        artifact_block = "\n\n".join(
+            f"=== АРТЕФАКТ: {name} ===\n{text}" for name, text in package
+        )
+        out_format = PACKAGE_OUTPUT_FORMAT
+    else:
+        artifact_block = artifact_text
+        out_format = OUTPUT_FORMAT
     mandate = ""
     if mode == "critic" and evidence_digest:
         mandate = (
@@ -129,8 +173,8 @@ def build_prompt(
     return (
         f"{role}{mandate}\n\n"
         f"=== РУБРИКА (eval/rubrics/hackathon-criteria.md) ===\n{rubric_text}\n\n"
-        f"=== АРТЕФАКТ ПОД ОЦЕНКУ ===\n{artifact_text}\n\n"
-        f"{OUTPUT_FORMAT}\n"
+        f"=== АРТЕФАКТ ПОД ОЦЕНКУ ===\n{artifact_block}\n\n"
+        f"{out_format}\n"
     )
 
 
@@ -151,9 +195,9 @@ def clear_run_label() -> None:
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    artifact_path = Path(args.artifact)
+    artifact_paths = [Path(p) for p in args.artifact.split(",") if p.strip()]
     rubric_path = Path(args.rubric)
-    for path in (artifact_path, rubric_path):
+    for path in (*artifact_paths, rubric_path):
         if not path.is_file():
             print(f"файл не найден: {path}", file=sys.stderr)
             return EXIT_NOT_FOUND
@@ -162,7 +206,16 @@ def main(argv: list[str]) -> int:
         print("STEPFUN_API_KEY не в окружении — прогон невозможен (ключ только из env)", file=sys.stderr)
         return EXIT_NO_KEY
 
-    artifact_text = artifact_path.read_text(encoding="utf-8-sig", errors="replace")
+    package: list[tuple[str, str]] | None = None
+    artifact_text = ""
+    if len(artifact_paths) > 1:
+        # Пакетный режим (H4): несколько артефактов одним прогоном.
+        package = [
+            (p.name, p.read_text(encoding="utf-8-sig", errors="replace"))
+            for p in artifact_paths
+        ]
+    else:
+        artifact_text = artifact_paths[0].read_text(encoding="utf-8-sig", errors="replace")
     rubric_text = rubric_path.read_text(encoding="utf-8-sig", errors="replace")
     evidence_digest = None
     if args.evidence_digest:
@@ -171,16 +224,18 @@ def main(argv: list[str]) -> int:
             print(f"дайджест не найден: {digest_path}", file=sys.stderr)
             return EXIT_NOT_FOUND
         evidence_digest = digest_path.read_text(encoding="utf-8-sig", errors="replace")
-    prompt = build_prompt(artifact_text, rubric_text, args.mode, evidence_digest)
+    prompt = build_prompt(artifact_text, rubric_text, args.mode, evidence_digest, package)
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    tag = args.tag or f"critic-{args.mode}-{artifact_path.stem}-{stamp}"
+    artifacts_label = "+".join(p.stem for p in artifact_paths)
+    tag = args.tag or f"critic-{args.mode}-{artifacts_label}-{stamp}"
     out_dir = Path(args.out) if args.out else REPO_ROOT / "eval" / "runs" / tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
     (out_dir / "critic.start").write_text(
         datetime.now(timezone.utc).isoformat() + "\n"
-        f"artifact: {artifact_path}\nrubric: {rubric_path}\nmode: {args.mode}\nmodel: {args.model}\n",
+        + "\n".join(f"artifact: {p}" for p in artifact_paths) + "\n"
+        f"rubric: {rubric_path}\nmode: {args.mode}\nmodel: {args.model}\n",
         encoding="utf-8",
     )
 
@@ -210,7 +265,7 @@ def main(argv: list[str]) -> int:
         encoding="utf-8",
     )
 
-    print(f"mode={args.mode} artifact={artifact_path} out={out_dir} exit={proc.returncode}")
+    print(f"mode={args.mode} artifacts={[str(p) for p in artifact_paths]} out={out_dir} exit={proc.returncode}")
     if proc.returncode != 0:
         tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-5:]
         print("\n".join(tail), file=sys.stderr)

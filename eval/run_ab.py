@@ -24,6 +24,9 @@
   council-lite — 3 роли (product/devil на step-5-preview, data на
                  step-3.7-flash) по council-design §5 (рычаг O1: 3 роли,
                  один раунд) + синтезатор-сессия (единственный писатель);
+  council-lite-flash — council-lite с ролью devil на step-3.7-flash
+                 (итерация О5, prod-council-lite.md §5 п.1: та же
+                 схема, модель роли devil — дешёвое семейство);
   council-full — полный протокол council-design §4, 12 сессий: Phase 1
                  независимая дивергенция 5 линз, Phase 2 кросс-критика
                  (линза видит четыре чужих выхода, свой — нет), Phase 3
@@ -396,6 +399,15 @@ ROLE_MODEL = {
     "user": "stepfun/step-3.7-flash",
 }
 
+# council-lite-flash (итерация О5, prod-council-lite.md §5 п.1): та же
+# рука council-lite, но роль devil переводится на step-3.7-flash
+# (рычаг O3 council-design §5). data уже на flash в обеих руках.
+ROLE_MODEL_FLASH_DEVIL = {
+    "product": "stepfun/step-5-preview",
+    "devil": "stepfun/step-3.7-flash",
+    "data": "stepfun/step-3.7-flash",
+}
+
 MODEL = "stepfun/step-5-preview"
 
 RESEARCH_CURATION_PROMPT = """Ты — агент «Стратег» (папка-агент для руководителя продукта), выполняешь
@@ -758,15 +770,17 @@ def run_arm_critic_loop2(
 
 
 def run_arm_council_lite(
-    feature: str, brief: str, arm_dir: Path, timeout: int, evidence: str = ""
+    feature: str, brief: str, arm_dir: Path, timeout: int, evidence: str = "",
+    role_models: dict | None = None,
 ) -> int:
+    models = role_models or ROLE_MODEL
     role_outputs: dict[str, str] = {}
     for role, lens in ROLES.items():
         code, out = run_session(
             ROLE_PROMPT.format(role=role, lens=lens, brief=brief),
             arm_dir,
             f"role-{role}",
-            ROLE_MODEL[role],
+            models[role],
             timeout,
         )
         if code != 0:
@@ -786,6 +800,20 @@ def run_arm_council_lite(
         return code
     (arm_dir / "final.md").write_text(final, encoding="utf-8")
     return 0
+
+
+def run_arm_council_lite_flash(
+    feature: str, brief: str, arm_dir: Path, timeout: int, evidence: str = ""
+) -> int:
+    """Рука council-lite-flash (итерация О5 §5.1): devil на step-3.7-flash.
+
+    Тот же протокол council-lite; отличие — модель роли devil (рычаг
+    O3 council-design §5). Предрегистрация: дельта рубрики ≤0.5 при
+    экономии ≥40% стоимости роли devil → кандидат в прод-конфиг.
+    """
+    return run_arm_council_lite(
+        feature, brief, arm_dir, timeout, evidence, ROLE_MODEL_FLASH_DEVIL
+    )
 
 
 def run_arm_council_full(
@@ -953,6 +981,7 @@ ARMS = ArmRegistry(
         ("options", "critic-loop"): run_arm_critic_loop,
         ("options", "critic-loop2"): run_arm_critic_loop2,
         ("options", "council-lite"): run_arm_council_lite,
+        ("options", "council-lite-flash"): run_arm_council_lite_flash,
         ("options", "council-full"): run_arm_council_full,
         ("research", "curation"): run_arm_research_curation,
         ("research", "lean"): run_arm_research_lean,
@@ -969,6 +998,7 @@ SESSIONS = {
     ("options", "critic-loop"): 3,  # черновик + критик + ревизия
     ("options", "critic-loop2"): 3,  # черновик + критик + точечная ревизия
     ("options", "council-lite"): 4,  # 3 роли + синтез
+    ("options", "council-lite-flash"): 4,  # 3 роли (devil на flash) + синтез
     ("options", "council-full"): 12,  # 5 + 5 + 1 + 1
     ("research", "curation"): 1,
     ("research", "lean"): 1,

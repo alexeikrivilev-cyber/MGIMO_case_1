@@ -161,6 +161,27 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e19b9626affeUCF9Id7vp7St9S | О4: ab-score-rh-heldout-hybrid | step-5-preview | 9497 | 18031 | 0 | 23104 | 0 | 0 | $0.06 |
 | 2026-11-16 | ses_e19b8072bffejV5kxNHXihXsOS | О4: ab-score-rh-heldout-lean | step-5-preview | 10527 | 32000 | 0 | 23104 | 0 | 0 | $0.10 |
 | 2026-11-16 | ses_e19b5328cffeRdhcwqAs36tCBE | О4: ab-score-rh-heldout-lean-retry | step-5-preview | 31 | 1953 | 0 | 33600 | 0 | 0 | $0.01 |
+| 2026-11-16 | ses_e19a3afe0ffeXE3n4nyaZ8kvWl | О4-хвост | step-5-preview | 17 | 3 | 0 | 21248 | 0 | 0 | $0.00 |
+| 2026-11-16 | ses_e19a37984ffe6J2U27HYNbT0de | О4: h2-research-unified | step-5-preview | 5856 | 18382 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e19a1752cffeIqO7Azzjuk0SLr | О4: h2-research-unified | step-5-preview | 17 | 3 | 0 | 21248 | 0 | 0 | $0.00 |
+| 2026-11-16 | ses_e19a2418effeDh4lQw5pjS31rc | О4: h2-research-unified | step-5-preview | 32 | 24402 | 0 | 28928 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e19a03389ffesqcduFELRzx1C7 | О4: h2-research-typed | step-5-preview | 7259 | 14028 | 0 | 21248 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e199ef9cdffeXnI9Zk7C2VplOD | О4: h2-options-unified | step-5-preview | 6297 | 26713 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-16 | ses_e199cc769ffeiiZjVRCMnt6KYE | О4: h2-options-typed | step-5-preview | 7629 | 21259 | 0 | 21376 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e199b421effe1LAduqOVZeb9u7 | О4: h4-package | step-5-preview | 49199 | 11768 | 0 | 0 | 0 | 0 | $0.08 |
+| 2026-11-16 | ses_e19983307ffeQYMd786wthgMkq | О4: ab-clf-demo-council-lite-flash-role- | step-5-preview | 3152 | 11747 | 0 | 21248 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19973975ffe5HwEbFPcBcowos | О4: ab-clf-demo-council-lite-flash-role- | step-3.7-flash | 24302 | 13267 | 0 | 0 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1995d651ffeQwUCCTaDY9VEZ3 | О4: ab-clf-demo-council-lite-flash-role- | step-3.7-flash | 3437 | 10068 | 0 | 20864 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1994db0bffeLKiP5hB0q9e0oX | О4: ab-clf-demo-council-lite-flash-synth | step-5-preview | 46840 | 37433 | 0 | 100864 | 0 | 0 | $0.16 |
+| 2026-11-16 | ses_e1992220cffe5nSbLLqG3q2pr0 | О4: ab-clf-heldout-council-lite-flash-ro | step-5-preview | 8 | 10410 | 0 | 25920 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1991295affeX6xBNtRVFi3I7V | О4: ab-clf-heldout-council-lite-flash-ro | step-3.7-flash | 4838 | 7133 | 0 | 20992 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1990445effejzpnvRM3AP9cJ8 | О4: ab-clf-heldout-council-lite-flash-ro | step-3.7-flash | 4837 | 4738 | 0 | 20992 | 0 | 0 | $0.02 |
+| 2026-11-16 | ses_e198fa3f8ffe3D2utBraeH0BHg | О4: ab-clf-heldout-council-lite-flash-sy | step-5-preview | 25234 | 38144 | 0 | 414144 | 0 | 0 | $0.17 |
+| 2026-11-16 | ses_e198cc65bffepO2uaP5QZetfOE | О4: o5-trigger-audit | step-5-preview | 1221 | 3587 | 0 | 21248 | 0 | 0 | $0.01 |
+| 2026-11-16 | ses_e198c7e55ffemVvj3zEVQQuT5I | О4: b11-plainchat | step-5-preview | 24889 | 4682 | 0 | 190976 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e19893865ffe9TAMb1HfeI9lUI | О4: ab-score-clf-demo-council-lite-flash | step-5-preview | 10807 | 17989 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1987aa6cffepFLSKGanl0HdcM | О4: ab-score-clf-heldout-council-lite-fl | step-5-preview | 9418 | 11673 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e198670a0ffewrkXKivhqjBti0 | О4: b11-plainchat-critic | step-5-preview | 2147 | 18269 | 0 | 23104 | 0 | 0 | $0.05 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
