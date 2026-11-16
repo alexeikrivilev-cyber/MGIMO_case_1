@@ -22,6 +22,8 @@
 | 2026-11-16 | Продолжение прерванного прогона: cost_report.py + починка тестового контракта (44/44 зелёные), пробы CLI | step-5-preview (Hermes) | — | — | не метрится рантаймом | отмечено честно, не оцениваем; поисковых вызовов: 0 |
 | 2026-11-16 | О4: стенд критиков — матрица 26 сессий (13 артефактов × critic/self), рубрика + навык critic | step-5-preview (OpenCode, хук cost-append) | ~190K in / ~330K out (cache-read включён) | — | ~$1.30 (21 строка с меткой «О4: m-…» = $1.10 + 5 ранних прогонов без метки ≈ $0.2, атрибуция по порядку) | прогон `eval/runs/critic-matrix/`, строки — prod-таблица |
 | 2026-11-16 | О4: бенчмарк DABstep dev-10 в Docker (прямой вызов API, не через хук) | step-5-preview (API) | 1,437,351 (cache-miss 794,343 + cache-read 643,008) | 150,746 | $1.27 | `eval/benchmarks/dabstep/runs/2026-11-16-dev10/results.json` |
+| 2026-11-16 | О4: A/B прогоны рук шага 3 — демо + held-out (skill / critic-loop / council-lite, 16 сессий) | step-5-preview (OpenCode, хук) | ~330K in / ~140K out | — | $0.98 (demo $0.53 + held-out $0.45, атрибуция по меткам) | `eval/runs/ab-options-*/`, метрики `metrics.md` |
+| 2026-11-16 | О4: скоринг рук (критик на финалах, 6 сессий) + проба H3 (критик + дайджест) | step-5-preview (OpenCode, хук) | — | — | $0.38 | `eval/runs/ab-options-*/critic-final/`, `eval/runs/h3-probe/` |
 
 ## Контур прода (prod) — метрика $/прогон для пользователя
 
@@ -95,6 +97,29 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e1a7dfb84ffeYkdcUhb8p2qeIm | О4: m-heldout-strategy-comms-critic | step-5-preview | 4248 | 12506 | 0 | 23104 | 0 | 0 | $0.04 |
 | 2026-11-16 | ses_e1a7ce8c2ffe0uWa8wiIxq81q6 | О4: m-heldout-verification-plan-critic | step-5-preview | 12888 | 21066 | 0 | 14464 | 0 | 0 | $0.07 |
 | 2026-11-16 | ses_e1a7b0badffeW4HoGrGvPrXvDR | О4: m-heldout-verification-plan-self | step-5-preview | 4252 | 15912 | 0 | 23040 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1a6fadd7ffehyjk7KaloPLxNi | О4: ab-session | step-5-preview | 4682 | 12202 | 0 | 45696 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e1a6eab2bffeQ95kybahEYFcNe | О4: ab-session1 | step-5-preview | 1496 | 19321 | 0 | 48960 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1a6d1e32ffe40zerSZ5LBWieE | О4: ab-critic-ab-options-demo-retention- | step-5-preview | 6042 | 23045 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e1a6b49a4ffeQd0DGPclN90cxE | О4: ab-session2 | step-5-preview | 59918 | 45809 | 0 | 194432 | 0 | 0 | $0.20 |
+| 2026-11-16 | ses_e1a67bb0affeKr66TR1jnpJxzU | О4: ab-role-product | step-5-preview | 3152 | 13172 | 0 | 21248 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e1a66a9e6ffeuKiODbDK1dOBaS | О4: ab-role-devil | step-5-preview | 3159 | 12727 | 0 | 21248 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e1a65a4ecffelgTxaMa9iJw8k9 | О4: ab-role-data | step-3.7-flash | 24301 | 7998 | 0 | 0 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1a64b91affeZsVx7m33Ae84dj | О4: ab-synthesizer | step-5-preview | 11392 | 6530 | 0 | 21248 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1a629539ffeRWSa6O9f1jXxP0 | О4: ab-score-ab-options-demo-retention-c | step-5-preview | 6808 | 14084 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1a615d5affeBKk7FMGatNxzT7 | О4: ab-score-ab-options-demo-retention-c | step-5-preview | 2757 | 20517 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1a5fb3a4ffeEGfW1dVOIRnmNd | О4: ab-score-ab-options-demo-retention-s | step-5-preview | 5280 | 16964 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1a58e099ffer4hM3W7za6T88e | О4: ab-council-lite-role-product | step-5-preview | 4680 | 10018 | 0 | 21248 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1a58043afferF8ri3V3XpWCZi | О4: ab-council-lite-role-devil | step-5-preview | 11114 | 11564 | 0 | 140608 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1a56f9b7ffe3TsgwPFHumMGvD | О4: ab-council-lite-role-data | step-3.7-flash | 4837 | 9500 | 0 | 20992 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1a55e550ffeCG1DYunn7NAXG7 | О4: ab-council-lite-synthesizer | step-5-preview | 11566 | 30712 | 0 | 21248 | 0 | 0 | $0.10 |
+| 2026-11-16 | ses_e1a53c0fbffeD5zacHIaGKxkvX | О4: ab-critic-loop-session1 | step-5-preview | 6992 | 16227 | 0 | 47296 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1a523627ffeoCn1A19XO5JVen | О4: ab-critic-ab-options-heldout-growth- | step-5-preview | 8116 | 23581 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e1a508493ffelkiXAKPGOwMuxe | О4: ab-critic-loop-session2 | step-5-preview | 10007 | 22756 | 0 | 21248 | 0 | 0 | $0.07 |
+| 2026-11-16 | ses_e1a4eceb4ffeFId0A9V3TM1rQF | О4: ab-skill-session | step-5-preview | 6087 | 8255 | 0 | 47424 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e1a4b0627ffe38c0x903Z67HZm | О4: ab-score-ab-options-heldout-growth-s | step-5-preview | 8431 | 13290 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1a49cdf2ffe2KLf09uxTuW48J | О4: ab-score-ab-options-heldout-growth-s | step-5-preview | 10624 | 10711 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e1a48b01bffeVt3rSdzUxJhPX0 | О4: ab-score-ab-options-heldout-growth-s | step-5-preview | 6556 | 19631 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-16 | ses_e1a3b2de4ffe6fr61VHNbyOmro | О4: h3-research-citations | step-5-preview | 8930 | 23240 | 0 | 21248 | 0 | 0 | $0.07 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

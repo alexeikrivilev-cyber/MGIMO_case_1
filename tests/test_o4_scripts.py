@@ -84,6 +84,22 @@ class RunCriticCliTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 2)
 
 
+    def test_evidence_digest_mandate_in_prompt(self) -> None:
+        # --evidence-digest добавляет мандат сверки цитат в промпт критика
+        module = load_module("run_critic_prompt_test", SCRIPTS_DIR / "run_critic.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            digest = Path(tmp) / "digest.md"
+            digest.write_text("Выдержка: «199K--319K без валюты».", encoding="utf-8")
+            plain = module.build_prompt("АРТ", "РУБ", "critic")
+            with_digest = module.build_prompt("АРТ", "РУБ", "critic", digest.read_text(encoding="utf-8"))
+            self.assertNotIn("ДОПОЛНИТЕЛЬНЫЙ МАНДАТ", plain)
+            self.assertIn("ДОПОЛНИТЕЛЬНЫЙ МАНДАТ", with_digest)
+            self.assertIn("199K--319K без валюты", with_digest)
+            # режим self мандат не получает
+            self_plain = module.build_prompt("АРТ", "РУБ", "self", digest.read_text(encoding="utf-8"))
+            self.assertNotIn("ДОПОЛНИТЕЛЬНЫЙ МАНДАТ", self_plain)
+
+
 class StateStepLabelTests(unittest.TestCase):
     """Метка «Шаг» для хука cost-append: выставление и точное восстановление."""
 
@@ -196,17 +212,26 @@ class ScoreArmsTests(unittest.TestCase):
             root = Path(tmp)
             (root / "COST.md").write_text(
                 "<!-- cost-rows:begin -->\n"
-                "| 2026-11-16 | ses_x | О4: ab-run-skill | step-5-preview | 1 | 2 | 0 | 0 | 0 | 0 | $0.10 |\n"
-                "| 2026-11-16 | ses_y | О4: ab-run-critic-loop | step-5-preview | 1 | 2 | 0 | 0 | 0 | 0 | $0.25 |\n"
+                "| 2026-11-16 | ses_x | О4: ab-run-skill-session | step-5-preview | 1 | 2 | 0 | 0 | 0 | 0 | $0.10 |\n"
+                "| 2026-11-16 | ses_y | О4: ab-run-critic-loop-session1 | step-5-preview | 1 | 2 | 0 | 0 | 0 | 0 | $0.25 |\n"
                 "| 2026-11-16 | ses_z | О3: council | step-5-preview | 1 | 2 | 0 | 0 | 0 | 0 | $0.99 |\n"
                 "<!-- cost-rows:end -->\n",
                 encoding="utf-8",
             )
             self.module.REPO_ROOT = root
-            usd, rows = self.module.cost_rows_for("О4: ab-run-skill")
+            usd, rows = self.module.cost_rows_for(["ab-run-skill-session"])
             self.assertAlmostEqual(usd, 0.10)
             self.assertEqual(rows, 1)
-            usd2, rows2 = self.module.cost_rows_for("О4: ab-run-")
+            # «ab-run-skil» (обрезок без границы дефиса) не матчит —
+            # матч только точный или префикс до дефиса.
+            usd_edge, rows_edge = self.module.cost_rows_for(["ab-run-skil"])
+            self.assertAlmostEqual(usd_edge, 0.0)
+            self.assertEqual(rows_edge, 0)
+            # «ab-session» не должен захватить «ab-session1» (нет дефиса).
+            usd_edge2, rows_edge2 = self.module.cost_rows_for(["ab-run-skill-session1"])
+            self.assertAlmostEqual(usd_edge2, 0.0)
+            self.assertEqual(rows_edge2, 0)
+            usd2, rows2 = self.module.cost_rows_for(["ab-run"])
             self.assertAlmostEqual(usd2, 0.35)
             self.assertEqual(rows2, 2)
 

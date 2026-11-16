@@ -1,0 +1,128 @@
+{
+  "run": "ab-options-demo-retention",
+  "arms": [
+    {
+      "arm": "council-lite",
+      "rubric": {
+        "criteria": {
+          "1. Проработанность": {
+            "pass1": 5.0,
+            "pass2": 4.0,
+            "points": 8.0
+          },
+          "2. Масштаб использования нейротехнологий": {
+            "pass1": 3.0,
+            "pass2": 3.0,
+            "points": 6.0
+          },
+          "3. Имплементация": {
+            "pass1": 3.0,
+            "pass2": 2.0,
+            "points": 4.0
+          },
+          "4. Качество": {
+            "pass1": 4.0,
+            "pass2": 3.0,
+            "points": 6.0
+          }
+        },
+        "total40": 24.0,
+        "findings": 7
+      },
+      "citations": {
+        "urls_resolved": 0,
+        "urls_total": 0,
+        "ev_refs": 3
+      },
+      "diversity": {
+        "avg_distance": 0.935,
+        "options": 6,
+        "status_quo_present": true
+      },
+      "usd": 0.16,
+      "cost_rows": 4
+    },
+    {
+      "arm": "critic-loop",
+      "rubric": {
+        "criteria": {
+          "1. Проработанность": {
+            "pass1": 4.0,
+            "pass2": 3.5,
+            "points": 7.0
+          },
+          "2. Масштаб использования нейротехнологий": {
+            "pass1": 2.0,
+            "pass2": 2.0,
+            "points": 4.0
+          },
+          "3. Имплементация": {
+            "pass1": 1.0,
+            "pass2": 1.0,
+            "points": 2.0
+          },
+          "4. Качество": {
+            "pass1": 2.5,
+            "pass2": 2.0,
+            "points": 4.0
+          }
+        },
+        "total40": 17.0,
+        "findings": 8
+      },
+      "citations": {
+        "urls_resolved": 0,
+        "urls_total": 0,
+        "ev_refs": 2
+      },
+      "diversity": {
+        "avg_distance": 1.0,
+        "options": 2,
+        "status_quo_present": true
+      },
+      "usd": 0.33,
+      "cost_rows": 3
+    },
+    {
+      "arm": "skill",
+      "rubric": {
+        "criteria": {
+          "1. Проработанность": {
+            "pass1": 5.0,
+            "pass2": 4.0,
+            "points": 8.0
+          },
+          "2. Масштаб использования нейротехнологий": {
+            "pass1": 3.0,
+            "pass2": 2.0,
+            "points": 4.0
+          },
+          "3. Имплементация": {
+            "pass1": 2.0,
+            "pass2": 1.0,
+            "points": 2.0
+          },
+          "4. Качество": {
+            "pass1": 3.0,
+            "pass2": 3.0,
+            "points": 6.0
+          }
+        },
+        "total40": 20.0,
+        "findings": 5
+      },
+      "citations": {
+        "urls_resolved": 0,
+        "urls_total": 0,
+        "ev_refs": 3
+      },
+      "diversity": {
+        "avg_distance": 0.941,
+        "options": 4,
+        "status_quo_present": true
+      },
+      "usd": 0.04,
+      "cost_rows": 1
+    }
+  ]
+}

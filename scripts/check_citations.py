@@ -30,7 +30,7 @@ EXIT_OK = 0
 EXIT_USAGE = 1
 EXIT_UNRESOLVED = 2
 
-URL_RE = re.compile(r"https?://[^\s)>\]]+")
+URL_RE = re.compile(r"https?://[^\s)>\],;]+")
 # Browser-like заголовки: часть сайтов (напр. Kaggle) отдаёт 404 ботам по
 # одному UA — нужен полный набор браузерных заголовков, иначе пробник
 # принимает живую ссылку за мёртвую (найдено 2026-11-16 на demo-цитатах).
@@ -96,8 +96,11 @@ def main(argv: list[str]) -> int:
             print(f"файл не найден: {path}", file=sys.stderr)
             return EXIT_USAGE
         text = path.read_text(encoding="utf-8-sig", errors="replace")
-        for url in URL_RE.findall(text):
-            seen.setdefault(url, name)
+        for match in URL_RE.findall(text):
+            # Висячая пунктуация прозы («…/page.», «…/page,») — не часть URL.
+            url = match.rstrip(".,;")
+            if url:
+                seen.setdefault(url, name)
 
     if not seen:
         print("URL не найдены — проверять нечего")
@@ -110,7 +113,6 @@ def main(argv: list[str]) -> int:
         print(f"{mark} {status:24s} {url}  ({source})")
         if not ok:
             bad.append(url)
-
     print(f"итог: {len(seen) - len(bad)}/{len(seen)} ссылок резолвятся")
     return EXIT_OK if not bad else EXIT_UNRESOLVED
 

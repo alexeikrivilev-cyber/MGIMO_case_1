@@ -89,6 +89,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         choices=["critic", "self"],
         help="critic — изолированный рецензент; self — роль автора (замер пользы)",
     )
+    parser.add_argument(
+        "--evidence-digest",
+        default=None,
+        help="файл с выдержками доказательств: критик получает мандат "
+        "сверить каждую цитату артефакта с выдержкой (режим critic)",
+    )
     parser.add_argument("--out", default=None, help="каталог прогона (default: eval/runs/<tag>)")
     parser.add_argument("--tag", default=None, help="метка прогона (default: critic-<mode>-<artifact>-<utc>)")
     parser.add_argument("--model", default="stepfun/step-5-preview")
@@ -97,10 +103,27 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return args
 
 
-def build_prompt(artifact_text: str, rubric_text: str, mode: str) -> str:
+def build_prompt(
+    artifact_text: str,
+    rubric_text: str,
+    mode: str,
+    evidence_digest: str | None = None,
+) -> str:
     role = CRITIC_ROLE if mode == "critic" else SELF_ROLE
+    mandate = ""
+    if mode == "critic" and evidence_digest:
+        mandate = (
+            "\n\nДОПОЛНИТЕЛЬНЫЙ МАНДАТ (проверка цитат): ниже дан дайджест "
+            "доказательств (выдержки из источников с URL). Сверь КАЖДУЮ "
+            "существенную цитату/число артефакта с выдержкой: совпадает "
+            "ли дословно, не добавилось ли к выдержке того, чего в ней "
+            "нет (единицы измерения, знак валюты, уточнения), не "
+            "приписывается ли источнику то, чего он не содержит. "
+            "Каждое расхождение — отдельная находка с важностью «важно»."
+            "\n\n=== ДАЙДЖЕСТ ДОКАЗАТЕЛЬСТВ ===\n" + evidence_digest + "\n=== КОНЕЦ ДАЙДЖЕСТА ===\n"
+        )
     return (
-        f"{role}\n\n"
+        f"{role}{mandate}\n\n"
         f"=== РУБРИКА (eval/rubrics/hackathon-criteria.md) ===\n{rubric_text}\n\n"
         f"=== АРТЕФАКТ ПОД ОЦЕНКУ ===\n{artifact_text}\n\n"
         f"{OUTPUT_FORMAT}\n"
@@ -168,7 +191,14 @@ def main(argv: list[str]) -> int:
 
     artifact_text = artifact_path.read_text(encoding="utf-8-sig", errors="replace")
     rubric_text = rubric_path.read_text(encoding="utf-8-sig", errors="replace")
-    prompt = build_prompt(artifact_text, rubric_text, args.mode)
+    evidence_digest = None
+    if args.evidence_digest:
+        digest_path = Path(args.evidence_digest)
+        if not digest_path.is_file():
+            print(f"дайджест не найден: {digest_path}", file=sys.stderr)
+            return EXIT_NOT_FOUND
+        evidence_digest = digest_path.read_text(encoding="utf-8-sig", errors="replace")
+    prompt = build_prompt(artifact_text, rubric_text, args.mode, evidence_digest)
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     tag = args.tag or f"critic-{args.mode}-{artifact_path.stem}-{stamp}"

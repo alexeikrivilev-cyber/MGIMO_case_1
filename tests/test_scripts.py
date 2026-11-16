@@ -1541,6 +1541,16 @@ class CheckCitationsTests(TempDirTestCase):
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
         self.assertIn("URL не найдены", result.stdout)
 
+    def test_trailing_punctuation_stripped(self) -> None:
+        # URL с висячей запятой/точкой с запятой не должен становиться
+        # «мёртвой ссылкой» (найдено на стенде О4: council-lite на
+        # held-out давал 6/8 из-за «arxiv.org/abs/2012.11876,»).
+        url = self.start_server()
+        path = self.write("a.md", f"См. {url}, и {url}; и {url}.\n")
+        result = run_script(CHECK_CITATIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("итог: 1/1", result.stdout)
+
     def test_no_arguments_exit_1(self) -> None:
         result = run_script(CHECK_CITATIONS)
         self.assertEqual(result.returncode, EXIT_USAGE)

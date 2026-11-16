@@ -215,7 +215,10 @@ def run_session(prompt: str, out_dir: Path, name: str, model: str, timeout: int)
     (out_dir / f"{name}.start").write_text(
         datetime.now(timezone.utc).isoformat() + f" model={model}\n", encoding="utf-8"
     )
-    previous = set_state_step(f"О4: ab-{name}")
+    # Метка для хука cost-append: «О4: ab-<прогон>-<рука>-<сессия>» —
+    # прогон и рука берутся из пути (out_dir = <прогон>/<рука>), чтобы
+    # $/run атрибутировался однозначно при нескольких прогонах.
+    previous = set_state_step(f"О4: ab-{out_dir.parent.name}-{out_dir.name}-{name}")
     try:
         proc = subprocess.run(
             ["opencode", "run", "--model", model, prompt],
@@ -364,6 +367,7 @@ def main(argv: list[str]) -> int:
         return EXIT_USAGE
     brief = brief_path.read_text(encoding="utf-8-sig", errors="replace")
     brief_hash = sha256_file(brief_path)
+    brief_bytes = brief_path.stat().st_size
 
     out_dir = Path(args.out) if args.out else REPO_ROOT / "eval" / "runs" / f"ab-{args.feature}-{args.task}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -372,7 +376,7 @@ def main(argv: list[str]) -> int:
         f"# A/B прогон — фича {args.feature}, задача {args.task} (О4)",
         "",
         f"Старт (UTC): {datetime.now(timezone.utc).isoformat()}",
-        f"Бриф: `{task['brief']}` (sha256 `{brief_hash[:16]}…`, {len(brief)} Б)",
+        f"Бриф: `{task['brief']}` (sha256 `{brief_hash[:16]}…`, {brief_bytes} Б)",
         f"Порядок рук: {' → '.join(arms)}"
         + (" (реверс — балансировка)" if args.reverse else ""),
         "",
