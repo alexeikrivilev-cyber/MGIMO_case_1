@@ -4,23 +4,30 @@
 скрипты запускаются отдельными процессами (как хук/человек в терминале),
 сетевые вызовы и прогоны моделей не выполняются.
 
+Покрытие: critic, run_ab (руки skill/lean/hybrid/critic-loop/critic-loop2/
+council-lite/council-full и фичи options/research), apply_revision,
+score_arms (метрики + --sources-gate), critic_matrix, DABstep.
+
 Запуск: python3 -m unittest tests.test_o4_scripts -v
 """
 
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 EVAL_DIR = REPO_ROOT / "eval"
 BENCH_DIR = REPO_ROOT / "eval" / "benchmarks" / "dabstep" / "scripts"
+APPLY_REVISION = SCRIPTS_DIR / "apply_revision.py"
 
 
 def load_module(name: str, path: Path):
@@ -157,6 +164,561 @@ class RunAbCliTests(unittest.TestCase):
         # имена моделей — квалифицированные для opencode run --model.
         self.assertIn("stepfun/step-3.7-flash", module.ROLE_MODEL.values())
         self.assertIn("stepfun/step-5-preview", module.ROLE_MODEL.values())
+
+
+# --------------------------------------------------------------------------
+# 2b) eval/run_ab.py — новые руки: council-full, critic-loop2, research
+# --------------------------------------------------------------------------
+
+
+class CouncilFullArmTests(unittest.TestCase):
+    """Рука council-full: полный протокол council-design §4 (12 сессий)."""
+
+    def setUp(self) -> None:
+        self.module = load_module("run_ab_council_full", EVAL_DIR / "run_ab.py")
+
+    def test_arms_registered(self) -> None:
+        for feature, arm in (
+            ("options", "council-full"),
+            ("options", "critic-loop2"),
+            ("research", "curation"),
+            ("research", "lean"),
+            ("research", "hybrid"),
+        ):
+            self.assertIn((feature, arm), self.module.ARMS, f"не зарегистрирована рука {arm} ({feature})")
+        # прежние руки фичи options не потеряны (обратная совместимость)
+        for arm in ("skill", "lean", "hybrid", "critic-loop", "council-lite"):
+            self.assertIn(("options", arm), self.module.ARMS)
+
+    def test_same_arm_name_in_other_feature_is_another_function(self) -> None:
+        self.assertIsNot(
+            self.module.ARMS[("options", "lean")], self.module.ARMS[("research", "lean")]
+        )
+        self.assertIsNot(
+            self.module.ARMS[("options", "hybrid")], self.module.ARMS[("research", "hybrid")]
+        )
+
+    def test_sessions_counts(self) -> None:
+        self.assertEqual(self.module.sessions_for("options", "council-full"), 12)
+        self.assertEqual(self.module.sessions_for("options", "critic-loop2"), 3)
+        self.assertEqual(self.module.sessions_for("options", "critic-loop"), 3)
+        self.assertEqual(self.module.sessions_for("options", "council-lite"), 4)
+        for arm in ("curation", "lean", "hybrid"):
+            self.assertEqual(self.module.sessions_for("research", arm), 1)
+
+    def test_five_lenses_and_model_tiering(self) -> None:
+        self.assertEqual(
+            list(self.module.COUNCIL_FULL_ROLES),
+            ["product", "comms", "data", "devil", "user"],
+        )
+        # council-lite не расширяется: состав и порядок линз сохранены
+        self.assertEqual(list(self.module.ROLES), ["product", "devil", "data"])
+        for role in ("product", "comms", "devil"):
+            self.assertEqual(self.module.ROLE_MODEL[role], "stepfun/step-5-preview", role)
+        for role in ("data", "user"):
+            self.assertEqual(self.module.ROLE_MODEL[role], "stepfun/step-3.7-flash", role)
+
+    def test_cross_prompt_states_isolation_rule(self) -> None:
+        prompt = self.module.CROSS_PROMPT
+        for placeholder in ("{role}", "{lens}", "{brief}", "{others}"):
+            self.assertIn(placeholder, prompt)
+        text = prompt.format(role="comms", lens="барьеры", brief="БРИФ", others="ЧУЖИЕ ВЫХОДЫ")
+        # изоляция Phase 1 названа явно, свой выход исключён
+        self.assertIn("НЕ видел", text)
+        self.assertIn("ОСТАЛЬНЫХ ЧЕТЫРЁХ", text)
+        self.assertIn("ЧУЖИЕ ВЫХОДЫ", text)
+
+    def test_adversarial_prompt_verbatim_and_scope(self) -> None:
+        prompt = self.module.ADV_PROMPT
+        for placeholder in ("{brief}", "{roles}", "{cross}"):
+            self.assertIn(placeholder, prompt)
+        text = prompt.format(brief="БРИФ", roles="ВЫХОДЫ", cross="ВОЗРАЖЕНИЯ")
+        self.assertIn("ДОСЛОВНО", text)
+        self.assertIn("ПРОТИВ ведущего", text)
+        self.assertIn("оставить как есть", text)
+
+    def test_synth_full_prompt_has_cross_and_adversarial_blocks(self) -> None:
+        prompt = self.module.SYNTH_FULL_PROMPT
+        for placeholder in ("{brief}", "{roles}", "{cross}", "{adversarial}"):
+            self.assertIn(placeholder, prompt)
+        text = prompt.format(brief="Б", roles="R", cross="C", adversarial="A")
+        self.assertIn("C", text)
+        self.assertIn("A", text)
+        # промпт council-lite не сломан: форматируется прежним составом
+        lite = self.module.SYNTH_PROMPT.format(brief="Б", roles="R")
+        self.assertIn("R", lite)
+
+    def test_dry_run_lists_new_option_arms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            # --out во временный каталог: dry-run не должен трогать
+            # манифест реального прогона (это артефакт замера).
+            proc = run_script(
+                EVAL_DIR / "run_ab.py",
+                "--task", "demo-retention",
+                "--feature", "options",
+                "--arms", "skill,critic-loop,council-lite,council-full,critic-loop2",
+                "--dry-run",
+                "--out", tmp,
+            )
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("[dry-run] council-full", proc.stdout)
+            self.assertIn("[dry-run] critic-loop2", proc.stdout)
+
+    def test_dry_run_research_feature(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = run_script(
+                EVAL_DIR / "run_ab.py",
+                "--task", "heldout-growth-segment",
+                "--feature", "research",
+                "--arms", "curation,lean,hybrid",
+                "--dry-run",
+                "--out", tmp,
+            )
+            self.assertEqual(proc.returncode, 0)
+            for arm in ("curation", "lean", "hybrid"):
+                self.assertIn(f"[dry-run] {arm}", proc.stdout)
+
+    def test_arm_of_other_feature_is_unknown(self) -> None:
+        proc = run_script(
+            EVAL_DIR / "run_ab.py",
+            "--task", "demo-retention",
+            "--feature", "research",
+            "--arms", "skill",
+        )
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("неизвестные руки", proc.stderr)
+
+
+class ResearchArmsTests(unittest.TestCase):
+    """Фича research: дайджест оснований и единый контракт выхода."""
+
+    def setUp(self) -> None:
+        self.module = load_module("run_ab_research", EVAL_DIR / "run_ab.py")
+
+    def test_tasks_have_evidence_dirs(self) -> None:
+        self.assertEqual(
+            self.module.TASKS["demo-retention"]["evidence"], "project/evidence"
+        )
+        self.assertEqual(
+            self.module.TASKS["heldout-growth-segment"]["evidence"],
+            "eval/tasks/heldout-growth-segment/artifacts/evidence",
+        )
+
+    def test_evidence_bundle_is_brief_plus_records(self) -> None:
+        bundle = self.module.build_evidence_bundle(self.module.TASKS["demo-retention"])
+        brief = (REPO_ROOT / "project/council/run-2026-11-16-01/frozen-brief.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(brief[:80], bundle)
+        for ident in ("=== ev-001 ===", "=== ev-002 ===", "=== ev-003 ==="):
+            self.assertIn(ident, bundle)
+        # записи отсортированы по имени файла
+        self.assertLess(bundle.index("=== ev-001 ==="), bundle.index("=== ev-003 ==="))
+        heldout = self.module.build_evidence_bundle(
+            self.module.TASKS["heldout-growth-segment"]
+        )
+        self.assertIn("=== ev-007 ===", heldout)
+
+    def test_research_prompts_share_output_contract(self) -> None:
+        prompts = (
+            self.module.RESEARCH_CURATION_PROMPT,
+            self.module.RESEARCH_LEAN_PROMPT,
+            self.module.RESEARCH_HYBRID_PROMPT,
+        )
+        for prompt in prompts:
+            self.assertIn("{brief}", prompt)
+            self.assertIn("{evidence}", prompt)
+            text = prompt.format(brief="БРИФ", evidence="ДАЙДЖЕСТ")
+            flat = " ".join(text.split())
+            self.assertIn("БРИФ", text)
+            self.assertIn("ДАЙДЖЕСТ", text)
+            # единые требования: структура research.md, конфликты без
+            # усреднения, H1..Hn со способом проверки, пробелы, основание
+            # числа в той же строке, ответ в чат
+            self.assertIn("H1", text)
+            self.assertIn("не усредняй", flat)
+            self.assertIn("пробел", text.lower())
+            self.assertIn("ev-N", text)
+            self.assertIn("ТОЙ ЖЕ", text)
+            self.assertIn("ОТВЕТОМ В ЧАТ", text)
+
+    def test_curation_prompt_opens_the_skill(self) -> None:
+        text = self.module.RESEARCH_CURATION_PROMPT.format(brief="Б", evidence="Э")
+        self.assertIn("knowledge/skills/evidence/SKILL.md", text)
+        self.assertIn("templates/research.md", text)
+
+    def test_lean_prompt_opens_no_skill_library(self) -> None:
+        text = self.module.RESEARCH_LEAN_PROMPT.format(brief="Б", evidence="Э")
+        self.assertIn("библиотеки навыков", text)
+        self.assertNotIn("knowledge/skills/evidence/SKILL.md", text)
+
+    def test_hybrid_prompt_opens_single_skill(self) -> None:
+        text = self.module.RESEARCH_HYBRID_PROMPT.format(brief="Б", evidence="Э")
+        self.assertIn("knowledge/skills/evidence/SKILL.md", text)
+        self.assertIn("ОДИН навык", text)
+
+
+CRITIC_LOOP2_DRAFT = """# Черновик options.md (шаг 3)
+
+## Вариант 1 — активация новичков
+Суть: довести новичка до первой повторной ценностной точки за 30 дней.
+Требует: сегментацию 0–3 мес и контент-план из 3–5 сообщений.
+Экономика: бюджет около нуля, broad-рассылки перераспределяются.
+Возражение: если ценность не подтверждается, путеводитель — шум [гипотеза].
+
+## Вариант 2 — автоплатёж как дефолт
+Суть: убрать ежемесячное перерешение платежа для новичков.
+Требует: работу с платёжным шлюзом и коммуникацию перевода.
+Экономика: меньше трения на шаге оплаты [гипотеза].
+Возражение: автопродление без осознанного выбора — репутационный риск.
+
+## Оставить как есть
+Цена бездействия: когорта 0–3 мес несёт 31.94% оттока (ev-002).
+"""
+
+CRITIC_LOOP2_REPLY = """Готово, правки точечные.
+```json
+{"edits": [{"find": "Возражение: если ценность не подтверждается, путеводитель — шум [гипотеза].",
+"replace": "Возражение: если ценность не подтверждается, путеводитель — шум; проверить A/B на 30 дней [гипотеза].",
+"finding": "нет способа проверки", "action": "apply"}]}
+```
+"""
+
+
+class CriticLoop2ArmTests(unittest.TestCase):
+    """Рука critic-loop2: сессии подменяются, апдейтер правок — настоящий."""
+
+    def setUp(self) -> None:
+        self.module = load_module("run_ab_critic_loop2", EVAL_DIR / "run_ab.py")
+
+    def _run_arm(self, reply: str) -> tuple[int, Path, list[str], list[list[str]]]:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        arm_dir = Path(tmp.name) / "cl2-demo" / "critic-loop2"
+        arm_dir.mkdir(parents=True)
+        sessions: list[str] = []
+        commands: list[list[str]] = []
+
+        def fake_session(prompt, out_dir, name, model, timeout):
+            sessions.append(name)
+            text = CRITIC_LOOP2_DRAFT if name == "session1" else reply
+            (out_dir / f"{name}.out").write_text(text, encoding="utf-8")
+            return 0, text
+
+        def fake_run(cmd, **kwargs):
+            commands.append(list(cmd))
+            if "run_critic.py" in " ".join(cmd):
+                critic = Path(cmd[cmd.index("--out") + 1])
+                critic.mkdir(parents=True, exist_ok=True)
+                (critic / "critic.out").write_text(
+                    "## Findings\n[важно] нет способа проверки\n", encoding="utf-8"
+                )
+                return subprocess.CompletedProcess(cmd, 0)
+            return subprocess.run(cmd, **kwargs)  # настоящий апдейтер правок
+
+        # подменяются только атрибуты модуля (глобальный subprocess не трогаем)
+        with mock.patch.object(self.module, "run_session", side_effect=fake_session):
+            with mock.patch.object(self.module, "subprocess") as fake_subprocess:
+                fake_subprocess.run.side_effect = fake_run
+                code = self.module.run_arm_critic_loop2("options", "БРИФ", arm_dir, 60)
+        return code, arm_dir, sessions, commands
+
+    def test_patch_applied_and_report_written(self) -> None:
+        code, arm_dir, sessions, _ = self._run_arm(CRITIC_LOOP2_REPLY)
+        self.assertEqual(code, 0)
+        self.assertEqual(sessions, ["session1", "session2"])
+        final = (arm_dir / "final.md").read_text(encoding="utf-8")
+        self.assertIn("проверить A/B на 30 дней", final)
+        self.assertIn("## Оставить как есть", final)
+        self.assertTrue((arm_dir / "draft.md").is_file())
+        self.assertTrue((arm_dir / "patches.json").is_file())
+        report = (arm_dir / "revision-report.md").read_text(encoding="utf-8")
+        self.assertIn("applied=1", report)
+        self.assertIn("integrity: ok", report)
+        self.assertIn("fallback: no", report)
+
+    def test_unparsable_reply_falls_back_to_draft(self) -> None:
+        code, arm_dir, _, _ = self._run_arm("не смог сформировать JSON, извините")
+        self.assertEqual(code, 0)
+        final = (arm_dir / "final.md").read_text(encoding="utf-8")
+        self.assertEqual(final, CRITIC_LOOP2_DRAFT)
+        report = (arm_dir / "revision-report.md").read_text(encoding="utf-8")
+        self.assertIn("fallback=yes", report)
+        self.assertFalse((arm_dir / "patches.json").exists())
+
+    def test_critic_tag_fits_the_40_char_label(self) -> None:
+        _, _, _, commands = self._run_arm(CRITIC_LOOP2_REPLY)
+        critic_cmd = next(cmd for cmd in commands if "run_critic.py" in " ".join(cmd))
+        tag = critic_cmd[critic_cmd.index("--tag") + 1]
+        # хук режет колонку «Шаг» до 40 символов; метка регистрируется в
+        # ARM_LABELS_BY_RUN как «<прогон>-critic»
+        self.assertEqual(tag, "cl2-demo-critic")
+        self.assertLessEqual(len(f"О4: {tag}"), 40)
+
+    def test_patch_prompt_json_contract(self) -> None:
+        prompt = self.module.PATCH_REVISION_PROMPT
+        text = prompt.format(draft="Д", findings="Н")
+        self.assertIn('"edits"', text)
+        for key in ("find", "replace", "finding", "action", "reason"):
+            self.assertIn(f'"{key}"', text)
+        self.assertIn("ДОСЛОВНО", text)
+        self.assertIn("Не более 15 правок", text)
+        self.assertIn("reject", text)
+        self.assertIn("«## Вариант", text)
+        self.assertIn("«оставить как есть»", text)
+
+
+# Черновик-фикстура для тестов апдейтера правок: заголовки, секция
+# «оставить как есть» и уникальные якоря для точечных правок.
+DRAFT = CRITIC_LOOP2_DRAFT
+
+
+class ApplyRevisionTests(unittest.TestCase):
+    """scripts/apply_revision.py — точечные правки и целостность артефакта."""
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+
+    def write(self, name: str, text: str) -> Path:
+        path = self.tmp / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def apply(self, draft: str, edits: list[dict]) -> subprocess.CompletedProcess:
+        self.write("draft.md", draft)
+        self.write("patches.json", json.dumps({"edits": edits}, ensure_ascii=False))
+        return run_script(
+            APPLY_REVISION,
+            "--draft", str(self.tmp / "draft.md"),
+            "--patches", str(self.tmp / "patches.json"),
+            "--out", str(self.tmp / "final.md"),
+            "--report", str(self.tmp / "report.md"),
+        )
+
+    def final(self) -> str:
+        return (self.tmp / "final.md").read_text(encoding="utf-8")
+
+    def report(self) -> str:
+        return (self.tmp / "report.md").read_text(encoding="utf-8")
+
+    def test_anchor_applied(self) -> None:
+        proc = self.apply(DRAFT, [
+            {
+                "find": "Требует: сегментацию 0–3 мес и контент-план из 3–5 сообщений.",
+                "replace": "Требует: сегментацию 0–3 мес и контент-план из 3–5 сообщений (ev-001).",
+                "finding": "нет основания",
+                "action": "apply",
+            }
+        ])
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("(ev-001)", self.final())
+        self.assertIn("applied=1 not_found=0 ambiguous=0 rejected=0", proc.stdout)
+        self.assertIn("fallback=no", proc.stdout)
+        self.assertIn("integrity=ok", proc.stdout)
+        self.assertIn("size_ratio=", proc.stdout)
+
+    def test_not_found_is_reported_and_not_applied(self) -> None:
+        proc = self.apply(DRAFT, [
+            {"find": "такого фрагмента в черновике нет никак", "replace": "X",
+             "finding": "мимо", "action": "apply"}
+        ])
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("not-found", self.report())
+        self.assertIn("applied=0 not_found=1", proc.stdout)
+        self.assertIn("fallback=yes", proc.stdout)
+        self.assertEqual(self.final(), DRAFT)
+
+    def test_ambiguous_anchor_is_reported_and_not_applied(self) -> None:
+        draft = DRAFT + "\nТребует: сегментацию 0–3 мес и контент-план из 3–5 сообщений.\n"
+        self.write("draft.md", draft)
+        self.write("patches.json", json.dumps({"edits": [
+            {"find": "Требует: сегментацию 0–3 мес и контент-план из 3–5 сообщений.",
+             "replace": "ЗАМЕНА", "finding": "мимо", "action": "apply"}
+        ]}))
+        proc = run_script(
+            APPLY_REVISION,
+            "--draft", str(self.tmp / "draft.md"),
+            "--patches", str(self.tmp / "patches.json"),
+            "--out", str(self.tmp / "final.md"),
+            "--report", str(self.tmp / "report.md"),
+        )
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("ambiguous", self.report())
+        self.assertIn("applied=0 not_found=0 ambiguous=1", proc.stdout)
+        self.assertIn("fallback=yes", proc.stdout)
+        self.assertEqual(self.final(), draft)
+
+    def test_rejected_edit_is_not_applied(self) -> None:
+        proc = self.apply(DRAFT, [
+            {"find": "Возражение: автопродление без осознанного выбора — репутационный риск.",
+             "replace": "Убрать возражение.", "finding": "возражение слабое",
+             "action": "reject", "reason": "возражение подтверждено ev-002"}
+        ])
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("rejected", self.report())
+        self.assertIn("возражение подтверждено ev-002", self.report())
+        self.assertIn("applied=0 not_found=0 ambiguous=0 rejected=1", proc.stdout)
+        self.assertEqual(self.final(), DRAFT)
+
+    def test_rejected_and_applied_mixed(self) -> None:
+        proc = self.apply(DRAFT, [
+            {"find": "Возражение: автопродление без осознанного выбора — репутационный риск.",
+             "replace": "Убрать.", "finding": "слабое", "action": "reject",
+             "reason": "основание есть"},
+            {"find": "Экономика: бюджет около нуля, broad-рассылки перераспределяются.",
+             "replace": "Экономика: бюджет около нуля, broad-рассылки перераспределяются (ev-002).",
+             "finding": "нет основания", "action": "apply"},
+        ])
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("applied=1 not_found=0 ambiguous=0 rejected=1", proc.stdout)
+        self.assertIn("fallback=no", proc.stdout)
+        self.assertIn("(ev-002)", self.final())
+        self.assertIn("репутационный риск", self.final())
+
+    def test_header_deletion_breaks_integrity(self) -> None:
+        proc = self.apply(DRAFT, [
+            {"find": "## Вариант 2 — автоплатёж как дефолт\nСуть: убрать ежемесячное "
+                     "перерешение платежа для новичков.\n",
+             "replace": "", "finding": "вариант слабый", "action": "apply"}
+        ])
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("integrity=BROKEN", proc.stdout)
+        self.assertIn("fallback=yes", proc.stdout)
+        self.assertIn("integrity: BROKEN", self.report())
+        self.assertIn("Вариант 2", self.report())
+        # честная деградация: финал = черновик дословно
+        self.assertEqual(self.final(), DRAFT)
+
+    def test_keep_as_is_section_deletion_breaks_integrity(self) -> None:
+        proc = self.apply(DRAFT, [
+            {"find": "## Оставить как есть\nЦена бездействия: когорта 0–3 мес несёт "
+                     "31.94% оттока (ev-002).\n",
+             "replace": "", "finding": "цена бездействия не нужна", "action": "apply"}
+        ])
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("integrity=BROKEN", proc.stdout)
+        self.assertIn("оставить как есть", self.report())
+        self.assertEqual(self.final(), DRAFT)
+
+    def test_size_ratio_guard(self) -> None:
+        filler = "Подробное обоснование варианта с числами и механизмом. " * 30
+        draft = (
+            "# Черновик\n\n## Вариант 1 — активация\n" + filler + "\n\n"
+            "## Оставить как есть\nЦена бездействия описана [гипотеза].\n"
+        )
+        proc = self.apply(draft, [
+            {"find": filler, "replace": "Кратко.", "finding": "слишком длинно",
+             "action": "apply"}
+        ])
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("integrity=BROKEN", proc.stdout)
+        self.assertIn("size_ratio=0.", proc.stdout)
+        self.assertLess(float(proc.stdout.split("size_ratio=")[1][:4]), 0.60)
+        self.assertIn("fallback=yes", proc.stdout)
+        self.assertEqual(self.final(), draft)
+
+    def test_missing_patches_file_exit_2(self) -> None:
+        self.write("draft.md", DRAFT)
+        proc = run_script(
+            APPLY_REVISION,
+            "--draft", str(self.tmp / "draft.md"),
+            "--patches", str(self.tmp / "нет-такого.json"),
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("файл не найден", proc.stderr)
+
+    def test_broken_patches_json_exit_2(self) -> None:
+        self.write("draft.md", DRAFT)
+        self.write("patches.json", "{не json")
+        proc = run_script(
+            APPLY_REVISION,
+            "--draft", str(self.tmp / "draft.md"),
+            "--patches", str(self.tmp / "patches.json"),
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("не удалось разобрать правки", proc.stderr)
+
+
+# --------------------------------------------------------------------------
+# 4b) eval/score_arms.py — гейт доказательств (--sources-gate)
+# --------------------------------------------------------------------------
+
+
+class ScoreArmsSourcesGateTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.module = load_module("score_arms_gate", EVAL_DIR / "score_arms.py")
+
+    def test_parse_violations(self) -> None:
+        self.assertEqual(self.module.parse_violations("итог: нарушений 3 в файлах 1"), 3)
+        self.assertEqual(
+            self.module.parse_violations("ok: файлов проверено 1, нарушений нет"), 0
+        )
+
+    def test_arm_label_fragments_for_new_runs(self) -> None:
+        self.assertEqual(
+            self.module.arm_label_fragments("cf-heldout", "council-full"),
+            ["ab-cf-heldout-council-full"],
+        )
+        self.assertEqual(
+            self.module.arm_label_fragments("cl2-demo", "critic-loop2"),
+            ["ab-cl2-demo-critic-loop2", "cl2-demo-critic"],
+        )
+        self.assertEqual(
+            self.module.arm_label_fragments("cl2-heldout", "critic-loop2"),
+            ["ab-cl2-heldout-critic-loop2", "cl2-heldout-critic"],
+        )
+
+    def test_sources_gate_adds_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run_dir = root / "cl2-demo"
+            arm_dir = run_dir / "critic-loop2"
+            arm_dir.mkdir(parents=True)
+            (arm_dir / "final.md").write_text(
+                "# options.md\n\n## Вариант 1\nЧисло 61.99% (ev-002).\n\n"
+                "## Оставить как есть\nЦена бездействия [гипотеза].\n",
+                encoding="utf-8",
+            )
+            (root / "COST.md").write_text(
+                "<!-- cost-rows:begin -->\n"
+                "| 2026-11-16 | s1 | О4: ab-cl2-demo-critic-loop2-session1 | step-5-preview "
+                "| 1 | 2 | 0 | 0 | 0 | 0 | $0.10 |\n"
+                "| 2026-11-16 | s2 | О4: cl2-demo-critic | step-5-preview "
+                "| 1 | 2 | 0 | 0 | 0 | 0 | $0.05 |\n"
+                "<!-- cost-rows:end -->\n",
+                encoding="utf-8",
+            )
+            self.module.REPO_ROOT = root
+
+            def fake_run(cmd):
+                joined = " ".join(cmd)
+                if "check_sources.py" in joined:
+                    return (
+                        2,
+                        "critic-loop2/final.md:4: числовое утверждение без основания\n"
+                        "итог: нарушений 1 в файлах 1",
+                    )
+                if "check_citations.py" in joined:
+                    return (0, "итог: 1/1")
+                if "council_diversity.py" in joined:
+                    return (0, "средняя попарная дистанция 0.42")
+                return (0, "")  # критик без ключа/сети — метрика рубрики пустая
+
+            self.module.run = fake_run
+            code = self.module.main(["--run-dir", str(run_dir), "--sources-gate"])
+            self.assertEqual(code, 0)
+            metrics_md = (run_dir / "metrics.md").read_text(encoding="utf-8")
+            self.assertIn("check_sources", metrics_md)
+            self.assertIn("exit=2; нарушений 1", metrics_md)
+            payload = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["arms"][0]["sources_gate"], {"exit": 2, "violations": 1})
+            # атрибуция $ по новым фрагментам метки: обе строки COST.md
+            self.assertAlmostEqual(payload["arms"][0]["usd"], 0.15)
+            # без флага колонка остаётся, но пустой (прежний состав метрик)
+            self.assertEqual(self.module.main(["--run-dir", str(run_dir)]), 0)
+            self.assertIn("| — |", (run_dir / "metrics.md").read_text(encoding="utf-8"))
 
 
 # --------------------------------------------------------------------------

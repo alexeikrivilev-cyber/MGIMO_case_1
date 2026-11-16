@@ -10,12 +10,15 @@
      + подсчёт ev-N ссылок в артефакте (основанность на evidence).
   3. diversity — `scripts/council_diversity.py` (TF-IDF proxy).
   4. $/run — строки COST.md с меткой «О4: ab-…» (хук cost-append).
+  5. `--sources-gate` — дисциплина доказательств: `scripts/check_sources.py`
+     на финальном артефакте каждой руки (код возврата + число нарушений);
+     колонка `check_sources` в metrics.md (без флага — «—»).
 
 Итог — `<out>/metrics.md` (таблица «рука × метрика × $») + metrics.json.
 
 Контракт CLI:
     python3 eval/score_arms.py --run-dir eval/runs/ab-options-demo-retention
-        [--force]
+        [--force] [--sources-gate]
 
 Коды возврата: 0 — все метрики собраны; 2 — ошибка использования.
 """
@@ -50,6 +53,18 @@ ARM_LABELS_BY_RUN = {
         "skill": ["ab-skill-session"],
         "critic-loop": ["ab-critic-loop-session1", "ab-critic-loop-session2", "ab-critic-ab-options-heldout-growth-"],
         "council-lite": ["ab-council-lite-role-product", "ab-council-lite-role-devil", "ab-council-lite-role-data", "ab-council-lite-synthesizer"],
+    },
+    # council-full на held-out (короткий --out: хук режет метку до 40 символов,
+    # поэтому фрагмент — префиксный и покрывает все 12 сессий руки).
+    "cf-heldout": {
+        "council-full": ["ab-cf-heldout-council-full"],
+    },
+    # critic-loop2: сессии руки + метка критика («О4: <прогон>-critic»).
+    "cl2-demo": {
+        "critic-loop2": ["ab-cl2-demo-critic-loop2", "cl2-demo-critic"],
+    },
+    "cl2-heldout": {
+        "critic-loop2": ["ab-cl2-heldout-critic-loop2", "cl2-heldout-critic"],
     },
 }
 
@@ -135,10 +150,33 @@ def count_evidence_refs(text: str) -> int:
     return len(set(re.findall(r"\bev-\d+\b", text)))
 
 
+def parse_violations(out: str) -> int:
+    """Число нарушений из вывода `check_sources.py`: итоговая строка
+    «итог: нарушений N в файлах M». Нет итога (скрипт упал) — 0."""
+    match = re.search(r"итог:\s*нарушений\s+(\d+)", out)
+    return int(match.group(1)) if match else 0
+
+
+def sources_gate(final: Path) -> dict:
+    """Гейт доказательственной дисциплины: `check_sources.py` на финальном
+    артефакте руки. Возвращает код возврата и число нарушений (метрика О4:
+    артефакт без оснований не засчитан, даже если рубрика высокая)."""
+    code, out = run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "check_sources.py"), str(final)]
+    )
+    return {"exit": code, "violations": parse_violations(out)}
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="score_arms.py")
     parser.add_argument("--run-dir", required=True, help="каталог A/B-прогона")
     parser.add_argument("--force", action="store_true", help="перезапустить критика, игнорируя кэш")
+    parser.add_argument(
+        "--sources-gate",
+        action="store_true",
+        help="прогон check_sources.py на финальном артефакте каждой руки "
+        "(колонка check_sources в metrics.md)",
+    )
     args = parser.parse_args(argv)
 
     run_dir = Path(args.run_dir)
@@ -193,18 +231,27 @@ def main(argv: list[str]) -> int:
         }
         # 4) $/run
         usd, rows = cost_rows_for(arm_label_fragments(run_dir.name, arm))
+        # 5) гейт доказательств (по флагу: проверка детерминированная и
+        # дешёвая, но не входит в прежний состав метрик прогонов О4)
+        gate = sources_gate(final) if args.sources_gate else None
         metrics.append({
             "arm": arm,
             "rubric": rubric,
             "citations": cite,
             "diversity": diversity,
+            "sources_gate": gate,
             "usd": round(usd, 3),
             "cost_rows": rows,
         })
+        gate_text = (
+            f"check_sources {gate['exit']}, нарушений {gate['violations']}"
+            if gate
+            else "check_sources пропущен"
+        )
         print(f"{arm}: рубрика {rubric.get('total40')}/40, findings {rubric.get('findings')}, "
               f"URL {cite['urls_resolved']}/{cite['urls_total']}, ev-N {cite['ev_refs']}, "
               f"div {diversity['avg_distance']}, options {diversity['options']} "
-              f"(как есть: {diversity['status_quo_present']}), ${usd:.2f}")
+              f"(как есть: {diversity['status_quo_present']}), ${usd:.2f}, {gate_text}")
 
     payload = {"run": run_dir.name, "arms": metrics}
     (run_dir / "metrics.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -216,18 +263,27 @@ def main(argv: list[str]) -> int:
         "",
         "Числа — из `<arm>/critic-final/critic.out`, `check_citations.py`,",
         "`council_diversity.py` и строк COST.md (артефакт: `metrics.json`).",
+        "Колонка `check_sources` — код возврата и число нарушений",
+        "`scripts/check_sources.py` на финальном артефакте (только с флагом",
+        "`--sources-gate`; без него — «—»).",
         "",
-        "| Рука | Рубрика /40 (critic, proxy) | Findings | URL (живые) | ev-N | Diversity (proxy) | Вариантов | «Как есть» | USD/run |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| Рука | Рубрика /40 (critic, proxy) | Findings | URL (живые) | ev-N | Diversity (proxy) | Вариантов | «Как есть» | USD/run | check_sources |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for m in metrics:
+        gate = m.get("sources_gate")
+        gate_cell = (
+            f"exit={gate['exit']}; нарушений {gate['violations']}"
+            if gate
+            else "—"
+        )
         lines.append(
             f"| {m['arm']} | {m['rubric'].get('total40', '—')} | {m['rubric'].get('findings', '—')} "
             f"| {m['citations']['urls_resolved']}/{m['citations']['urls_total']} "
             f"| {m['citations']['ev_refs']} "
             f"| {m['diversity']['avg_distance'] if m['diversity']['avg_distance'] is not None else '—'} "
             f"| {m['diversity']['options']} | {'да' if m['diversity']['status_quo_present'] else 'НЕТ'} "
-            f"| {m['usd']:.2f} |"
+            f"| {m['usd']:.2f} | {gate_cell} |"
         )
     (run_dir / "metrics.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"метрики: {run_dir / 'metrics.md'}")
