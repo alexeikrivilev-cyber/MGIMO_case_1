@@ -32,7 +32,7 @@
 из STATE.md.
 **Очередь О2 — в работе:** навыки шагов 2–4 (`options`, `strategy-product`,
 `strategy-comms`, `verification` + раздел «Шаг 2» в навыке `evidence`),
-шаблоны артефактов шагов 2–4, проверка `check_options.py` (63/63 тестов
+шаблоны артефактов шагов 2–4, проверка `check_options.py` (67/67 тестов
 зелёные). Дальше — по [ROADMAP.md](ROADMAP.md): полный прогон демо-задачи
 (`research.md` → `options.md` → `strategy-product.md` → `strategy-comms.md`
 → `verification-plan.md`), затем очередь О3.
@@ -61,7 +61,7 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 Проверки вручную:
 
 ```bash
-python3 tests/test_scripts.py                  # 63/63 (stdlib, без зависимостей)
+python3 tests/test_scripts.py                  # 67/67 (stdlib, без зависимостей)
 uv run --with pytest python -m pytest tests/ -q # то же через pytest
 python3 scripts/check_sources.py project/evidence/*.md
 python3 scripts/check_options.py project/options.md  # шаг 3: варианты и возражения

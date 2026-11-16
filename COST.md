@@ -35,6 +35,8 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e1b3f4ed5ffePUQ15wNbJpyZiy | Шаг 0 + ЧЕКПОИНТ 1 | step-5-preview | 29775 | 46821 | 0 | 2365504 | 0 | 0 | $0.39 |
 | 2026-11-16 | ses_e1b383769ffeBhM11dq3gyfWi9 | Шаг 1 | step-5-preview | 41697 | 24448 | 0 | 1776128 | 0 | 0 | $0.29 |
 | 2026-11-16 | ses_e1b345cf1ffe7gMpPaxqOaYKzc | проверка мержа хука | step-5-preview | 230 | 104 | 0 | 73344 | 0 | 0 | $0.01 |
+| 2026-11-16 | ses_e1b2ed595ffetRIQcJzHUUXuNU | проба целевой среды (проверка модели) | step-5-preview | 120 | 6 | 0 | 36608 | 0 | 0 | $0.00 |
+| 2026-11-16 | ses_e1b2d5cc8ffe4OA7wYRI8UkGol | О2 инфраструктура: навыки, шаблоны, check_options (делегация OpenCode) | step-5-preview | 66778 | 50954 | 0 | 7275968 | 0 | 0 | $0.93 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
