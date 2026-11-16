@@ -60,7 +60,7 @@ DIGIT_RE = re.compile(r"\d")
 URL_LINE_RE = re.compile(r"^[-*+]\s*URL\s*:\s*(\S.*)$")
 ACCESS_DATE_LINE_RE = re.compile(r"^[-*+]\s*Дата доступа\s*:\s*(.*)$")
 NUMERIC_CLAIM_RE = re.compile(
-    r"(\d+(?:[.,]\d+)?\s*%|\b\d{4}\s*г|млн|тыс|руб|₽|\$)"
+    r"(\d+(?:[.,]\d+)?\s*%|\b\d{4}\s*г|млн|тыс|руб(?:\.|лей|лях|ль)?(?![а-я])|₽|\$)"
 )
 GROWTH_VERB_RE = re.compile(r"вырос|упал|снизил|сократил", re.IGNORECASE)
 DATE_VALUE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})\b")

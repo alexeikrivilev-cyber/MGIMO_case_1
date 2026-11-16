@@ -59,6 +59,12 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e1ae324d1ffe0y4Yojh71spEhJ | О3: проба сырых событий (скорректировано) | step-5-preview | 25 | 48 | 0 | 20032 | 0 | 0 | $0.00 |
 | 2026-11-16 | ses_e1ae2da50ffeyjkZ7VOcFibMX4 | О3: проба отладочных событий (скорректировано) | step-5-preview | 27 | 104 | 0 | 20032 | 0 | 0 | $0.00 |
 | 2026-11-16 | ses_e1ae22b21ffeWpHsxNxu1yT7We | О3: верификация фикса учёта (post-fix) | step-5-preview | 26 | 25 | 0 | 20032 | 0 | 0 | $0.00 |
+| 2026-11-16 | ses_e1ad81ebbffehgUnIdZ9E3eURy | О3 | step-5-preview | 34495 | 15684 | 0 | 519296 | 0 | 0 | $0.13 |
+| 2026-11-16 | ses_e1ac6cdeeffeWHOLxCrhdnsMzO | О3: held-out step0 | step-5-preview | 52925 | 19833 | 0 | 1816320 | 0 | 0 | $0.29 |
+| 2026-11-16 | ses_e1ac3d094ffeJyxH1sP6AxNaHf | О3: held-out step1 | step-5-preview | 73810 | 51037 | 0 | 4569152 | 0 | 0 | $0.67 |
+| 2026-11-16 | ses_e1abd9520ffeYM6hPYbCI7oJjG | О3: held-out step2 | step-5-preview | 68381 | 65949 | 0 | 4839104 | 0 | 0 | $0.73 |
+| 2026-11-16 | ses_e1ab684c3ffecrHULwEBV64Nio | О3: held-out step3 | step-5-preview | 98032 | 43616 | 0 | 3950464 | 0 | 0 | $0.61 |
+| 2026-11-16 | ses_e1ab0c984ffecDOVBmvN2uL2jz | О3: held-out step4 | step-5-preview | 118392 | 50834 | 0 | 7959744 | 0 | 0 | $1.05 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
