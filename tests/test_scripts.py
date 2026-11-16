@@ -277,6 +277,18 @@ class CheckSourcesArtifactTests(TempDirTestCase):
         result = run_script(CHECK_SOURCES, str(path))
         self.assertEqual(result.returncode, EXIT_OK, result.stdout)
 
+    def test_rubrika_word_is_not_a_currency_claim(self) -> None:
+        # «руб» внутри «рубрика» — не денежное утверждение (ложный позитив
+        # чекера, найден на decisions.md 2026-11-16).
+        path = self.write(
+            "project/research.md",
+            artifact("## Оценка\n- Рубрика качества: возражения сильные.\n"),
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        # нарушение одно — секция без ссылки; числового утверждения нет
+        self.assertEqual(result.stdout.count("числовое утверждение"), 0)
+
     def test_violation_reports_file_and_line(self) -> None:
         path = self.write(
             "project/research.md",
@@ -1332,6 +1344,108 @@ class RecoverStateTests(TempDirTestCase):
     def test_real_repo_state_recovers_or_valid(self) -> None:
         """Критерий приёмки: на валидном STATE.md репозитория — exit 0."""
         result = run_script(RECOVER_STATE)
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 11) check_decisions.py — реестр решений полон (B6, PRD §11)
+# --------------------------------------------------------------------------
+
+CHECK_DECISIONS = "check_decisions.py"
+
+DECISIONS_OK = """# Решения (фикстура)
+
+## Реестр решений
+
+| ID | Решение | Владелец | Дата | Метрика | Условие пересмотра | Статус |
+|---|---|---|---|---|---|---|
+| D1 | Комбинация вариантов 1 и 3 | РП (оператор, репетиция) | 2026-11-16 | 30-дневное удержание | зона «не работает» 2 недели | принято |
+| D2 | Вариант 2 отвергнут | РП (оператор) | 2026-11-16 | не применимо | снятие ограничения рамки | отвергнут |
+
+## Основания каждого решения
+
+- D1: выбор на чекпоинте — `project/options.md`; основания вариантов —
+  ev-002 (отток по контрактам) и ev-003 (SHAP-сигналы).
+
+## История пересмотров (append-only)
+
+(пока нет)
+"""
+
+
+class CheckDecisionsTests(TempDirTestCase):
+    """R1 реестр, R2 полнота полей, R3 основания, R4 история."""
+
+    def test_valid_registry_exit_0(self) -> None:
+        path = self.write("project/decisions.md", DECISIONS_OK)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("решений 2", result.stdout)
+
+    def test_missing_owner_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("| РП (оператор, репетиция) |", "| … |")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("владелец", result.stdout)
+
+    def test_missing_revision_condition_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("| зона «не работает» 2 недели |", "| — |")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("условие пересмотра", result.stdout)
+
+    def test_bad_date_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("2026-11-16", "2026-13-45")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("дата", result.stdout)
+
+    def test_no_decision_rows_exit_2(self) -> None:
+        text = DECISIONS_OK.replace(
+            "| D1 | Комбинация вариантов 1 и 3 | РП (оператор, репетиция) | 2026-11-16 | 30-дневное удержание | зона «не работает» 2 недели | принято |\n",
+            "",
+        ).replace(
+            "| D2 | Вариант 2 отвергнут | РП (оператор) | 2026-11-16 | не применимо | снятие ограничения рамки | отвергнут |\n",
+            "",
+        )
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("реестр", result.stdout.lower())
+
+    def test_missing_history_section_exit_2(self) -> None:
+        text = DECISIONS_OK.replace("## История пересмотров (append-only)\n\n(пока нет)\n", "")
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("История пересмотров", result.stdout)
+
+    def test_grounds_without_references_exit_2(self) -> None:
+        text = DECISIONS_OK.replace(
+            "- D1: выбор на чекпоинте — `project/options.md`; основания вариантов —\n  ev-002 (отток по контрактам) и ev-003 (SHAP-сигналы).",
+            "- D1: выбор на чекпоинте; основания вариантов — внутренний анализ.",
+        )
+        path = self.write("project/decisions.md", text)
+        result = run_script(CHECK_DECISIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("Основания", result.stdout)
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(CHECK_DECISIONS)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_missing_file_exit_1(self) -> None:
+        result = run_script(CHECK_DECISIONS, str(self.tmp / "нет.md"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_repo_decisions_file_passes(self) -> None:
+        """Критерий приёмки: реальный project/decisions.md проходит."""
+        result = run_script(CHECK_DECISIONS, "project/decisions.md")
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
 
 
