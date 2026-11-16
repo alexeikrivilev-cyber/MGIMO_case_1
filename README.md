@@ -29,7 +29,13 @@
 **День 2 (16.11.2026) — завершён:** скелет агента, навыки framing/evidence/resume,
 скрипты-проверки (44/44 тестов зелёные), 3 хука OpenCode, прогон шагов 0–1
 на демо-задаче `demo-retention` с ЧЕКПОИНТОМ 1, прерыванием и возобновлением
-из STATE.md. Дальше — по [ROADMAP.md](ROADMAP.md): очередь О2 (шаги 2–5).
+из STATE.md.
+**Очередь О2 — в работе:** навыки шагов 2–4 (`options`, `strategy-product`,
+`strategy-comms`, `verification` + раздел «Шаг 2» в навыке `evidence`),
+шаблоны артефактов шагов 2–4, проверка `check_options.py` (63/63 тестов
+зелёные). Дальше — по [ROADMAP.md](ROADMAP.md): полный прогон демо-задачи
+(`research.md` → `options.md` → `strategy-product.md` → `strategy-comms.md`
+→ `verification-plan.md`), затем очередь О3.
 
 ## Быстрый старт (целевая среда — OpenCode)
 
@@ -55,8 +61,10 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 Проверки вручную:
 
 ```bash
-python3 tests/test_scripts.py                 # 44/44
+python3 tests/test_scripts.py                  # 63/63 (stdlib, без зависимостей)
+uv run --with pytest python -m pytest tests/ -q # то же через pytest
 python3 scripts/check_sources.py project/evidence/*.md
+python3 scripts/check_options.py project/options.md  # шаг 3: варианты и возражения
 python3 scripts/check_state.py
 python3 scripts/cost_report.py
 ```
@@ -64,3 +72,11 @@ python3 scripts/cost_report.py
 Прерывание и возобновление: остановите прогон на середине шага (Ctrl-C или
 внешний kill) — затем новый чат: `opencode run "Прочитай STATE.md и LOG.md
 (навык resume) и продолжи с места остановки"`.
+
+## Инструменты и шаблоны (очередь О2)
+
+| Что | Файл | Зачем |
+|---|---|---|
+| Проверка вариантов | `scripts/check_options.py` | ≥3 варианта, среди них «оставить как есть»; у каждого возражение и маркер типа утверждения |
+| Навыки шагов 3–4 | `knowledge/skills/options|strategy-product|strategy-comms|verification/SKILL.md` | методика шага; карта «вопрос → навык» — `knowledge/index.md` |
+| Шаблоны шагов 2–4 | `templates/research.md`, `options.md`, `strategy-product.md`, `strategy-comms.md`, `verification-plan.md` | копия файла → `project/<артефакт>.md`; шапка каждого шаблона указывает навык и проверки |

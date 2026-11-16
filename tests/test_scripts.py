@@ -24,6 +24,7 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 
 CHECK_SOURCES = "check_sources.py"
 CHECK_STATE = "check_state.py"
+CHECK_OPTIONS = "check_options.py"
 COST_REPORT = "cost_report.py"
 
 EXIT_OK = 0
@@ -509,6 +510,372 @@ class CostReportTests(TempDirTestCase):
         self.assertIn("Контур разработки (dev): строк:", result.stdout)
         self.assertRegex(result.stdout, r"оценка \$: \d+\.\d{2}")
         self.assertIn("Итого (dev + prod):", result.stdout)
+
+
+# --------------------------------------------------------------------------
+# 5) check_options.py — структура вариантов (R1 варианты, R2 возражения, R3 типы)
+# --------------------------------------------------------------------------
+
+OPTIONS_OK = """# Варианты удержания (фикстура)
+
+> Цитата запроса РП — не проверяется.
+
+## Критерии сравнения
+
+- Эффект на удержание
+- Стоимость и перераспределение
+
+## Варианты
+
+### Вариант 1: программа лояльности
+
+#### Суть
+
+- Механизм: …
+- Основание: ev-1
+
+#### Что требует
+
+- Ресурсы: …
+
+#### Экономика
+
+- Затраты: …
+- Эффект: … [прогноз]
+
+#### Сильные возражения
+
+- Сильнейшее возражение: …
+
+#### Риски
+
+- … [гипотеза]
+
+### Вариант 2: первые 90 дней жизни подписчика
+
+#### Суть
+
+- Механизм: …
+- Основание: ev-2
+
+#### Что требует
+
+- …
+
+#### Экономика
+
+- … [допущение]
+
+#### Сильные возражения
+
+- Сильнейшее возражение: …
+
+#### Риски
+
+- …
+
+### Вариант 3: оставить как есть
+
+#### Суть
+
+- Механизм: инерция текущих процессов.
+- Основание: ev-3
+
+#### Что требует
+
+- Ничего.
+
+#### Экономика
+
+- Затрат нет; что теряем: … [прогноз]
+
+#### Сильные возражения
+
+- Сильнейшее возражение: …
+
+#### Риски
+
+- … [гипотеза]
+
+## Сравнение вариантов
+
+| Критерий | Вариант 1 | Вариант 2 | Вариант 3 (как есть) |
+|---|---|---|---|
+| Эффект | … | … | … |
+"""
+
+OPTIONS_TWO_VARIANTS = OPTIONS_OK[
+    : OPTIONS_OK.index("### Вариант 2:")
+] + OPTIONS_OK[OPTIONS_OK.index("### Вариант 3:"):]
+
+OPTIONS_NO_STATUS_QUO = OPTIONS_OK.replace(
+    "### Вариант 3: оставить как есть",
+    "### Вариант 3: сэкономить и не трогать продукт",
+)
+
+OPTIONS_NO_OBJECTION = OPTIONS_OK.replace(
+    "#### Сильные возражения\n\n- Сильнейшее возражение: …\n\n#### Риски\n\n- …\n\n### Вариант 3:",
+    "#### Сильные возражения\n\n- Замечание: …\n\n#### Риски\n\n- …\n\n### Вариант 3:",
+)
+
+OPTIONS_NO_MARKER = OPTIONS_OK.replace(
+    "#### Экономика\n\n- Затрат нет; что теряем: … [прогноз]",
+    "#### Экономика\n\n- Затрат нет; что теряем: …",
+).replace(
+    "#### Риски\n\n- … [гипотеза]\n\n## Сравнение вариантов",
+    "#### Риски\n\n- …\n\n## Сравнение вариантов",
+)
+
+OPTIONS_OBJECTION_IN_QUOTE = OPTIONS_OK.replace(
+    "#### Сильные возражения\n\n- Сильнейшее возражение: …\n\n#### Риски\n\n- … [гипотеза]\n\n## Сравнение",
+    "#### Сильные возражения\n\n> Сильнейшее возражение: …\n\n#### Риски\n\n- … [гипотеза]\n\n## Сравнение",
+)
+
+
+def heading_lineno(text: str, needle: str) -> int:
+    """Номер строки, содержащей needle (для адресной проверки вывода)."""
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        if needle in line:
+            return lineno
+    raise AssertionError(f"в фикстуре нет строки с «{needle}»")
+
+
+class CheckOptionsRuleTests(TempDirTestCase):
+    """Правила R1–R3: варианты, возражения, маркеры типов."""
+
+    def test_three_variants_with_status_quo_exit_0(self) -> None:
+        path = self.write("project/options.md", OPTIONS_OK)
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("ok", result.stdout.lower())
+
+    def test_two_variants_exit_2(self) -> None:
+        path = self.write("project/options.md", OPTIONS_TWO_VARIANTS)
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("3", result.stdout)
+
+    def test_missing_status_quo_variant_exit_2(self) -> None:
+        path = self.write("project/options.md", OPTIONS_NO_STATUS_QUO)
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("оставить как есть", result.stdout)
+
+    def test_variant_without_objection_exit_2_addressed(self) -> None:
+        path = self.write("project/options.md", OPTIONS_NO_OBJECTION)
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        lineno = heading_lineno(OPTIONS_NO_OBJECTION, "### Вариант 2:")
+        self.assertIn(f"{path}:{lineno}: ", result.stdout)
+        self.assertIn("возражени", result.stdout)
+
+    def test_variant_without_type_marker_exit_2(self) -> None:
+        path = self.write("project/options.md", OPTIONS_NO_MARKER)
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        lineno = heading_lineno(OPTIONS_NO_MARKER, "### Вариант 3:")
+        self.assertIn(f"{path}:{lineno}: ", result.stdout)
+        self.assertIn("[гипотеза]", result.stdout)
+
+    def test_objection_in_blockquote_does_not_count_exit_2(self) -> None:
+        path = self.write("project/options.md", OPTIONS_OBJECTION_IN_QUOTE)
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_no_variant_sections_exit_2(self) -> None:
+        path = self.write("project/options.md", "# Варианты\n\n- Ничего не решено.\n")
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_template_options_md_is_self_consistent_exit_0(self) -> None:
+        """Шаблон templates/options.md сам проходит check_options.py.
+
+        Согласованность шаблона и проверки: если агент скопирует шаблон
+        и начнёт заполнять, структура «### Вариант …» уже корректна.
+        """
+        result = run_script(CHECK_OPTIONS, "templates/options.md")
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_clean_and_dirty_files_reported_separately(self) -> None:
+        clean = self.write("project/options.md", OPTIONS_OK)
+        dirty = self.write("project/options-draft.md", OPTIONS_TWO_VARIANTS)
+        result = run_script(CHECK_OPTIONS, str(clean), str(dirty))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn(str(dirty) + ":", result.stdout)
+        self.assertNotIn(str(clean) + ":", result.stdout)
+
+
+class CheckOptionsCliTests(TempDirTestCase):
+    """Контракт CLI check_options.py."""
+
+    def test_no_arguments_exit_1(self) -> None:
+        result = run_script(CHECK_OPTIONS)
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertTrue(result.stderr.strip())
+
+    def test_help_prints_contract_exit_0(self) -> None:
+        result = run_script(CHECK_OPTIONS, "--help")
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout)
+        self.assertIn("check_options.py", result.stdout)
+        self.assertIn("R1", result.stdout)
+
+    def test_missing_file_exit_1(self) -> None:
+        missing = self.tmp / "project" / "no-such-options.md"
+        result = run_script(CHECK_OPTIONS, str(missing))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+        self.assertIn(str(missing), result.stderr)
+
+    def test_directory_argument_exit_1(self) -> None:
+        (self.tmp / "project").mkdir(parents=True, exist_ok=True)
+        result = run_script(CHECK_OPTIONS, str(self.tmp / "project"))
+        self.assertEqual(result.returncode, EXIT_USAGE)
+
+    def test_relative_path_from_tmp_cwd(self) -> None:
+        self.write("project/options.md", OPTIONS_TWO_VARIANTS)
+        result = run_script(CHECK_OPTIONS, "project/options.md", cwd=self.tmp)
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertRegex(result.stdout, r"project/options\.md:\d+: .+")
+
+    def test_any_passed_file_is_checked_not_only_options_md(self) -> None:
+        """Контракт: проверяется каждый переданный файл, а не только options.md.
+
+        Тихий пропуск файлов по имени превращал бы опечатку в пути в
+        «ok: нарушений нет» — поэтому поведение закреплено тестом.
+        """
+        path = self.write("draft/varianty-chernovik.md", OPTIONS_TWO_VARIANTS)
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn(str(path) + ":", result.stdout)
+
+    def test_non_utf8_file_exit_2(self) -> None:
+        path = self.tmp / "project" / "options.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"# \xff\xfe options\n")
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn("UTF-8", result.stdout)
+
+    def test_non_options_file_is_checked_exit_2(self) -> None:
+        """Контракт: каждый переданный файл проверяется, тихого пропуска нет.
+
+        Скрипт про шаг 3, поэтому пакетный выхват ``project/*.md`` — не его
+        сценарий: варианты проверяются вызовом на ``project/options.md``.
+        Молчаливый пропуск файлов по имени превращал бы опечатку в пути в
+        «ok: нарушений нет» — поэтому он не делается.
+        """
+        path = self.write(
+            "project/brief.md", "# brief.md — рамка\n\n## Сводка\n\n- Без вариантов.\n"
+        )
+        result = run_script(CHECK_OPTIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn(str(path) + ":", result.stdout)
+
+    def test_batch_checks_every_passed_file(self) -> None:
+        """Пакетный вызов: нарушение находится в каждом переданном файле."""
+        dirty = self.write("project/options.md", OPTIONS_TWO_VARIANTS)
+        brief = self.write(
+            "project/brief.md", "# brief.md — рамка\n\n## Сводка\n\n- Без вариантов.\n"
+        )
+        result = run_script(CHECK_OPTIONS, str(dirty), str(brief))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+        self.assertIn(str(dirty) + ":", result.stdout)
+        self.assertIn(str(brief) + ":", result.stdout)
+
+
+# --------------------------------------------------------------------------
+# 6) Структура артефактов очереди О2: навыки и шаблоны
+# --------------------------------------------------------------------------
+
+
+def read_text(path: Path) -> str:
+    """Читает файл как UTF-8 с BOM."""
+    return path.read_text(encoding="utf-8-sig")
+
+
+def frontmatter(path: Path) -> dict[str, str]:
+    """Разбирает frontmatter «key: value» из начала файла."""
+    lines = read_text(path).splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}
+    fields: dict[str, str] = {}
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        key, sep, value = line.partition(":")
+        if sep:
+            fields[key.strip()] = value.strip()
+    return fields
+
+
+def headings(path: Path) -> list[str]:
+    """Строки-заголовки markdown (обрезанные)."""
+    return [line.strip() for line in read_text(path).splitlines() if line.startswith("#")]
+
+
+class SkillsStructureTests(unittest.TestCase):
+    """Навыки knowledge/skills/*/SKILL.md: frontmatter и раздел «Проверка»."""
+
+    NEW_SKILLS = ("options", "strategy-product", "strategy-comms", "verification")
+
+    def skills(self) -> list[Path]:
+        """Все навыки репозитория (существующие + новые очереди О2)."""
+        return sorted((REPO_ROOT / "knowledge" / "skills").glob("*/SKILL.md"))
+
+    def test_every_skill_has_name_description_and_check_section(self) -> None:
+        skills = self.skills()
+        self.assertTrue(skills, "не найдено навыков knowledge/skills/*/SKILL.md")
+        for path in skills:
+            fields = frontmatter(path)
+            self.assertIn("name", fields, f"{path}: нет frontmatter name")
+            self.assertIn("description", fields, f"{path}: нет frontmatter description")
+            self.assertTrue(fields["description"], f"{path}: пустое описание")
+            self.assertEqual(
+                fields["name"], path.parent.name, f"{path}: name ≠ каталогу"
+            )
+            self.assertIn("## Проверка", headings(path), f"{path}: нет раздела «Проверка»")
+            self.assertTrue(
+                any(item.startswith("## Анти-паттерны") for item in headings(path)),
+                f"{path}: нет раздела «Анти-паттерны»",
+            )
+
+    def test_new_o2_skills_exist(self) -> None:
+        for name in self.NEW_SKILLS:
+            path = REPO_ROOT / "knowledge" / "skills" / name / "SKILL.md"
+            self.assertTrue(path.is_file(), f"нет навыка {name}: {path}")
+
+    def test_evidence_skill_has_step2_section(self) -> None:
+        """О2: навык evidence дополнен разделом шага 2 (append-only)."""
+        path = REPO_ROOT / "knowledge" / "skills" / "evidence" / "SKILL.md"
+        self.assertIn("Шаг 2", read_text(path))
+        self.assertIn("2026-11-16", read_text(path))
+
+
+class TemplatesStructureTests(unittest.TestCase):
+    """Шаблоны templates/*.md: непустой файл с шапкой-блокцитатой."""
+
+    NEW_TEMPLATES = (
+        "research.md",
+        "options.md",
+        "strategy-product.md",
+        "strategy-comms.md",
+        "verification-plan.md",
+    )
+
+    def test_every_template_has_header_quote(self) -> None:
+        templates = sorted((REPO_ROOT / "templates").glob("*.md"))
+        self.assertTrue(templates, "не найдено шаблонов templates/*.md")
+        for path in templates:
+            text = read_text(path)
+            self.assertTrue(text.strip(), f"{path}: пустой файл")
+            self.assertTrue(
+                any(line.startswith(">") for line in text.splitlines()),
+                f"{path}: нет шапки «> …»",
+            )
+
+    def test_new_o2_templates_exist(self) -> None:
+        for name in self.NEW_TEMPLATES:
+            path = REPO_ROOT / "templates" / name
+            self.assertTrue(path.is_file(), f"нет шаблона {name}: {path}")
 
 
 if __name__ == "__main__":
