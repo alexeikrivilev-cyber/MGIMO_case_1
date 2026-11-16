@@ -1,0 +1,55 @@
+# Сырой материал: arXiv 2608.26151 — аннотация (abs-страница)
+
+> Источник: https://arxiv.org/abs/2608.26151
+> Дата доступа: 2026-11-16. Fetch: HTTP 200. Снимок — дословная аннотация
+> и метаданные abs-страницы (навигация arXiv не сохранялась).
+
+## Метаданные
+
+- arXiv ID: 2608.26151 [cs.AI; cs.LG]
+- Title: Explainable Artificial Intelligence for Customer Churn Prediction in
+  Telecommunications: A Framework for CRM Integration
+- Author: Sandeep Gaddamwar
+- Submitted: 1 Jul 2026 (v1, 1,549 KB); страница лицензии: CC BY 4.0
+- Comments: 10 pages, 7 figures, 1 table
+- DOI: https://doi.org/10.48550/arXiv.2608.26151
+- Полный текст: https://arxiv.org/pdf/2608.26151 (HTML: https://arxiv.org/html/2608.26151v1)
+
+## Аннотация (дословно)
+
+Subscriber attrition is a costly, persistent challenge for telecommunications
+providers, with monthly churn of roughly 1.9% in mature markets eroding
+billions in revenue annually. Predictive models can flag at-risk customers
+accurately, yet they are routinely excluded from frontline CRM workflows
+because high-performing ensemble and non-linear architectures are opaque: a
+retention specialist cannot design a personalised intervention from a
+probability score alone, without knowing why a subscriber is at risk. This
+paper addresses that gap. We benchmark four classifiers--Logistic Regression,
+Random Forest, XGBoost, and LightGBM--on the IBM Telco Customer Churn
+benchmark (7,043 records; 19 features; 26.5% churn, balanced to 50% via SMOTE
+on the training partition only). Logistic Regression attains the strongest
+AUC-ROC (0.8411) and LightGBM the highest accuracy (78.42%); all four fall
+within a 0.011 AUC band (0.831--0.841), and 5-fold cross-validation confirms
+the leading models are effectively tied. Explanations are delivered at two
+granularities: a global SHAP ranking identifying tenure, total charges, and
+month-to-month contract as the dominant churn signals, and instance-level
+SHAP and LIME decompositions that expose the drivers behind each prediction.
+Building on these outputs, we introduce a four-layer CRM integration
+architecture that converts risk scores and attribution vectors into tiered
+segmentation, maps top features to structured retention-action templates, and
+routes campaign outcomes into a retraining feedback loop. Targeting the
+highest-risk quintile is projected to cut overall churn by 3.3--5.3
+percentage points, preserving an estimated $199K--$319K per campaign cycle.
+
+## Чеки abs-страницы (что в аннотации есть / чего нет)
+
+- В аннотации ЕСТЬ: monthly churn ~1.9% (mature markets); 7,043 records,
+  19 features, 26.5% churn; AUC-ROC 0.8411 (Logistic Regression), accuracy
+  78.42% (LightGBM), AUC band 0.831–0.841; SHAP: tenure, total charges,
+  month-to-month contract — доминирующие сигналы; прогноз −3.3…−5.3 п.п.
+  оттока при таргетинге top-квинтиля риска; $199K–$319K per campaign cycle.
+- В аннотации НЕТ величин «month-to-month 42.7% vs 2-year 2.8%»: назван
+  только сигнал «month-to-month contract» без процентных величин. Эти
+  величины посчитаны из самого датасета (см.
+  `project/evidence/ev-002-telco-dataset-stats.md`) — конфликт атрибуции
+  с `eval/tasks/demo-retention/materials.md` зафиксирован в ev-003.

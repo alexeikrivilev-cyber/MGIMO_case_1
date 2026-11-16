@@ -26,4 +26,41 @@
 ## Статус
 
 **День 1 (16.11.2026) — завершён:** исследование, PRD, ROADMAP, research-документы.
-Дальше — по [ROADMAP.md](ROADMAP.md): День 2 — скелет агента и шаги 0–1.
+**День 2 (16.11.2026) — завершён:** скелет агента, навыки framing/evidence/resume,
+скрипты-проверки (44/44 тестов зелёные), 3 хука OpenCode, прогон шагов 0–1
+на демо-задаче `demo-retention` с ЧЕКПОИНТОМ 1, прерыванием и возобновлением
+из STATE.md. Дальше — по [ROADMAP.md](ROADMAP.md): очередь О2 (шаги 2–5).
+
+## Быстрый старт (целевая среда — OpenCode)
+
+```bash
+# 1. Ключ провайдера — только через окружение, никогда в репозиторий:
+export STEPFUN_API_KEY=<ключ StepFun>        # прайс и причины: COST.md, §1.8 прайс-документа
+
+# 2. Зависимости плагина хуков (один раз):
+cd .opencode && npm install && cd ..
+
+# 3. Прогон агента из корня репозитория:
+opencode run "Выполни шаг 0 (рамка) по демо-задаче eval/tasks/demo-retention/task.md"
+```
+
+Что происходит внутри: инструкции агента грузятся из `docs/agents-md-staged.md`
+(готовое содержимое `AGENTS.md`; перенос в корневом файле согласуется с
+владельцем — прямая запись `AGENTS.md` заблокирована политикой
+`protected_instruction_files`). Хуки (`.opencode/plugins/strategy-hooks.ts`):
+после записи `project/*.md` — `check_sources.py`; после записи `STATE.md` и в
+конце сеанса — `check_state.py`; на каждом ассистентском сообщении — строка
+учёта в прод-таблицу `COST.md`. Лог хуков — `.opencode/hooks.log` (вне git).
+
+Проверки вручную:
+
+```bash
+python3 tests/test_scripts.py                 # 44/44
+python3 scripts/check_sources.py project/evidence/*.md
+python3 scripts/check_state.py
+python3 scripts/cost_report.py
+```
+
+Прерывание и возобновление: остановите прогон на середине шага (Ctrl-C или
+внешний kill) — затем новый чат: `opencode run "Прочитай STATE.md и LOG.md
+(навык resume) и продолжи с места остановки"`.

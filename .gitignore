@@ -29,3 +29,4 @@ __pycache__/
 # --- OpenCode: окружение/зависимости/логи — вне git; конфиг и плагины — в git ---
 .opencode/node_modules/
 .opencode/hooks.log
+.hermes-run.log

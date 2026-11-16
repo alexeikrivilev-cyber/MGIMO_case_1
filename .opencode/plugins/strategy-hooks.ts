@@ -14,8 +14,11 @@
  *      .opencode/hooks.log.
  *   3. cost-append (event message.updated): токены каждого ассистентского
  *      сообщения агрегируются по сессии; строка прод-таблицы COST.md
- *      (между маркерами <!-- cost-rows:begin/end -->) перезаписывается
- *      идемпотентно по sessionID. Оценка $ — по прайсу step-5-preview
+ *      (между маркерами <!-- cost-rows:begin/end -->) мержится по
+ *      sessionID: агрегат живёт в памяти процесса, поэтому к токенам
+ *      сессии из COST.md дописывается вклад текущего процесса (сессия
+ *      может длиться несколько запусков `opencode run`). Оценка $ — по
+ *      прайсу step-5-preview
  *      (docs/research/llm-pricing-agent-costs.md §1.8):
  *        $ = input·1.00/1M + cache.read·0.10/1M + output·2.70/1M
  *      (в метриках OpenCode input excludes cache-read — сверено с внутренним
@@ -55,8 +58,10 @@ type TokenSnapshot = {
 
 type SessionAggregate = TokenSnapshot & { searches: number; model: string };
 
-/** Агрегаты по сессиям: sessionID → накопленные токены. */
+/** Агрегаты по сессиям: sessionID → накопленные токены текущего процесса. */
 const sessions = new Map<string, SessionAggregate>();
+/** База мержа: токены сессии из COST.md на момент первой записи процесса. */
+const sessionBases = new Map<string, TokenSnapshot & { searches: number }>();
 /** Уже учтённые сообщения: messageID → токены на момент последнего события. */
 const counted = new Map<string, TokenSnapshot>();
 
@@ -124,13 +129,51 @@ function currentStep(): string {
   }
 }
 
-function estimateUsd(agg: SessionAggregate): string {
+function estimateUsd(tokens: {
+  input: number;
+  output: number;
+  cacheRead: number;
+}): string {
   const usd =
-    (agg.input * PRICE.inputMiss +
-      agg.cacheRead * PRICE.inputHit +
-      agg.output * PRICE.output) /
+    (tokens.input * PRICE.inputMiss +
+      tokens.cacheRead * PRICE.inputHit +
+      tokens.output * PRICE.output) /
     1_000_000;
   return `$${usd.toFixed(2)}`;
+}
+
+function parseNumberCell(cell: string): number {
+  const cleaned = String(cell).replace(/[\s\u00a0]/g, "").replace(/^\$/, "");
+  const value = Number(cleaned);
+  return Number.isFinite(value) ? value : 0;
+}
+
+/** Читает текущую строку сессии из COST.md (для мержа между процессами). */
+function readSessionRow(
+  lines: string[],
+  begin: number,
+  end: number,
+  sessionID: string,
+): (TokenSnapshot & { searches: number }) | null {
+  for (const line of lines.slice(begin + 1, end)) {
+    if (!line.includes(`| ${sessionID} |`)) continue;
+    const cells = line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((cell) => cell.trim());
+    if (cells.length < 11) return null;
+    return {
+      input: parseNumberCell(cells[4]),
+      output: parseNumberCell(cells[5]),
+      reasoning: parseNumberCell(cells[6]),
+      cacheRead: parseNumberCell(cells[7]),
+      cacheWrite: parseNumberCell(cells[8]),
+      searches: parseNumberCell(cells[9]),
+    };
+  }
+  return null;
 }
 
 function upsertCostRow(sessionID: string, agg: SessionAggregate): void {
@@ -153,10 +196,34 @@ function upsertCostRow(sessionID: string, agg: SessionAggregate): void {
       note(`cost-append: маркеры-строки не найдены в COST.md, строка не дописана (${sessionID})`);
       return;
     }
+    // Сессия может длиться несколько процессов (opencode run → continue):
+    // агрегат живёт в памяти процесса, поэтому дописываем к тому, что уже
+    // в COST.md. База фиксируется один раз на процесс.
+    let base = sessionBases.get(sessionID);
+    if (!base) {
+      base =
+        readSessionRow(lines, begin, end, sessionID) ?? {
+          input: 0,
+          output: 0,
+          reasoning: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          searches: 0,
+        };
+      sessionBases.set(sessionID, base);
+    }
+    const merged = {
+      input: base.input + agg.input,
+      output: base.output + agg.output,
+      reasoning: base.reasoning + agg.reasoning,
+      cacheRead: base.cacheRead + agg.cacheRead,
+      cacheWrite: base.cacheWrite + agg.cacheWrite,
+      searches: base.searches + agg.searches,
+    };
     const row =
       `| ${new Date().toISOString().slice(0, 10)} | ${sessionID} | ${currentStep()} | ` +
-      `${agg.model || "—"} | ${agg.input} | ${agg.output} | ${agg.reasoning} | ` +
-      `${agg.cacheRead} | ${agg.cacheWrite} | ${agg.searches} | ${estimateUsd(agg)} |`;
+      `${agg.model || "—"} | ${merged.input} | ${merged.output} | ${merged.reasoning} | ` +
+      `${merged.cacheRead} | ${merged.cacheWrite} | ${merged.searches} | ${estimateUsd(merged)} |`;
     const kept = lines
       .slice(begin + 1, end)
       .filter((line: string) => line.trim() && !line.includes(`| ${sessionID} |`));
@@ -167,7 +234,10 @@ function upsertCostRow(sessionID: string, agg: SessionAggregate): void {
       ...lines.slice(end),
     ].join("\n");
     writeFileSync(COST_MD, next);
-    note(`cost-append: ${sessionID} → ${estimateUsd(agg)} (${agg.input} in / ${agg.output} out)`);
+    note(
+      `cost-append: ${sessionID} → ${estimateUsd(merged)} ` +
+        `(${merged.input} in / ${merged.output} out, +${agg.input}/+${agg.output} за процесс)`,
+    );
   } catch (error) {
     note(`cost-append ошибка (${sessionID}): ${String(error)}`);
   }

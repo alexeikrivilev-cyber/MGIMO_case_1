@@ -1,0 +1,70 @@
+# Сырой материал: Mixpanel — анонс отчёта 2025 State of Media & Entertainment Product Analytics
+
+> Источник: https://mixpanel.com/blog/2025-state-of-media-entertainment-product-analytics-report-benchmarks/
+> Дата доступа: 2026-11-16. Fetch: HTTP 200 (возобновлён после внешнего
+> прерывания прерванной сессии; в прерванной сессии fetch начался и не
+> завершился). Снимок — содержательная часть страницы (навигация/футер
+> сайта не сохранялись). Числа ниже — как на странице, без правок.
+
+## Метаданные страницы
+
+- Заголовок: The 2025 State of Media & Entertainment Product Analytics report is here
+- Автор: Brandon Weaver, Senior Content Marketing Manager @ Mixpanel
+- Опубликовано: Dec 13, 2024; последняя правка: Dec 16, 2024
+- Раздел: Inside Mixpanel; теги: business & ops, data, mixpanel news, product management
+
+## Текст статьи (содержательная часть)
+
+The media and entertainment industry is in constant flux with new platforms,
+technologies, and consumer behaviors emerging all the time. Staying ahead and
+taking advantage of everything requires a deep understanding of your audience
+and a data-driven approach to product development.
+
+That's where the 2025 State of Media & Entertainment Product Analytics report
+comes in.
+
+### The 2025 State of Media & Entertainment Product Analytics: Data, insights, and more
+
+We crunched the numbers and analyzed 3.72 trillion events across 14.16 billion
+unique users from 2,713 media and entertainment companies. Introducing the
+2025 State of Media & Entertainment Product Analytics report, a data-driven
+deep dive into the most critical metrics across the industry.
+
+The newest report focuses on three key areas of product success—acquisition,
+engagement, and retention—going beyond surface-level trends to determine the
+state of product analytics in the media and entertainment world.
+
+Download the free report where you'll find:
+
+- Detailed subindustry insights: We dive into the nuances of user behavior
+  across key sectors—social media, publishers, streaming, gaming, creative,
+  broadcasting—offering tailored insights and recommendations for each domain.
+- Key metrics to track like app install rate, session duration, DAU, WAU,
+  MAU, CLTV, user login sessions, churn rate, time between visits, content
+  velocity, and many more.
+
+The report also answers questions like:
+
+- What is the month-over-month percentage user growth for different media
+  sectors?
+- Which global region shows the lowest mobile popularity? (Hint: It's not who
+  you may think.)
+- How are companies measuring and improving user engagement?
+- Despite its popularity, why is engagement falling for streamers?
+- Why did one week retention rates fall for all but two subindustries?
+- And more…
+
+This report doesn't just highlight the "what"—it dives deep into the "how."
+Learn your subindustry's most popular metrics to track and walk away with
+concrete recommendations to improve your results.
+
+How does your company compare to the rest of the industry? Download the 2025
+State of Media & Entertainment Product Analytics report today and find out.
+
+## Что НЕ содержится на странице (зафиксировано при сохранении)
+
+- Конкретных бенчмаркных величин удержания (retention) по субиндустриям и
+  streaming страница не содержит: только анонс отчёта и ссылка на скачивание
+  (https://mixpanel.com/m/benchmarks-report-2025-media-entertainment/).
+  Попытка получить числа со страницы — недоступность зафиксирована как
+  пробел (см. `project/evidence/ev-001-mixpanel-benchmarks.md`).
