@@ -65,3 +65,17 @@
   (снимок страницы, 2026-11-16, ev-001)
 - `eval/tasks/heldout-growth-segment/artifacts/materials/bank-marketing.zip`
   (скачан `scripts/fetch_with_retry.py`, 1 023 843 байта, ev-001)
+
+## Ре-проверка 2026-11-16 (О4, браузер + живая перекачка)
+
+- Страница https://archive.ics.uci.edu/dataset/222/bank+marketing
+  резолвится; все проверенные величины совпадают: 45 211 instances,
+  16 features, «from May 2008 to November 2010», «term deposit»,
+  авторы Moro/Rita/Cortez (артефакт прогона —
+  `eval/runs/browser-live-check-2026-11-16/results.md`).
+- Zip https://archive.ics.uci.edu/static/public/222/bank+marketing.zip
+  резолвится (HTTP 200). Свежая перекачка дает байт-идентичные
+  внутренние архивы: sha256 bank.zip и bank-additional.zip совпадают
+  с распакованными из committed-копии. Сам файл на диске несёт
+  154-байтный префикс-провенанс от `fetch_with_retry.py` (поэтому его
+  sha256 отличается от свежего скачивания — содержимое идентично).

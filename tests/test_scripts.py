@@ -350,6 +350,38 @@ class CheckSourcesMeasurementLogTests(TempDirTestCase):
         result = run_script(CHECK_SOURCES, str(path))
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
 
+    def test_o4_stand_journals_are_measurement_logs(self) -> None:
+        # О4: журналы стенда (eval/runs/**, результаты бенчмарков) —
+        # тот же класс, что журналы Консилиума (правило C).
+        for rel in (
+            "eval/runs/ab-options-demo-retention/manifest.md",
+            "eval/benchmarks/dabstep/runs/2026-11-16-dev10/results.md",
+        ):
+            path = self.write(
+                rel,
+                "# Прогон\n\n## Итог\n\n- Точность 7/10, стоимость $1.27 "
+                "(артефакт: `results.json`).\n",
+            )
+            result = run_script(CHECK_SOURCES, str(path))
+            self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+
+    def test_o4_stand_journal_bare_number_exit_2(self) -> None:
+        path = self.write(
+            "eval/runs/critic-matrix/analysis.md",
+            "# Анализ\n\n## Метрики\n\n- Точность 7/10, стоимость $1.27.\n",
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
+    def test_benchmarks_readme_not_measurement_log(self) -> None:
+        # README стенда — не журнал: правило C на него не распространяется.
+        path = self.write(
+            "eval/benchmarks/dabstep/README.md",
+            artifact("## Метрики\n- Точность 7/10.\n"),
+        )
+        result = run_script(CHECK_SOURCES, str(path))
+        self.assertEqual(result.returncode, EXIT_VIOLATION, result.stdout)
+
     def test_section_reference_grounds_table_numbers(self) -> None:
         # Числа в таблице секции обоснованы ссылкой на артефакт в теле секции
         # (процедура измерения документирована в секции).
@@ -1508,6 +1540,16 @@ class CheckCitationsTests(TempDirTestCase):
         result = run_script(CHECK_CITATIONS, str(path))
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
         self.assertIn("URL не найдены", result.stdout)
+
+    def test_trailing_punctuation_stripped(self) -> None:
+        # URL с висячей запятой/точкой с запятой не должен становиться
+        # «мёртвой ссылкой» (найдено на стенде О4: council-lite на
+        # held-out давал 6/8 из-за «arxiv.org/abs/2012.11876,»).
+        url = self.start_server()
+        path = self.write("a.md", f"См. {url}, и {url}; и {url}.\n")
+        result = run_script(CHECK_CITATIONS, str(path))
+        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertIn("итог: 1/1", result.stdout)
 
     def test_no_arguments_exit_1(self) -> None:
         result = run_script(CHECK_CITATIONS)

@@ -1,0 +1,62 @@
+{
+  "question": "For Belles_cookbook_store in January, if we were to move the fraudulent transactions towards a different Authorization Characteristics Indicator (ACI) by incentivizing users to use a different interaction, what would be the preferred choice considering the lowest possible fees?",
+  "guidelines": "Answer must be just the selected ACI to incentive and the associated cost rounded to 2 decimals in this format: {card_scheme}:{fee}. If a question does not have a relevant or applicable answer for the task, please respond with 'Not Applicable'",
+  "answer": "",
+  "steps": 12,
+  "usage": {
+    "prompt_tokens": 64858,
+    "cached_tokens": 59136,
+    "completion_tokens": 959
+  },
+  "seconds": 16.9,
+  "trace": [
+    {
+      "step": 1,
+      "protocol_nudge": true
+    },
+    {
+      "step": 2,
+      "protocol_nudge": true
+    },
+    {
+      "step": 3,
+      "protocol_nudge": true
+    },
+    {
+      "step": 4,
+      "protocol_nudge": true
+    },
+    {
+      "step": 5,
+      "protocol_nudge": true
+    },
+    {
+      "step": 6,
+      "protocol_nudge": true
+    },
+    {
+      "step": 7,
+      "protocol_nudge": true
+    },
+    {
+      "step": 8,
+      "protocol_nudge": true
+    },
+    {
+      "step": 9,
+      "protocol_nudge": true
+    },
+    {
+      "step": 10,
+      "protocol_nudge": true
+    },
+    {
+      "step": 11,
+      "protocol_nudge": true
+    },
+    {
+      "step": 12,
+      "protocol_nudge": true
+    }
+  ]
+}

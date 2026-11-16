@@ -40,3 +40,13 @@
 
 - `eval/tasks/heldout-growth-segment/artifacts/materials/analysis-online-shoppers.md` (полные таблицы разрезов, ev-004)
 - `eval/tasks/heldout-growth-segment/artifacts/materials/page-uci-468-online-shoppers.txt` (снимок страницы, 2026-11-16)
+
+## Ре-проверка 2026-11-16 (О4, браузер + живая перекачка)
+
+- Страница https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset
+  резолвится; проверенные цитаты совпадают: «1-year period»,
+  «Revenue» как класс, авторы Sakar/Kastro, 12 330 сессий (артефакт
+  прогона — `eval/runs/browser-live-check-2026-11-16/results.md`).
+- Zip https://archive.ics.uci.edu/static/public/468/online+shoppers+purchasing+intention+dataset.zip
+  резолвится (HTTP 200); `online_shoppers_intention.csv` из свежей
+  перекачки байт-идентичен committed-копии (sha256 b3055ee3…).

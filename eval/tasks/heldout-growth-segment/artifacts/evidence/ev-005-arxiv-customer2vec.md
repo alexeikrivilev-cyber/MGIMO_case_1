@@ -38,3 +38,11 @@
 ## Сырой материал
 
 - `eval/tasks/heldout-growth-segment/artifacts/materials/page-arxiv-2012.11876.txt` (снимок abstract, 2026-11-16, ev-005)
+
+## Ре-проверка 2026-11-16 (О4, браузер, живая страница)
+
+- URL https://arxiv.org/abs/2012.11876 резолвится; заголовок
+  «Intelligent Vector-based Customer Segmentation in the Banking
+  Industry»; автор Salman Mousaeirad; проверенные цитаты совпадают
+  (Customer2Vec, embedding, clustering) — артефакт прогона —
+  `eval/runs/browser-live-check-2026-11-16/results.md`.

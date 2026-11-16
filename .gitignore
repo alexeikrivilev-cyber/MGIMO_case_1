@@ -30,3 +30,6 @@ __pycache__/
 .opencode/node_modules/
 .opencode/hooks.log
 .hermes-run.log
+
+# --- Бенчмарк-стенд: сырьё перекачиваемо (URL — в fetch_data.sh), в git не идёт ---
+eval/benchmarks/dabstep/data/
