@@ -132,6 +132,16 @@ TASKS = {
 CHAIN = ("research.md", "options.md", "strategy-product.md",
          "strategy-comms.md", "verification-plan.md", "decisions.md")
 
+# Артефакты этапа «стратегии + решения» (шаги 4–5). Гейты чек-листа и
+# управляемости применяются ко ВСЕМ артефактам этапа, не к одному:
+# дефект области действия (TASK-hermes-20) — гейты acceptance/
+# actionability винтили только на strategy-product.md, и comms /
+# verification-plan / decisions дошли до сдачи без секции приёмного
+# чек-листа и структурных признаков плана (вердикт владельца, BRIEF
+# п.27: шаги 4–5 отвечают за «готовность к действию»).
+STEP45_ARTIFACTS = ("strategy-product.md", "strategy-comms.md",
+                    "verification-plan.md", "decisions.md")
+
 UNITARY_RUBRIC = "eval/rubrics/hackathon-criteria.md"
 
 EVIDENCE_NOTE = """Каждое существенное число несёт основание (ev-N / URL) В
@@ -232,7 +242,15 @@ STRATEGY_COMMS_BODY = """Ты — агент «Стратег», выполня�
 стратегию (один дом факта), не копией. {evidence_note} Объём —
 100–200 строк.
 
-{chat_contract}"""
+ОБЯЗАТЕЛЬНО (решение владельца, BRIEF п.27 — «готовность к действию»):
+артефакт несёт секцию «Приёмный чек-лист (6 вопросов владельца)» с
+ответами по сути ЭТОГО артефакта — что знаем / чего не знаем; какие
+решения просим утвердить; что проверять первым и почему; деньги /
+команды / сроки коммуникации; метрики успеха коммуникации; когда
+остановить. Плюс структурные признаки плана: приоритеты P0–P2 с
+последовательностью сообщений и согласований, контрольная группа
+(holdout) как способ замера эффекта коммуникации, критерии остановки
+кампании. {chat_contract}"""
 
 VERIFICATION_BODY = """Ты — агент «Стратег», выполняешь шаг 4 (ПЛАН
 ПРОВЕРКИ) по навыку verification и шаблону — оба даны ниже.
@@ -245,6 +263,16 @@ VERIFICATION_BODY = """Ты — агент «Стратег», выполняе�
 решением человека со снятием ограничения рамки). Метрики и пороги
 каждого решения шага 5 берутся ОТСЮДА. {evidence_note} Объём —
 100–200 строк.
+
+ОБЯЗАТЕЛЬНО (решение владельца, BRIEF п.27 — «готовность к действию»):
+артефакт несёт секцию «Приёмный чек-лист (6 вопросов владельца)» с
+ответами по сути ЭТОГО артефакта — что знаем / чего не знаем о
+проверяемости; какие решения уже предрегистрированы; что проверять
+первым и почему (порядок замеров); деньги / команды / сроки плана
+проверки; метрики успеха; когда остановить. Плюс структурные признаки
+плана: приоритеты P0–P2 самой проверки (какие замеры и пилоты идут
+первыми и почему), контрольная группа (holdout) и A/B как способ
+отделить эффект от сопутствующих изменений, критерии остановки.
 
 {chat_contract}"""
 
@@ -262,6 +290,19 @@ DECISIONS_BODY = """Ты — агент «Стратег», выполняешь
 репетиция демо): целевая метрика и критерий успеха; выбранная
 комбинация механизмов шага 3; отвергнутые варианты с причинами; цена
 бездействия. {evidence_note} Объём — 80–150 строк.
+
+ОБЯЗАТЕЛЬНО (решение владельца, BRIEF п.27 — «готовность к действию»):
+артефакт несёт секцию «Приёмный чек-лист (6 вопросов владельца)» с
+ответами по сути ЭТОГО артефакта — что знаем / чего не знаем на
+момент решения; какие решения зафиксированы; что проверять первым и
+почему; деньги / команды / сроки исполнения; метрики успеха (KPI с
+порогами из verification-plan.md); когда остановить. Плюс структурные
+признаки плана: приоритеты P0–P2 решений с последовательностью
+исполнения (что блокирует что), контрольная группа (holdout) / A-B
+как условие доказательности эффекта, критерии остановки. Артефакт —
+ЧИСТЫЙ markdown: без кодовых фенсов вокруг содержания и без
+преамбулы вне содержания (гейты исключают фенсы из анализа —
+артефакт внутри ```markdown для них невидим, прецедент TASK-hermes-18).
 
 {chat_contract}"""
 
@@ -468,16 +509,17 @@ def gates_for_artifact(name: str, artifacts: Path, task: dict) -> list[tuple[str
         gates.append(("options", ["scripts/check_options.py", path]))
         gates.append(("complexity", ["scripts/check_complexity.py", path]))
         gates.append(("ranges", ["scripts/check_ranges.py", path]))
-    if name == "strategy-product.md":
+    if name in STEP45_ARTIFACTS:
+        # Гейты «готовности к действию» — на весь этап 4–5 (дефект
+        # области действия TASK-hermes-20: было только strategy-product).
         gates.append(("acceptance", ["scripts/check_acceptance.py", path]))
         gates.append(("actionability",
                       ["scripts/check_actionability.py", path]))
-        gates.append(("ranges", ["scripts/check_ranges.py", path]))
-    if name in ("strategy-comms.md", "verification-plan.md"):
+    if name in ("strategy-product.md", "strategy-comms.md",
+                "verification-plan.md", "decisions.md"):
         gates.append(("ranges", ["scripts/check_ranges.py", path]))
     if name == "decisions.md":
         gates.append(("decisions", ["scripts/check_decisions.py", path]))
-        gates.append(("ranges", ["scripts/check_ranges.py", path]))
     return gates
 
 
@@ -596,17 +638,24 @@ def critic_detector(artifacts: list[Path], out_dir: Path, tag: str,
 
 def patch_revision(artifact: Path, findings: str, work_dir: Path,
                    name: str, timeout: int, label: str,
-                   manifest: list) -> bool:
+                   manifest: list,
+                   prompt_template: str | None = None) -> bool:
     """Точечная ревизия по находкам критика (механика critic-loop2):
     JSON-правок → apply_revision.py с проверками целостности; при
-    BROKEN/нуле правок финал = черновик дословно (честная деградация)."""
+    BROKEN/нуле правок финал = черновик дословно (честная деградация).
+
+    prompt_template — переопределение промпта правок (по умолчанию
+    PATCH_REVISION_PROMPT для находок критика); используется драйвером
+    ревизии по находкам ГЕЙТОВ (TASK-hermes-20). Формат тот же:
+    name/draft/findings/max_edits.
+    """
+    template = prompt_template or PATCH_REVISION_PROMPT
     draft = artifact.read_text(encoding="utf-8")
     backup = artifact.with_suffix(".md.critic-backup")
     backup.write_text(draft, encoding="utf-8")
     code, reply = run_session(
-        PATCH_REVISION_PROMPT.format(name=name, draft=draft,
-                                     findings=findings,
-                                     max_edits=MAX_PATCH_EDITS),
+        template.format(name=name, draft=draft,
+                        findings=findings, max_edits=MAX_PATCH_EDITS),
         work_dir / name.replace(".md", ""), "patch", MODEL, timeout,
         f"О4: {label}-{name.replace('.md', '')}-patch")
     manifest.append(f"- {name}: patch-сессия exit={code}")
@@ -631,8 +680,13 @@ def patch_revision(artifact: Path, findings: str, work_dir: Path,
          "--draft", str(backup), "--patches", str(patches_path),
          "--out", str(final_path),
          "--report", str(work_dir / name.replace(".md", "") / "revision-report.md")],
-        cwd=REPO_ROOT)
+        cwd=REPO_ROOT, capture_output=True, text=True)
     manifest.append(f"- {name}: apply_revision exit={applier.returncode}")
+    summary = (applier.stdout or "").strip()
+    if summary:
+        # Итог точечных правок в журнал: applied/not_found/fallback/
+        # integrity — честная деградация видна в манифесте прогона.
+        manifest.append(f"- {name}: {summary}")
     if applier.returncode != 0 or not final_path.is_file():
         artifact.write_text(draft, encoding="utf-8")
         manifest.append(f"- {name}: апдейтер упал — финал = черновик")
@@ -899,8 +953,9 @@ def main(argv: list[str]) -> int:
               f"порог годности {MIN_ARTIFACT_CHARS} символов + заголовок")
         print("гейты финала: sources/transferability по всей цепочке; "
               "options/complexity/ranges на options; acceptance/"
-              "actionability/ranges на strategy-product; ranges на comms/"
-              "verification/decisions; decisions на decisions.md")
+              "actionability/ranges на всех артефактах шагов 4–5 "
+              "(strategy-product, strategy-comms, verification-plan, "
+              "decisions); decisions на decisions.md")
         return EXIT_OK
     return run_path(args.task, runs_dir, args.timeout, args.force,
                     args.from_step, args.no_critic)

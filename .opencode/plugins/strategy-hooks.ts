@@ -45,11 +45,22 @@ const SKILLS_INDEX = resolve(REPO_ROOT, "knowledge/index.md");
 // (правки агента затирались restore'ом метки; TASK-hermes-6 п.4).
 const RUN_LABEL = resolve(REPO_ROOT, "eval/.cost-label");
 
-// Артефакт шага 4 с приёмным чек-листом 6 вопросов (TASK-hermes-14 §3):
-// гейт check_acceptance винтит ТОЛЬКО на нём — comms и verification-plan
-// несут указатели, а не копию чек-листа («один дом факта»), поэтому на
-// них гейт падал бы by design и превратился бы в ложную тревогу.
-const ACCEPTANCE_ARTIFACT = "strategy-product.md";
+// Артефакты этапа 4–5 с приёмным чек-листом и структурными признаками
+// плана (TASK-hermes-14 §3, решение владельца BRIEF п.27): гейты
+// check_acceptance и check_actionability винтят на ВСЕХ артефактах
+// этапа. Дефект области действия (TASK-hermes-20): раньше гейты
+// смотрели только на strategy-product.md — comms / verification-plan /
+// decisions писались без чек-листа и плана, и сдача вскрыла это как
+// блокер. Прежний довод «указатели, не копия» («один дом факта»)
+// опровергнут вердиктом владельца: шаги 4–5 отвечают за «готовность
+// к действию», подробности допустимо давать по ссылке, но секция
+// чек-листа и структурные признаки плана обязаны быть в каждом.
+const STEP45_ARTIFACTS = new Set([
+  "strategy-product.md",
+  "strategy-comms.md",
+  "verification-plan.md",
+  "decisions.md",
+]);
 
 // Прод-прайс step-5-preview, $ за 1M токенов (§1.8 прайс-документа).
 // Формула: input×1.00 + cache.read×0.10 + output×2.70 (в метриках OpenCode
@@ -288,8 +299,9 @@ export const StrategyHooks: Plugin = async () => {
           // TASK-hermes-15 П.4: гейты задачи 14 были «вручную + в навыках» —
           // теперь они проводные. Переносимость — на любой артефакт
           // project/ (калибрована на 15/15, §task-14); приёмный
-          // чек-лист — только на strategy-product.md (единственный дом
-          // чек-листа; на comms/verification гейт падал бы by design).
+          // чек-лист и управляемость — на всех артефактах этапа 4–5
+          // (дефект области действия TASK-hermes-20: было только
+          // strategy-product.md).
           const { code: tcode, out: tout } = runPython("check_transferability.py", [abs]);
           output.output += `\n\n[hook:transferability-guard] check_transferability.py → exit ${tcode}\n${tout.trim()}`;
           note(`transferability-guard: ${abs} → exit ${tcode}`);
@@ -297,17 +309,18 @@ export const StrategyHooks: Plugin = async () => {
           // (BRIEF п.27). Диапазоны и сложность набора — на любой
           // артефакт project/ (оба зелёные на 12 аналитических
           // артефактах демо+held-out после правок-переносов);
-          // управляемость — вместе с чек-листом, только на
-          // strategy-product.md (на options.md гейт падал бы by
-          // design: шаг 3 останавливается на вариантах — там его
-          // находка это ИЗМЕРЕНИЕ слепой зоны, §30.1).
+          // управляемость — вместе с чек-листом, на артефактах этапа
+          // 4–5 (на options.md гейт падал бы by design: шаг 3
+          // останавливается на вариантах — там его находка это
+          // ИЗМЕРЕНИЕ слепой зоны, §30.1).
           const { code: rcode, out: rout } = runPython("check_ranges.py", [abs]);
           output.output += `\n\n[hook:ranges-guard] check_ranges.py → exit ${rcode}\n${rout.trim()}`;
           note(`ranges-guard: ${abs} → exit ${rcode}`);
           const { code: xcode, out: xout } = runPython("check_complexity.py", [abs]);
           output.output += `\n\n[hook:complexity-guard] check_complexity.py → exit ${xcode}\n${xout.trim()}`;
           note(`complexity-guard: ${abs} → exit ${xcode}`);
-          if (abs.endsWith(`/${ACCEPTANCE_ARTIFACT}`)) {
+          const base = abs.split("/").pop() ?? "";
+          if (STEP45_ARTIFACTS.has(base)) {
             const { code: acode, out: aout } = runPython("check_acceptance.py", [abs]);
             output.output += `\n\n[hook:acceptance-guard] check_acceptance.py → exit ${acode}\n${aout.trim()}`;
             note(`acceptance-guard: ${abs} → exit ${acode}`);

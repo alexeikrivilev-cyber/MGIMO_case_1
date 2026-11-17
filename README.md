@@ -29,14 +29,19 @@
 ```bash
 python3 -m venv .venv && . .venv/bin/activate    # изолированное окружение (один раз)
 python3 -m pip install -r requirements.txt        # единственная зависимость — pytest
-python3 -m pytest tests/ -q                                   # 464 теста
+python3 -m pytest tests/ -q                                   # 480 тестов
 python3 scripts/check_state.py                                # STATE.md цел
 python3 scripts/check_sources.py project/brief.md project/research.md \
   project/options.md project/strategy-product.md \
   project/strategy-comms.md project/verification-plan.md \
   project/decisions.md                                        # каждый факт несёт основание
 python3 scripts/check_evidence_links.py --task all            # число → содержание evidence
-python3 scripts/check_acceptance.py project/strategy-product.md   # 6 вопросов владельца
+python3 scripts/check_acceptance.py project/strategy-product.md \
+  project/strategy-comms.md project/verification-plan.md \
+  project/decisions.md     # приёмный чек-лист 6 вопросов — на каждом артефакте этапа 4–5
+python3 scripts/check_actionability.py project/strategy-product.md \
+  project/strategy-comms.md project/verification-plan.md \
+  project/decisions.md     # структурные признаки плана (P0–P2, контрольные группы, KPI, остановка)
 python3 scripts/cost_report.py                                # сводка расходов
 ```
 
@@ -73,10 +78,14 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 из `knowledge/index.md` по шагу; после каждой записи `project/*.md`
 хук `.opencode/plugins/strategy-hooks.ts` прогоняет гейты
 (`check_sources`, `check_transferability`, `check_ranges`,
-`check_complexity`, для `strategy-product.md` ещё `check_acceptance` и
-`check_actionability`); на каждом сообщении ассистанта хук дописывает
-строку учёта в прод-таблицу `COST.md`; состояние шага живёт в
-`STATE.md` — прерванный прогон продолжается новым чатом
+`check_complexity`; на артефактах этапа 4–5 — `strategy-product.md`,
+`strategy-comms.md`, `verification-plan.md`, `decisions.md` — ещё
+`check_acceptance` и `check_actionability`: область действия исправлена
+в TASK-hermes-20, прежде гейты смотрели только на strategy-product.md,
+и остальные артефакты этапа дошли до сдачи без плана); на каждом
+сообщении ассистента хук дописывает строку учёта в прод-таблицу
+`COST.md`; состояние шага живёт в `STATE.md` — прерванный прогон
+продолжается новым чатом
 (`opencode run "Прочитай STATE.md и LOG.md (навык resume) и продолжи"`).
 
 Сколько стоит: одна сессия шага — **$0.3–0.6**, полный путь демо-кейса
@@ -300,7 +309,7 @@ sha256 артефактов) — `eval/runs/t18-case/manifest.md`.
 
 ## 9. Проверки и состав репозитория
 
-- **Тесты**: `python3 -m pytest tests/ -q` — 464 зелёные (в т.ч. тесты
+- **Тесты**: `python3 -m pytest tests/ -q` — 480 зелёных (в т.ч. тесты
   на живом хуке, негативные Controls гейтов, регрессы на
   закоммиченные артефакты).
 - **Секреты**: ключи только через окружение (`.opencode/opencode.json` —

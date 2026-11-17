@@ -654,6 +654,13 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e151c50f1ffewNf7KoRleh7mE0 | TASK-hermes-18 | step-5-preview | 6496 | 29879 | 0 | 25536 | 0 | 0 | $0.09 |
 | 2026-11-17 | ses_e151a592fffeRdOsDT1FAvy1W7 | О4: t18-case-ho-decisions-patch | step-5-preview | 40584 | 22483 | 0 | 888064 | 0 | 0 | $0.19 |
 | 2026-11-17 | ses_e151499b9ffeSFiKNJsIX3QH3k | TASK-hermes-19 | step-5-preview | 21475 | 238 | 0 | 40000 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e15014165ffeN0amCbaqqlijwD | О4: t20-gate-rev-strategy-comms-patch | step-5-preview | 45628 | 30486 | 0 | 866368 | 0 | 0 | $0.21 |
+| 2026-11-17 | ses_e14fe6416ffeVU7COS0xgEMsVf | О4: t20-gate-rev-verification-plan-patch | step-5-preview | 7534 | 15798 | 0 | 23680 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e14fd17abffe9TtvZMBawwJuds | О4: t20-gate-rev-verification-plan-patch | step-5-preview | 46 | 2508 | 0 | 31168 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e14fcd603ffeVGvGj28eo4NuCW | О4: t20-gate-rev-verification-plan-patch | step-5-preview | 8119 | 19194 | 0 | 23680 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e14fb5f1effeI57a8qGFolK0Kx | О4: t20-gate-rev-decisions-patch | step-5-preview | 10282 | 20666 | 0 | 23680 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e14f9e1b4ffe1wpk7fVVISR69w | О4: t20-gate-rev-decisions-patch | step-5-preview | 12443 | 415 | 0 | 23680 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e14f93180ffepn2BXGDQlFRVVh | О4: t20-gate-rev-verification-plan-patch | step-5-preview | 8269 | 4205 | 0 | 23680 | 0 | 0 | $0.02 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

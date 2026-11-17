@@ -62,6 +62,35 @@ ARTIFACT_UNMARKED_TRANSFER = """# Драйверы (фикстура пробы 
 работает тот же механизм.
 """
 
+# Фикстура этапа 4–5, проходящая оба гейта «готовности к действию»:
+# приоритеты P0–P2, контрольная группа, KPI, критерии остановки и
+# приёмный чек-лист с ответами на 6 вопросов (дефект области действия
+# TASK-hermes-20: этот состав теперь обязателен на КАЖДОМ артефакте
+# этапа, не только на strategy-product.md).
+ARTIFACT_STEP45_CLEAN = """# Коммуникационная стратегия (фикстура пробы хука)
+
+## Приоритеты и последовательность
+
+- P0 — согласование решения с руководством до конца квартала.
+- P1 — пилот коммуникации с контрольной группой (holdout).
+- P2 — масштабирование на всю когорту после замера.
+
+## Приёмный чек-лист (6 вопросов владельца)
+
+1. Что знаем / чего не знаем: знаем структуру оттока по тенур-бакетам
+   на аналоге (ev-002); не знаем событие-триггер на сервисе.
+2. Какие решения: комбинация механизмов «первые девяносто дней» и
+   «риск-таргетинг» на утверждение.
+3. Что проверять первым и почему: первым — доставляемость сообщений,
+   потому что канал может не выдержать адресной нагрузки.
+4. Деньги / команды / сроки: бюджет около нуля (перераспределение),
+   команда коммуникаций, срок — квартал.
+5. Метрики успеха: KPI доставляемости и открываемости не ниже
+   broadcast-уровня.
+6. Когда остановить: критерии остановки — эффект таргетинга ниже
+   порога за цикл; spend возвращается на адресную коммуникацию.
+"""
+
 
 @unittest.skipUnless(NODE, "node не в окружении — хук грузится только через node")
 class HookGateWiringTests(unittest.TestCase):
@@ -114,9 +143,40 @@ class HookGateWiringTests(unittest.TestCase):
     def test_transferability_gate_refuses_unmarked_transfer(self) -> None:
         appended = self._probe(self._fixture("strategy-comms.md", ARTIFACT_UNMARKED_TRANSFER))
         self.assertIn("[hook:transferability-guard] check_transferability.py → exit 2", appended)
-        # Приёмный чек-лист винтит только на strategy-product.md: на
-        # comms он падал бы by design (указатели, не копия).
-        self.assertNotIn("acceptance-guard", appended)
+        # TASK-hermes-20: приёмный чек-лист и управляемость винтят на
+        # ВСЕХ артефактах этапа 4–5 — на comms гейты тоже запускаются
+        # (прежний довод «только strategy-product» опровергнут вердиктом
+        # владельца). Фикстура без чек-листа и плана → отказ обоих.
+        self.assertIn("[hook:acceptance-guard] check_acceptance.py → exit 2", appended)
+        self.assertIn("[hook:actionability-guard] check_actionability.py → exit 2", appended)
+
+    def test_step45_gates_run_on_every_stage_artifact(self) -> None:
+        """Регресс дефекта области действия (TASK-hermes-20): гейты
+        чек-листа и управляемости запускаются на КАЖДОМ артефакте этапа
+        4–5 — сломанный comms / verification / decisions больше не
+        проходят мимо."""
+        for name in ("strategy-comms.md", "verification-plan.md",
+                     "decisions.md"):
+            appended = self._probe(
+                self._fixture(name, ARTIFACT_NO_CHECKLIST))
+            self.assertIn("[hook:acceptance-guard] check_acceptance.py → exit 2",
+                          appended)
+            self.assertIn(
+                "[hook:actionability-guard] check_actionability.py → exit 2",
+                appended)
+
+    def test_step45_clean_fixture_passes_both_gates(self) -> None:
+        """Готовый к действию артефакт этапа проходит оба гейта без
+        ложных тревог — на каждом из четырёх имён этапа."""
+        for name in ("strategy-product.md", "strategy-comms.md",
+                     "verification-plan.md", "decisions.md"):
+            appended = self._probe(self._fixture(name,
+                                                 ARTIFACT_STEP45_CLEAN))
+            self.assertIn("[hook:acceptance-guard] check_acceptance.py → exit 0",
+                          appended)
+            self.assertIn(
+                "[hook:actionability-guard] check_actionability.py → exit 0",
+                appended)
 
     def test_skill_index_gate_refuses_skill_outside_index(self) -> None:
         """Навык вне индекса → хук показывает отказ skill-index (M2/M11)."""

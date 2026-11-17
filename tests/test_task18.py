@@ -70,16 +70,30 @@ class TestGateSets(unittest.TestCase):
         self.assertIn("actionability", names)
         self.assertIn("ranges", names)
 
+    def test_all_step45_artifacts_get_acceptance_and_actionability(self):
+        # Дефект области действия TASK-hermes-20: гейты чек-листа и
+        # управляемости винтили только на strategy-product.md — comms /
+        # verification / decisions дошли до сдачи без плана. Фикс: весь
+        # этап 4–5 под обоими гейтами.
+        for name in RFC.STEP45_ARTIFACTS:
+            names = self.gate_names(name)
+            self.assertIn("acceptance", names, name)
+            self.assertIn("actionability", names, name)
+
     def test_comms_and_verification_get_ranges_only(self):
+        # Прежний состав (ranges без acceptance/actionability) — это и
+        # есть дефект области действия; регресс фиксирует новый состав.
         for name in ("strategy-comms.md", "verification-plan.md"):
             names = self.gate_names(name)
             self.assertIn("ranges", names)
-            self.assertNotIn("acceptance", names)
+            self.assertIn("acceptance", names)
 
     def test_decisions_gets_registry_gate(self):
         names = self.gate_names("decisions.md")
         self.assertIn("decisions", names)
         self.assertIn("ranges", names)
+        self.assertIn("acceptance", names)
+        self.assertIn("actionability", names)
 
     def test_all_chain_artifacts_have_sources(self):
         for name in RFC.CHAIN:
@@ -196,6 +210,117 @@ class TestInlineContract(unittest.TestCase):
         self.assertNotIn("project/options.md", joined)
         self.assertTrue(any("research.md" in h and "этого прогона" in h
                             for h in headers), headers)
+
+
+class TestGateScopeRegression(unittest.TestCase):
+    """Регресс дефекта области действия (TASK-hermes-20): нарочно
+    сломанный артефакт ЛЮБОГО из шагов 4–5 обязан валить гейты —
+    прогон с ним падает. До фикса гейты acceptance/actionability
+    смотрели только на strategy-product.md, и сломанный comms /
+    verification / decisions прошли бы «зелёно»."""
+
+    BROKEN_COMMS = """# Коммуникационная стратегия (фикстура регресса)
+
+## Ключевые сообщения
+
+1. Сообщение без плана: запускаем комбинацию механизмов.
+"""
+
+    BROKEN_DECISIONS_FENCED = """Гейт падал на указатели пунктов навыка.
+
+```markdown
+# Решения (фикстура регресса)
+
+## Реестр решений
+
+| ID | Решение | Владелец | Дата | Метрика | Условие | Статус |
+|---|---|---|---|---|---|---|
+| D1 | Целевая метрика — удержание | РП | 2026-11-17 | holdout | пересмотр | принято |
+```
+"""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.task = RFC.TASKS["demo-retention"]
+
+    def _gates(self, name: str) -> dict[str, int]:
+        path = self.tmp / name
+        codes: dict[str, int] = {}
+        for gate_name, argv in RFC.gates_for_artifact(name, self.tmp,
+                                                      self.task):
+            argv = [a.replace(str(self.tmp), str(self.tmp)) for a in argv]
+            code, _ = RFC.run_gate(argv, self.tmp / "logs", gate_name)
+            codes[gate_name] = code
+        return codes
+
+    def test_broken_comms_fails_acceptance_and_actionability(self):
+        (self.tmp / "strategy-comms.md").write_text(self.BROKEN_COMMS,
+                                                   encoding="utf-8")
+        codes = self._gates("strategy-comms.md")
+        self.assertEqual(codes["acceptance"], 2)
+        self.assertEqual(codes["actionability"], 2)
+
+    def test_fenced_decisions_fails_both_gates(self):
+        # Артефакт внутри код-фенса невидим для гейтов (они исключают
+        # фенсы) — содержание с приёмным чек-листом внутри ограды не
+        # проходит: класс прецедента TASK-hermes-18 (strategy-product).
+        path = self.tmp / "decisions.md"
+        path.write_text(self.BROKEN_DECISIONS_FENCED, encoding="utf-8")
+        codes = self._gates("decisions.md")
+        self.assertEqual(codes["acceptance"], 2)
+        self.assertEqual(codes["actionability"], 2)
+
+    def test_real_step45_artifacts_all_green(self):
+        # Живые артефакты этапа после ревизии TASK-hermes-20: состав
+        # гейтов драйвера на них зелёный (не только на strategy-product).
+        artifacts = (REPO_ROOT / "eval" / "runs" / "t18-case"
+                     / "artifacts")
+        for name in RFC.STEP45_ARTIFACTS:
+            path = artifacts / name
+            self.assertTrue(path.is_file(), name)
+            for gate_name, argv in RFC.gates_for_artifact(name, artifacts,
+                                                          self.task):
+                code, output = RFC.run_gate(argv, self.tmp / "logs",
+                                            f"live-{gate_name}")
+                self.assertEqual(code, 0,
+                                 f"{gate_name}: {output[:500]}")
+
+
+class TestGenerationMandates(unittest.TestCase):
+    """Промпты генерации шагов 4–5 несут мандат приёмного чек-листа и
+    структур плана — иначе следующий прогон воспроизведёт дефект
+    области действия на стороне генерации (TASK-hermes-20)."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.artifacts = self.tmp / "artifacts"
+        self.artifacts.mkdir(parents=True)
+        for name in ("research.md", "options.md", "strategy-product.md",
+                     "verification-plan.md"):
+            (self.artifacts / name).write_text(
+                f"# {name}\n\n" + ("строка основания ev-001\n" * 50),
+                encoding="utf-8")
+        self.task = RFC.TASKS["demo-retention"]
+
+    def test_comms_prompt_mandates_checklist_and_plan(self):
+        prompt = RFC.build_prompt(self.task, self.artifacts,
+                                  "strategy-comms.md")
+        self.assertIn("Приёмный чек-лист (6 вопросов владельца)", prompt)
+        self.assertIn("P0–P2", prompt)
+        self.assertIn("контрольная группа", prompt)
+
+    def test_verification_prompt_mandates_checklist_and_plan(self):
+        prompt = RFC.build_prompt(self.task, self.artifacts,
+                                  "verification-plan.md")
+        self.assertIn("Приёмный чек-лист (6 вопросов владельца)", prompt)
+        self.assertIn("P0–P2", prompt)
+        self.assertIn("критерии остановки", prompt.lower())
+
+    def test_decisions_prompt_mandates_checklist_and_clean_md(self):
+        prompt = RFC.build_prompt(self.task, self.artifacts, "decisions.md")
+        self.assertIn("Приёмный чек-лист (6 вопросов владельца)", prompt)
+        self.assertIn("P0–P2", prompt)
+        self.assertIn("кодовых фенсов", prompt.lower())
 
 
 class TestGatePlumbing(unittest.TestCase):
