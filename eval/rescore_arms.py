@@ -176,6 +176,13 @@ def parse_scores(text: str) -> dict:
     clc-heldout: оценка терялась, хотя критик её вернул). Вариант с
     выделением «| **Итого** |» добавлен по прогону TASK-hermes-12 —
     тот же класс дефекта (см. score_ablation.parse_scores).
+
+    Форматы живого прогона TASK-hermes-18 (копия синхронизирована с
+    score_ablation.parse_scores): «Итого: ≈29/40 (проход 2; проход 1
+    — ≈33/40)» — итог = число после «Итого:»; «Итого: проход 1 —
+    28/40; проход 2 — 20/40» — итог = проход с максимальным номером;
+    значения проходов — в «passes» (разброс > шума судьи — названная
+    нестабильность клетки).
     """
     total = re.search(
         r"Итого\s*:\s*(?:\*\*)?\s*([\d.]+)\s*(?:\*\*)?\s*/\s*40"
@@ -186,12 +193,28 @@ def parse_scores(text: str) -> dict:
     # «| Итого | | | **22/40** |» (дефект парсинга найден на прогоне
     # clc-heldout: оценка терялась, хотя критик её вернул).
     value = total.group(1) or total.group(2) if total else None
+    if value is None:
+        approx = re.search(
+            r"Итого\s*:\s*(?:\*\*)?\s*[≈~]\s*(?:\*\*)?\s*([\d.]+)\s*(?:\*\*)?\s*/\s*40",
+            text)
+        if approx:
+            value = approx.group(1)
+    numbered = re.findall(
+        r"проход\s*(\d+)\s*[—–-]\s*[≈~]?\s*(\d+(?:[.,]\d+)?)\s*/\s*40",
+        text, re.IGNORECASE)
+    passes = [float(p[1].replace(",", ".")) for p in numbered]
+    if value is None and passes:
+        # Числа только в проходах: итог — проход с максимальным номером.
+        value = max(numbered, key=lambda p: int(p[0]))[1]
     findings = re.findall(r"\[(?:важность:\s*)?(критично|важно|незначительно)\]", text)
-    return {
+    result = {
         "total40": float(value) if value else None,
         "findings_total": len(findings),
         "findings_important": sum(1 for f in findings if f in ("критично", "важно")),
     }
+    if passes:
+        result["passes"] = passes
+    return result
 
 
 def run_critic(artifact: str, rubric: str, mode: str, out_dir: Path, tag: str) -> int:

@@ -1,0 +1,30 @@
+== полный путь demo-retention → /home/alex/projects/strategy-agent/eval/runs/t18-case
+[research.md] раунд 1: провал ['sources-research.md'] → ревизия
+[research.md] гейты зелёные (раунд 2)
+[options.md] раунд 1: провал ['sources-options.md'] → ревизия
+[options.md] раунд 2: провал ['options'] → ревизия
+[options.md] раунд 3: провал ['transferability-options.md'] → ревизия
+[options.md] итог гейтов: {'sources-options.md': 0, 'transferability-options.md': 0, 'options': 0, 'complexity': 0, 'ranges': 2}
+RUNNER_EXIT=4
+== полный путь demo-retention → /home/alex/projects/strategy-agent/eval/runs/t18-case
+[options.md] раунд 1: провал ['sources-options.md'] → ревизия
+[options.md] гейты зелёные (раунд 2)
+[strategy-product.md] раунд 1: провал ['transferability-strategy-product.md'] → ревизия
+[strategy-product.md] раунд 2: провал ['transferability-strategy-product.md', 'acceptance', 'actionability'] → ревизия
+[strategy-product.md] гейты зелёные (раунд 3)
+[strategy-comms.md] гейты зелёные (раунд 1)
+[verification-plan.md] гейты зелёные (раунд 1)
+mode=critic artifacts=['/home/alex/projects/strategy-agent/eval/runs/t18-case/artifacts/strategy-product.md', '/home/alex/projects/strategy-agent/eval/runs/t18-case/artifacts/strategy-comms.md', '/home/alex/projects/strategy-agent/eval/runs/t18-case/artifacts/verification-plan.md'] out=/home/alex/projects/strategy-agent/eval/runs/t18-case/critic4 exit=0
+оценки и находки: /home/alex/projects/strategy-agent/eval/runs/t18-case/critic4/critic.out
+applied=7 not_found=1 ambiguous=0 rejected=3 fallback=no integrity=ok size_ratio=1.07
+applied=8 not_found=0 ambiguous=0 rejected=5 fallback=no integrity=ok size_ratio=1.04
+applied=6 not_found=0 ambiguous=0 rejected=3 fallback=no integrity=ok size_ratio=1.02
+[шаг 4 после критика] гейты: {'sources-strategy-product.md': 0, 'transferability-strategy-product.md': 0, 'acceptance': 0, 'actionability': 0, 'ranges': 0, 'sources-strategy-comms.md': 0, 'transferability-strategy-comms.md': 0, 'sources-verification-plan.md': 0, 'transferability-verification-plan.md': 0}
+[decisions.md] раунд 1: провал ['ranges'] → ревизия
+[decisions.md] гейты зелёные (раунд 2)
+mode=critic artifacts=['/home/alex/projects/strategy-agent/eval/runs/t18-case/artifacts/decisions.md'] out=/home/alex/projects/strategy-agent/eval/runs/t18-case/critic5 exit=0
+оценки и находки: /home/alex/projects/strategy-agent/eval/runs/t18-case/critic5/critic.out
+applied=9 not_found=0 ambiguous=0 rejected=0 fallback=no integrity=ok size_ratio=1.13
+[шаг 5 после критика] гейты: {'sources-decisions.md': 0, 'transferability-decisions.md': 0, 'decisions': 0, 'ranges': 0}
+== итог: зелено
+RUNNER_EXIT=0

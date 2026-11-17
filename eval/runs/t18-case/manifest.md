@@ -1,0 +1,70 @@
+# Полный путь под текущим прод-конфигом — demo-retention
+
+- старт: 2026-11-17T16:32:19.588500+00:00
+- конфиг: шаг 3 — база (навык options); шаги 4–5 — критик-детектор + все гейты (§32.0)
+- прод-конфиг и предрегистрация: measurements.md §32
+- модель сессий: stepfun/step-5-preview
+- контракт сессий: входы инлайном, артефакт — ответом в чат; порог годности 2000 символов + заголовок
+- options.md: session1 exit=0, символов в выходе 15508
+- options.md: раунд 1 — провал гейтов: ['sources-options.md'] → ревизия
+- options.md: fix-r1 exit=0
+- options.md: гейты зелёные (раунд 2)
+- strategy-product.md: session1 exit=0, символов в выходе 17894
+- strategy-product.md: раунд 1 — провал гейтов: ['transferability-strategy-product.md'] → ревизия
+- strategy-product.md: fix-r1 exit=0
+- strategy-product.md: раунд 2 — провал гейтов: ['transferability-strategy-product.md', 'acceptance', 'actionability'] → ревизия
+- strategy-product.md: fix-r2 exit=0
+- strategy-product.md: гейты зелёные (раунд 3)
+- strategy-comms.md: session1 exit=0, символов в выходе 12501
+- strategy-comms.md: гейты зелёные (раунд 1)
+- verification-plan.md: session1 exit=0, символов в выходе 16317
+- verification-plan.md: гейты зелёные (раунд 1)
+- критик t18-case-critic4: exit=0
+- strategy-product.md: patch-сессия exit=0
+- strategy-product.md: apply_revision exit=0
+- strategy-comms.md: patch-сессия exit=0
+- strategy-comms.md: apply_revision exit=0
+- verification-plan.md: patch-сессия exit=0
+- verification-plan.md: apply_revision exit=0
+- шаг 4 после критика: гейты {'sources-strategy-product.md': 0, 'transferability-strategy-product.md': 0, 'acceptance': 0, 'actionability': 0, 'ranges': 0, 'sources-strategy-comms.md': 0, 'transferability-strategy-comms.md': 0, 'sources-verification-plan.md': 0, 'transferability-verification-plan.md': 0}
+- decisions.md: session1 exit=0, символов в выходе 20639
+- decisions.md: раунд 1 — провал гейтов: ['ranges'] → ревизия
+- decisions.md: fix-r1 exit=0
+- decisions.md: гейты зелёные (раунд 2)
+- критик t18-case-critic5: exit=0
+- decisions.md: patch-сессия exit=0
+- decisions.md: apply_revision exit=0
+- шаг 5 после критика: гейты {'sources-decisions.md': 0, 'transferability-decisions.md': 0, 'decisions': 0, 'ranges': 0}
+
+## Финальная сводка гейтов
+
+- sources-research.md: exit=0
+- transferability-research.md: exit=0
+- research.md: sha256=4b223a6e037339c4
+- sources-options.md: exit=0
+- transferability-options.md: exit=0
+- options: exit=0
+- complexity: exit=0
+- ranges: exit=0
+- options.md: sha256=7d52b6a8ad5bf383
+- sources-strategy-product.md: exit=0
+- transferability-strategy-product.md: exit=0
+- acceptance: exit=0
+- actionability: exit=0
+- ranges: exit=0
+- strategy-product.md: sha256=83cfecaef5b1f93d
+- sources-strategy-comms.md: exit=0
+- transferability-strategy-comms.md: exit=0
+- ranges: exit=0
+- strategy-comms.md: sha256=01e91a3408636abd
+- sources-verification-plan.md: exit=0
+- transferability-verification-plan.md: exit=0
+- ranges: exit=0
+- verification-plan.md: sha256=aae199a6e5e19293
+- sources-decisions.md: exit=0
+- transferability-decisions.md: exit=0
+- decisions: exit=0
+- ranges: exit=0
+- decisions.md: sha256=f59a53a3259645bc
+
+- ИТОГ: все гейты зелёные

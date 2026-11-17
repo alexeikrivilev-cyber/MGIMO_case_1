@@ -69,6 +69,17 @@ def parse_scores(text: str) -> dict:
     выделением «| **Итого** |» добавлен по прогону TASK-hermes-12
     (research-curation-1-unified): тот же класс дефекта — формат выхода
     оценщика валидируется не регуляркой «на глаз».
+
+    Форматы живого прогона TASK-hermes-18 (оценка цепочки кейса):
+      - «Итого: ≈29/40 (проход 2; проход 1 — ≈33/40)» — число после
+        «Итого:» с ≈; итог = число сразу после «Итого:» (финальный
+        проход по замыслу модели), значения проходов — в «passes»;
+      - «Итого: проход 1 — 28/40 (7.0/10); проход 2 — 20/40» — числа
+        только в проходах; итог = проход с максимальным номером.
+    Разброс проходов > шума судьи (sd 1.41, §26) — нестабильность
+    клетки: отмечается в отчёте, самоотчёт модели о стабильности
+    («расхождение ≤1 по каждому критерию») с разбросом 4–8 баллов
+    противоречит сам себе (названо как находка, не как истина).
     """
     total = re.search(
         r"Итого\s*:\s*(?:\*\*)?\s*([\d.]+)\s*(?:\*\*)?\s*/\s*40"
@@ -76,12 +87,31 @@ def parse_scores(text: str) -> dict:
         text,
     )
     value = total.group(1) or total.group(2) if total else None
+    if value is None:
+        approx = re.search(
+            r"Итого\s*:\s*(?:\*\*)?\s*[≈~]\s*(?:\*\*)?\s*([\d.]+)\s*(?:\*\*)?\s*/\s*40",
+            text)
+        if approx:
+            value = approx.group(1)
+    passes = [float(p[1].replace(",", "."))
+              for p in re.findall(
+                  r"проход\s*(\d+)\s*[—–-]\s*[≈~]?\s*(\d+(?:[.,]\d+)?)\s*/\s*40",
+                  text, re.IGNORECASE)]
+    if value is None and passes:
+        # Числа только в проходах: итог — проход с максимальным номером.
+        numbered = re.findall(
+            r"проход\s*(\d+)\s*[—–-]\s*[≈~]?\s*(\d+(?:[.,]\d+)?)\s*/\s*40",
+            text, re.IGNORECASE)
+        value = max(numbered, key=lambda p: int(p[0]))[1]
     findings = re.findall(r"\[(?:важность:\s*)?(критично|важно|незначительно)\]", text)
-    return {
+    result = {
         "total40": float(value) if value else None,
         "findings_total": len(findings),
         "findings_important": sum(1 for f in findings if f in ("критично", "важно")),
     }
+    if passes:
+        result["passes"] = passes
+    return result
 
 
 # Частичная оценка: критик отказался оценивать критерии, неоценимые из

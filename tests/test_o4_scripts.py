@@ -1108,6 +1108,21 @@ class RescoreArmsTests(unittest.TestCase):
         # Шаблон без числа («Итого: __ /40») не матчится — не выдумываем 0.
         self.assertIsNone(self.module.parse_scores("Итого: __ /40")["total40"])
 
+    def test_parse_scores_approx_and_two_pass_formats(self) -> None:
+        # Живые форматы прогона TASK-hermes-18 (оценка цепочки кейса):
+        # «≈N/40» с двумя проходами в скобках и «проход 1 — N/40;
+        # проход 2 — M/40» без числа после «Итого:».
+        text = ("Итого: ≈29/40 (проход 2; проход 1 — ≈33/40). "
+                "Расхождение между проходами ≤1 — оценка стабильна.")
+        parsed = self.module.parse_scores(text)
+        self.assertEqual(parsed["total40"], 29.0)
+        self.assertEqual(parsed["passes"], [33.0])
+        text2 = ("Итого: проход 1 — 28/40 (7.0/10); проход 2 — 20/40 "
+                 "(5.0/10). Порог нестабильности не пробит.")
+        parsed2 = self.module.parse_scores(text2)
+        self.assertEqual(parsed2["total40"], 20.0)
+        self.assertEqual(parsed2["passes"], [28.0, 20.0])
+
     def test_dry_run_lists_all_plan_runs(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(EVAL_DIR / "rescore_arms.py"), "--dry-run"],

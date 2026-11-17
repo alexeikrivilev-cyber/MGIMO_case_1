@@ -1,0 +1,4 @@
+$ python3 scripts/check_acceptance.py /home/alex/projects/strategy-agent/eval/runs/t18-case/artifacts/strategy-product.md
+exit=0
+
+ok: файлов проверено 1, нарушений нет

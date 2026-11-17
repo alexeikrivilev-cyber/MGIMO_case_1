@@ -248,6 +248,50 @@ class TestRanges(unittest.TestCase):
         self.assertEqual(proc.returncode, 2)
         self.assertIn("$199K–$319K", proc.stderr)
 
+    def test_section_ref_not_matched(self):
+        # Указатель на секции («§3.1–3.6») — не количественный
+        # диапазон: тот же класс ложных срабатываний, что
+        # «руб≈рубли» в check_sources (TASK-14). Дефект найден
+        # baseline-прогоном TASK-18 на project/decisions.md.
+        text = ("возражения дьявола (`phase3-devil.out`, §3.1–3.6) — "
+                "спор разрешает человек\n")
+        proc = run_gate(RANGES, text)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_marker_on_continuation_line_pass(self):
+        # Перенос строки в пункте списка не разрывает основание:
+        # число на строке, маркер — на строке продолжения
+        # (прецедент абзац-проверки check_transferability, TASK-14;
+        # дефект найден baseline-прогоном TASK-18).
+        text = ("- D2: основания — ev-002 и ev-003 (AUC 0.8411, "
+                "прогноз −3.3…−5.3 п.п.\n"
+                "  [прогноз]); структура — strategy-product.md\n")
+        proc = run_gate(RANGES, text)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_ground_not_leaking_between_list_items(self):
+        # Маркер в СЛЕДУЮЩЕМ пункте не-groundит диапазон в
+        # предыдущем: пункт списка — граница логической строки.
+        text = ("- D2: сдвиг оттока −5…−15 п.п.\n"
+                "- D3: другой вопрос [прогноз]\n")
+        proc = run_gate(RANGES, text)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("−5…−15", proc.stderr)
+
+    def test_table_row_is_own_unit(self):
+        # Регрессия TASK-18: склейка «в абзац» собирала строки
+        # таблицы (между ними нет пустых строк) в одну единицу, и
+        # основание соседней строки прикрывало диапазон в этой —
+        # прецедент «4–8 недель» у cl2 (под который гейт написан)
+        # перестал ловиться. Строка таблицы — своя единица.
+        text = ("| Вариант | Экономика | Срок |\n"
+                "|---|---|---|\n"
+                "| А | spend ×0.9 | 4–8 недель |\n"
+                "| Б | рост чека | — [прогноз] |\n")
+        proc = run_gate(RANGES, text)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("4–8", proc.stderr)
+
     def test_usage_errors(self):
         proc = subprocess.run([sys.executable, str(RANGES)],
                               capture_output=True, text=True, timeout=60)

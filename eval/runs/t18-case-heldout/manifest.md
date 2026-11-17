@@ -1,0 +1,21 @@
+# Полный путь под текущим прод-конфигом — heldout-growth-segment
+
+- старт: 2026-11-17T18:02:19.814058+00:00
+- конфиг: шаг 3 — база (навык options); шаги 4–5 — критик-детектор + все гейты (§32.0)
+- прод-конфиг и предрегистрация: measurements.md §32
+- модель сессий: stepfun/step-5-preview
+- контракт сессий: входы инлайном, артефакт — ответом в чат; порог годности 2000 символов + заголовок
+- brief.md перенесён дословно из eval/tasks/heldout-growth-segment/artifacts/brief.md (sha256=1777eeafce2c8513); ЧЕКПОИНТ 1 пройден ранее, источник — оператор, репетиция демо
+- brief.md: check_sources exit=0
+- шаг 1: citations exit=0
+- шаг 1: evidence-links exit=0
+- шаг 1: sources exit=0
+- research.md: session1 exit=0, символов в выходе 21561
+- research.md: раунд 1 — провал гейтов: ['sources-research.md'] → ревизия
+- research.md: fix-r1 exit=0
+- research.md: гейты зелёные (раунд 2)
+- options.md: session1 exit=0, символов в выходе 0
+- options.md: сессия без годного выхода (exit=0)
+- options.md: session2 exit=0, символов в выходе 0
+- options.md: сессия без годного выхода (exit=0)
+- options.md: ПРОВАЛ — две сессии без годного артефакта
