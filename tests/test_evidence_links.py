@@ -11,16 +11,26 @@
 
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 EVAL_DIR = REPO_ROOT / "eval"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 CHECK_LINKS = "check_evidence_links.py"
 RECOMPUTE_TELCO = EVAL_DIR / "recompute_telco_slices.py"
@@ -288,6 +298,25 @@ class CriticStep4Tests(TempDirTestCase):
                           "--draft", str(self.tmp / "nope.md"),
                           "--out", str(self.tmp))
         self.assertEqual(proc.returncode, 2)
+
+    def test_empty_critic_output_exit_4(self) -> None:
+        # Урок TASK-hermes-5: «exit 0 ≠ непустой выход». Критик вернул
+        # пустой stdout при exit=0 → ревизия без мандата НЕ измеряется,
+        # прогон провальный (дефект найден в прогоне t9-step4-demo-run4).
+        out = self.tmp / "run"
+        (out / "critic-draft").mkdir(parents=True)
+        (out / "critic-draft" / "critic.out").write_text("", encoding="utf-8")
+        module = load_module("run_critic_step4_empty_test", EVAL_DIR / "run_critic_step4.py")
+        with mock.patch.object(
+            module.subprocess, "run",
+            return_value=subprocess.CompletedProcess(args=[], returncode=0),
+        ):
+            code = module.main([
+                "--draft", str(REPO_ROOT / "project" / "strategy-product.md"),
+                "--out", str(out),
+                "--tag", "test-empty",
+            ])
+        self.assertEqual(code, 4)
 
 
 if __name__ == "__main__":

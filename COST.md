@@ -235,6 +235,47 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e19336d97ffeSK3Vp7EV5mInFo | О4: ab-runs-t8-step4-revision | step-5-preview | 58030 | 21452 | 0 | 386176 | 0 | 0 | $0.15 |
 | 2026-11-17 | ses_e19318e70ffeEwfX72w9eWDMk2 | О4: t8-step4-score-draft | step-5-preview | 11 | 28437 | 0 | 27904 | 0 | 0 | $0.08 |
 | 2026-11-17 | ses_e192f9e50fferb97AZVWp4OJA2 | О4: t8-step4-score-final | step-5-preview | 28506 | 14404 | 0 | 0 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e19215f16ffe42UKnJ5PWXtsIV | О4: t9-step4-demo-run2-critic-draft | step-5-preview | 11 | 1706 | 0 | 27904 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e19212721ffeB3cLOMolShSFjy | О4: ab-runs-t9-step4-demo-run2-revision | step-5-preview | 34180 | 19881 | 0 | 286080 | 0 | 0 | $0.12 |
+| 2026-11-17 | ses_e191fac48ffewHFvhsTjKuxzYj | О4: t9-step4-demo-run2-score-draft | step-5-preview | 11 | 26776 | 0 | 27904 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e191de6e0ffebdeGKIWr0HbHC6 | О4: t9-step4-demo-run2-score-final | step-5-preview | 29392 | 21798 | 0 | 46464 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e191c5848ffeZGJuy8V0aA2rcS | О4: t9-step4-demo-run3-critic-draft | step-5-preview | 11 | 14850 | 0 | 27904 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e191b6125ffezq5OAhTNwxo0lJ | О4: ab-runs-t9-step4-demo-run3-revision | step-5-preview | 3450 | 21612 | 0 | 117632 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e191a0680ffe9yvMzJxWVJYXkW | О4: t9-step4-demo-run3-score-draft | step-5-preview | 11 | 24251 | 0 | 27904 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e1917efa0ffeqpLJDqf61UiLSY | О4: t9-step4-demo-run3-score-final | step-5-preview | 5441 | 2110 | 0 | 23360 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e1917af14ffe1YcPqfV2fE609T | О4: t9-step4-demo-run4-critic-draft | step-5-preview | 11 | 32000 | 0 | 27904 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e191500deffeo1mfcYE0ytG4fp | О4: ab-runs-t9-step4-demo-run4-revision | step-5-preview | 48 | 17937 | 0 | 26176 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1913bf0affecbmNrpfpIWNWRp | О4: t9-step4-demo-run4-score-draft | step-5-preview | 11 | 22839 | 0 | 27904 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e19121765ffefurySXFTULexhf | О4: t9-step4-demo-run4-score-final | step-5-preview | 4362 | 21799 | 0 | 23552 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e190e11aeffeqb6hMnP2oiS74L | О4: t9-step4-heldout-run1-critic-draft | step-5-preview | 6136 | 16781 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e190ce098ffePMKeG24qzT4BHx | О4: ab-runs-t9-step4-heldout-run1-revisi | step-5-preview | 32453 | 13105 | 0 | 83328 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e190bf9c3ffe8CZu8q5fdnfgwy | О4: t9-step4-heldout-run1-score-draft | step-5-preview | 56 | 22007 | 0 | 29184 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e190a58cdffe0PkAq1bb1VVeXS | О4: t9-step4-heldout-run1-score-final | step-5-preview | 7118 | 16081 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e19094a3fffe1UtxYEmtd6UNDm | О4: t9-step4-heldout-run2-critic-draft | step-5-preview | 56 | 19351 | 0 | 29184 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e1907eb0bffe2UKVUmiwsyUp9t | О4: ab-runs-t9-step4-heldout-run2-revisi | step-5-preview | 16971 | 28972 | 0 | 266880 | 0 | 0 | $0.12 |
+| 2026-11-17 | ses_e1905e1a3ffetjoPb3ogZAmNcd | О4: t9-step4-heldout-run2-score-draft | step-5-preview | 56 | 15809 | 0 | 29184 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e190495f5ffeVzHFt6cUwmqIvX | О4: t9-step4-heldout-run2-score-final | step-5-preview | 7216 | 13490 | 0 | 23296 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e190383c7ffeos03n5TgNnzaif | О4: t9-step4-heldout-run3-critic-draft | step-5-preview | 56 | 17952 | 0 | 29184 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1902430effee0ETK0pozDuvVl | О4: ab-runs-t9-step4-heldout-run3-revisi | step-5-preview | 7425 | 8491 | 0 | 21632 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e1901b5ddffec2QwuyFlDnFPwC | О4: t9-step4-heldout-run3-score-draft | step-5-preview | 56 | 17503 | 0 | 29184 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e19008a71ffe63rLsZ3nc6tt1K | О4: t9-step4-heldout-run3-score-final | step-5-preview | 7104 | 18621 | 0 | 23232 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e18ff39b2ffez2tBBAQjX1hmdl | О4: t9-step4-heldout-run4-critic-draft | step-5-preview | 56 | 19578 | 0 | 29184 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e18fdefcfffeNQEIsTzrbcjWYH | О4: ab-runs-t9-step4-heldout-run4-revisi | step-5-preview | 38682 | 35095 | 0 | 732800 | 0 | 0 | $0.21 |
+| 2026-11-17 | ses_e18fb5324ffewByS8YelzXazC1 | О4: t9-step4-heldout-run4-score-draft | step-5-preview | 56 | 23483 | 0 | 29184 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18f9b81bffebDt4WhOpbMVG5X | О4: t9-step4-heldout-run4-score-final | step-5-preview | 30208 | 22407 | 0 | 640 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e18f6977cffeTA9wYCnDrXApVb | О4: t9-step4-demo-run4b-critic-draft | step-5-preview | 11 | 22496 | 0 | 27904 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e18f50999ffesktXr1YbD5tzoK | О4: ab-runs-t9-step4-demo-run4b-revision | step-5-preview | 23735 | 17092 | 0 | 144192 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e18f3d1ddffeDuORV9no4Ms2Z3 | О4: t9-step4-demo-run4b-score-draft | step-5-preview | 11 | 8482 | 0 | 27904 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e18f306eaffeFVdnZq7TvTtson | О4: t9-step4-demo-run4b-score-final | step-5-preview | 4861 | 10326 | 0 | 23552 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e18f196f4ffeiqwlbMG75LBMEn | О4: t9-gate-strategy-product | step-5-preview | 11 | 16720 | 0 | 27904 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e18f07b37ffeOhPfL89aDovprl | О4: t9-gate-strategy-comms | step-5-preview | 3465 | 16394 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e18ef6533ffeZ46Ov0tC3tVAyu | О4: t9-gate-verification-plan | step-5-preview | 3230 | 22794 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18ede4dbffeeA2UKUOvfjTa9h | О4: t9-gate-strategy-product | step-5-preview | 27449 | 31167 | 0 | 1792 | 0 | 0 | $0.11 |
+| 2026-11-17 | ses_e18ebcd81ffe6p3KIqIugkJDZ6 | О4: t9-gate-strategy-comms | step-5-preview | 4248 | 14156 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e18ead30dffe2ClA6JhsYbEBzX | О4: t9-gate-verification-plan | step-5-preview | 25560 | 14334 | 0 | 1792 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e18dc7dcbffem2QQxr6fPrAEoO | О4: t9-gate-demo-strategy-product | step-5-preview | 11 | 15233 | 0 | 27904 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e18db43feffev2uZjh43RduPyk | О4: t9-gate-demo-strategy-comms | step-5-preview | 9 | 10734 | 0 | 26560 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e18da86cfffeoWhDDVajJ1s93i | О4: t9-gate-demo-verification-plan | step-5-preview | 30 | 12725 | 0 | 26304 | 0 | 0 | $0.04 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

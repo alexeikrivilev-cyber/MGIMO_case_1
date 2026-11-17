@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import math
 import os
 import subprocess
 import sys
@@ -1095,6 +1096,204 @@ class RescoreArmsTests(unittest.TestCase):
         expected = sum(len(items) for items in self.module.PLAN.values())
         self.assertEqual(proc.stdout.count("[dry-run]"), expected)
         self.assertIn("[reused] demo-research-critic", proc.stdout)
+
+
+# --------------------------------------------------------------------------
+# 3) eval/critic_step4_power.py — power-анализ репликации (TASK-hermes-9 §22.1)
+# --------------------------------------------------------------------------
+
+
+class CriticStep4PowerTests(unittest.TestCase):
+    """Мощность one-sample t против шума рубрики: численные свойства + CLI."""
+
+    def setUp(self) -> None:
+        self.module = load_module("critic_step4_power_under_test", EVAL_DIR / "critic_step4_power.py")
+
+    def test_power_matches_reference_values(self) -> None:
+        # Эталоны R power.t.test(type="one.sample", sig.level=0.05):
+        # n=20, delta=1, sd=1 → 0.9874; n=10, delta=1, sd=1 → 0.8031.
+        self.assertAlmostEqual(self.module.power_one_sample_t(1.0, 1.0, 20), 0.987, places=2)
+        self.assertAlmostEqual(self.module.power_one_sample_t(1.0, 1.0, 10), 0.803, places=2)
+
+    def test_power_monotonic_in_k_and_delta(self) -> None:
+        sigma = 2.616 * math.sqrt(2)
+        powers_k = [self.module.power_one_sample_t(8.0, sigma, k) for k in (3, 4, 5, 6, 8)]
+        self.assertEqual(powers_k, sorted(powers_k))
+        powers_d = [self.module.power_one_sample_t(d, sigma, 4) for d in (3.0, 4.3, 6.15, 8.0)]
+        self.assertEqual(powers_d, sorted(powers_d))
+
+    def test_power_bounded(self) -> None:
+        sigma = 2.616 * math.sqrt(2)
+        for k in (2, 3, 4, 5):
+            for d in (0.0, 1.0, 20.0):
+                p = self.module.power_one_sample_t(d, sigma, k)
+                self.assertGreaterEqual(p, 0.0)
+                self.assertLessEqual(p, 1.0)
+
+    def test_required_k_for_headline_delta_is_4(self) -> None:
+        # Предрегистрация §22.1: σ=2.616 (два наблюдения §21.3) → k=4 для δ=8.
+        sigma_delta = self.module.sample_sd([20.0, 23.7]) * math.sqrt(2)
+        self.assertAlmostEqual(sigma_delta, 3.70, places=1)
+        self.assertEqual(self.module.required_k(8.0, sigma_delta), 4)
+        self.assertEqual(self.module.required_k(6.15, sigma_delta), 6)
+
+    def test_cli_writes_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = run_script(EVAL_DIR / "critic_step4_power.py", "--out", tmp)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            artifact = Path(tmp) / "critic-step4-power.md"
+            self.assertTrue(artifact.is_file())
+            text = artifact.read_text(encoding="utf-8")
+            self.assertIn("k = 4", text)
+            self.assertIn("предрегистрация", text.lower())
+
+    def test_cli_bad_arg_exit_2(self) -> None:
+        proc = run_script(EVAL_DIR / "critic_step4_power.py", "--nope")
+        self.assertEqual(proc.returncode, 2)
+
+
+# --------------------------------------------------------------------------
+# 4) eval/mdd_recompute.py — пересчёт MDD из измеренного шума (§22.2)
+# --------------------------------------------------------------------------
+
+
+class MddRecomputeTests(unittest.TestCase):
+    """Пост-фактум пересчёт MDD: свойства порога и перепроверка выводов."""
+
+    def setUp(self) -> None:
+        self.module = load_module("mdd_recompute_under_test", EVAL_DIR / "mdd_recompute.py")
+
+    def test_mdd_n1_is_z_approximation(self) -> None:
+        sigma = 1.03
+        expected = (self.module.Z_975 + self.module.Z_080) * sigma * math.sqrt(2)
+        self.assertAlmostEqual(self.module.mdd_two_arm(1, sigma), expected, places=6)
+
+    def test_mdd_decreases_with_n_from_3(self) -> None:
+        sigma = 1.03
+        values = [self.module.mdd_two_arm(n, sigma) for n in (3, 4, 6, 8)]
+        self.assertEqual(values, sorted(values, reverse=True))
+
+    def test_verdict_boundaries(self) -> None:
+        self.assertIn("выше", self.module.verdict([5.0], 5.0))
+        self.assertIn("ГРАНИЦЕ", self.module.verdict([4.0], 5.0))
+        self.assertIn("ниже шума", self.module.verdict([2.0], 5.0))
+
+    def test_cli_writes_artifact_and_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = run_script(EVAL_DIR / "mdd_recompute.py", "--out", tmp)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            data = json.loads((Path(tmp) / "mdd-recompute.json").read_text(encoding="utf-8"))
+            self.assertTrue(data["post_hoc"])
+            self.assertEqual(len(data["conclusions"]), 11)
+            md = (Path(tmp) / "mdd-recompute.md").read_text(encoding="utf-8")
+            self.assertIn("ПОСТ-ФАКТУМ", md)
+            # C2 (council-lite +4/+4) при единой рубрике n=1 — ниже пересчитанного порога.
+            c2 = next(c for c in data["conclusions"] if c["id"] == "C2")
+            self.assertLess(c2["deltas"][0], c2["mdd"])
+            self.assertIn("ниже шума", c2["verdict"])
+
+
+# --------------------------------------------------------------------------
+# 5) eval/aggregate_step4.py — агрегация серии репликаций (§22.1)
+# --------------------------------------------------------------------------
+
+
+class AggregateStep4Tests(unittest.TestCase):
+    """Сборка серии прогонов: pooled Δ, one-sample t, вердикт по предрегистрации."""
+
+    def setUp(self) -> None:
+        self.module = load_module("aggregate_step4_under_test", EVAL_DIR / "aggregate_step4.py")
+
+    def test_parse_total_both_formats(self) -> None:
+        self.assertEqual(self.module.parse_total("Итого: 28 / 40"), 28.0)
+        self.assertEqual(self.module.parse_total("| Итого | | | **22/40** |"), 22.0)
+        self.assertIsNone(self.module.parse_total("нет оценки"))
+
+    def test_parse_revision_line(self) -> None:
+        rev = self.module.parse_revision("applied=14 not_found=1 ambiguous=0 rejected=0 fallback=no integrity=ok size_ratio=1.12")
+        self.assertEqual(rev["applied"], 14)
+        self.assertEqual(rev["integrity"], "ok")
+        self.assertAlmostEqual(rev["size_ratio"], 1.12)
+
+    def test_one_sample_t_reference(self) -> None:
+        # xs = [8, 6, 4, 2] → mean 5, sd 2.582, t = 5/(2.582/2) = 3.873, df 3.
+        stats = self.module.one_sample_t([8.0, 6.0, 4.0, 2.0])
+        self.assertAlmostEqual(stats["mean"], 5.0)
+        self.assertAlmostEqual(stats["t"], 3.873, places=2)
+        self.assertEqual(stats["df"], 3)
+        self.assertLess(stats["p"], 0.05)
+
+    def test_collect_and_aggregate_synthetic_series(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            drafts = [20.0, 22.0]
+            finals = [28.0, 26.0]
+            for i, (d, f) in enumerate(zip(drafts, finals), start=1):
+                run = root / f"run{i}"
+                (run / "score-draft").mkdir(parents=True)
+                (run / "score-final").mkdir(parents=True)
+                (run / "score-draft" / "critic.out").write_text(f"Итого: {d} / 40\n", encoding="utf-8")
+                (run / "score-final" / "critic.out").write_text(
+                    f"Итого: {f} / 40\n[важно] находка\n[незначительно] ещё\n", encoding="utf-8"
+                )
+                (run / "revision-report.md").write_text(
+                    "applied=10 not_found=0 ambiguous=0 rejected=0 fallback=no integrity=ok size_ratio=1.05\n",
+                    encoding="utf-8",
+                )
+            out = root / "summary.md"
+            proc = run_script(
+                EVAL_DIR / "aggregate_step4.py", "--task", "synthetic",
+                "--runs", str(root / "run1"), str(root / "run2"), "--out", str(out),
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            data = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+            self.assertEqual(data["k"], 2)
+            self.assertAlmostEqual(data["pooled_delta"], 6.0)  # (27−21)
+            self.assertEqual(data["per_run_delta"], [8.0, 4.0])
+            self.assertIn("SUGGESTIVE", data["verdict"])  # MDD(k=2)=42.7 → полоса
+
+    def test_missing_run_dir_exit_3(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = run_script(
+                EVAL_DIR / "aggregate_step4.py", "--task", "x",
+                "--runs", str(Path(tmp) / "nope"),
+            )
+            self.assertEqual(proc.returncode, 3)
+
+
+# --------------------------------------------------------------------------
+# 6) eval/revision_threshold.py — порог правок (§22.3-Б)
+# --------------------------------------------------------------------------
+
+
+class RevisionThresholdTests(unittest.TestCase):
+    """Гипотеза «сколько правок достаточно»: кореляция и групповые проверки."""
+
+    def setUp(self) -> None:
+        self.module = load_module("revision_threshold_under_test", EVAL_DIR / "revision_threshold.py")
+
+    def test_pearson_reference(self) -> None:
+        # Идеальная линейная связь → 1.0; независимая → около 0.
+        self.assertAlmostEqual(self.module.pearson([1, 2, 3], [2, 4, 6]), 1.0, places=9)
+        self.assertAlmostEqual(self.module.pearson([1, 2, 3], [3, 1, 2]), -0.5, places=9)
+
+    def test_events_verified_against_artifacts(self) -> None:
+        # applied-счётчики сверены с revision-report.md реальных прогонов.
+        by_run = {e[0]: e[1] for e in self.module.EVENTS}
+        self.assertEqual(by_run["cl2-demo"], 12)
+        self.assertEqual(by_run["cl2-heldout"], 14)
+        self.assertEqual(by_run["clc-demo"], 13)
+        self.assertEqual(by_run["clc-heldout"], 8)
+        self.assertEqual(by_run["t8-step4"], 14)
+        self.assertEqual(len(self.module.EVENTS), 12)
+
+    def test_cli_writes_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = run_script(EVAL_DIR / "revision_threshold.py", "--out", tmp)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            data = json.loads((Path(tmp) / "revision-threshold.json").read_text(encoding="utf-8"))
+            self.assertEqual(data["verdict"], "НЕ ПОДТВЕРЖДЕНО")
+            self.assertLess(abs(data["pearson_r"]), 0.5)
 
 
 if __name__ == "__main__":

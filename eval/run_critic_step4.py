@@ -83,6 +83,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--draft", default=str(DEFAULT_DRAFT))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     parser.add_argument("--timeout", type=int, default=900)
+    parser.add_argument(
+        "--tag",
+        default="t8-step4",
+        help="метка прогона для атрибуции $ в COST.md (default: t8-step4)",
+    )
     return parser.parse_args(argv)
 
 
@@ -108,7 +113,7 @@ def main(argv: list[str]) -> int:
             "--rubric", RUBRIC,
             "--mode", "critic",
             "--out", str(critic_dir),
-            "--tag", "t8-step4-critic-draft",
+            "--tag", f"{args.tag}-critic-draft",
             "--timeout", str(args.timeout),
         ],
         cwd=REPO_ROOT,
@@ -117,10 +122,20 @@ def main(argv: list[str]) -> int:
         print(f"критик на черновике упал exit={code}", file=sys.stderr)
         return EXIT_RUN_FAILED
     findings = (critic_dir / "critic.out").read_text(encoding="utf-8", errors="replace")
+    if not findings.strip():
+        # Дефект класса «exit 0 ≠ непустой выход» (урок TASK-hermes-5):
+        # ревизия без находок — ДРУГАЯ рука (self-ревизия), молча пускать
+        # её в серию нельзя — прогон считается провальным.
+        print(
+            "критик на черновике вернул пустой выход при exit=0 — "
+            "прогон провален (ревизия без мандата не измеряется)",
+            file=sys.stderr,
+        )
+        return EXIT_RUN_FAILED
     (out_dir / "findings.md").write_text(findings, encoding="utf-8")
 
     # 2) Точечная ревизия по находкам (свежая сессия, только JSON правок).
-    run_label.set_run_label("О4: t8-step4-revision")
+    run_label.set_run_label(f"О4: {args.tag}-revision")
     try:
         code, reply = run_session(
             STEP4_REVISION_PROMPT.format(draft=draft, findings=findings),
@@ -173,13 +188,24 @@ def main(argv: list[str]) -> int:
                 "--rubric", RUBRIC,
                 "--mode", "critic",
                 "--out", str(out_dir / f"score-{name}"),
-                "--tag", f"t8-step4-score-{name}",
+                "--tag", f"{args.tag}-score-{name}",
                 "--timeout", str(args.timeout),
             ],
             cwd=REPO_ROOT,
         ).returncode
         if code != 0:
             print(f"замер {name} упал exit={code}", file=sys.stderr)
+            return EXIT_RUN_FAILED
+        score_text = (out_dir / f"score-{name}" / "critic.out").read_text(
+            encoding="utf-8", errors="replace"
+        )
+        if "Итого" not in score_text:
+            # Тот же класс: exit 0 с пустым/неразборчивым выходом — метрики
+            # не существует, прогон считается провальным (урок TASK-hermes-5).
+            print(
+                f"замер {name}: выход без «Итого» (пустой?) — прогон провален",
+                file=sys.stderr,
+            )
             return EXIT_RUN_FAILED
 
     print(f"готово: {out_dir} (critic-draft, revision, final, score-draft, score-final)")
