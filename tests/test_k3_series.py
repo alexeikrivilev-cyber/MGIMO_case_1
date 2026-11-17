@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import json
 import importlib.util
 import subprocess
 import sys
@@ -136,6 +137,55 @@ class ScoringCoverageTests(unittest.TestCase):
             self.assertEqual(len(l2), 3 * 2)
             names = {c[0] for c in calls}
             self.assertIn("final-2.md", names)  # третья цепочка обязательно
+
+
+class IdempotencyAndGuardsTests(unittest.TestCase):
+    """Идемпотентность драйвера и guard sha в сшивании добора."""
+
+    def _make_series(self, tmp: str) -> Path:
+        base = Path(tmp) / "demo-retention"
+        (base / "L2").mkdir(parents=True)
+        (base / "L3").mkdir(parents=True)
+        for name in ("final.md", "final-1.md", "final-2.md"):
+            (base / "L2" / name).write_text("x", encoding="utf-8")
+            (base / "L3" / name).write_text("y", encoding="utf-8")
+        return base
+
+    def test_existing_critic_out_is_not_rescored(self):
+        # Защита от двойной оплаты: готовый непустой critic.out переиспользуется.
+        with tempfile.TemporaryDirectory() as tmp:
+            base = self._make_series(tmp)
+            for rubric in ("unified", "typical"):
+                pre = Path(tmp) / "scores" / "demo" / f"L2-0-{rubric}"
+                pre.mkdir(parents=True)
+                (pre / "critic.out").write_text("...\nИтого: 41/40\n", encoding="utf-8")
+            seen: list[str] = []
+
+            def spy(artifact, rubric, out_dir, tag):
+                seen.append(Path(out_dir).name)
+                return {"total40": 0.0}
+
+            with mock.patch.object(k3, "run_critic", spy):
+                k3.main(["--task", "demo", "--runs-dir", tmp])
+            self.assertEqual([d for d in seen if d.startswith("L2-0-")], [])
+            self.assertEqual(len(seen), 16)  # 18 прогонов − 2 уже сделанных
+
+    def test_merge_rejects_mismatched_prompt_sha(self):
+        # Добор «не той рукой» — не добор: sha промпта обязан совпадать.
+        merge = load_module("merge_l3_retry", REPO_ROOT / "eval" / "merge_l3_retry.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            series, retry = Path(tmp) / "L3", Path(tmp) / "retry" / "L3"
+            series.mkdir(parents=True)
+            retry.mkdir(parents=True)
+            (series / "meta.json").write_text(
+                json.dumps({"prompt_sha256_16": "aaa", "sessions": []}), encoding="utf-8"
+            )
+            (retry / "meta.json").write_text(
+                json.dumps({"prompt_sha256_16": "bbb", "sessions": []}), encoding="utf-8"
+            )
+            rc = merge.main(["--series", str(series), "--retry", str(retry)])
+            self.assertEqual(rc, merge.EXIT_USAGE)
+            self.assertFalse((series / "final-1.md").exists())
 
 
 class CliTests(unittest.TestCase):
