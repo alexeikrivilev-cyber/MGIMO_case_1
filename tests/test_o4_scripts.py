@@ -1068,28 +1068,112 @@ class DabstepRunRowTests(unittest.TestCase):
 
 class RescoreArmsTests(unittest.TestCase):
     """Контракт eval/rescore_arms.py (TASK-hermes-7 §1): план реcкоринга
-    должен ссылаться только на существующие файлы, иначе замер молча
-    теряет строку."""
+    должен ссылаться только на файлы, зафиксированные замером, иначе
+    замер молча теряет строку.
+
+    TASK-hermes-21: лабораторные прогоны (`eval/runs/**`) вне git
+    (README §9) — в свежем клоне их нет на диске, и проверка «путь
+    плана существует на диске» падала бы у организатора. Инвариант
+    сохранён в применимой к клону форме: каждый путь плана либо
+    резолвится на диске (рубрики, артефакты `project/` и held-out —
+    они в git), либо зафиксирован в ЗАПИСАННОМ замере
+    `eval/runs/t7-rescore/summary.json` (курируемое доказательство)
+    с тем же тегом. Опечатка или правка плана → строка перестаёт
+    резолвиться (путь не на диске и не в замере).
+    """
+
+    SUMMARY = REPO_ROOT / "eval" / "runs" / "t7-rescore" / "summary.json"
 
     def setUp(self) -> None:
         self.module = load_module("rescore_arms_under_test", EVAL_DIR / "rescore_arms.py")
+        self.assertTrue(self.SUMMARY.is_file(), "запись замера t7-rescore/summary.json не в git")
+
+    def recorded_runs(self) -> list[dict]:
+        return json.loads(self.SUMMARY.read_text(encoding="utf-8"))["runs"]
+
+    @staticmethod
+    def normalize(path: str) -> str:
+        """Путь → вид относительно корня репозитория (от CWD не зависит)."""
+        try:
+            return str((REPO_ROOT / path).resolve().relative_to(REPO_ROOT.resolve()))
+        except ValueError:
+            return str(Path(path))
 
     def test_plan_paths_exist(self) -> None:
+        recorded = {
+            self.normalize(src)
+            for run in self.recorded_runs()
+            for key in ("artifact",)
+            for src in ([run[key]] if run.get(key) else [])
+        } | {
+            self.normalize(run[field]["source"])
+            for run in self.recorded_runs()
+            for field in ("unified", "typical")
+            if run.get(field) and run[field].get("source")
+        }
         for bucket, items in self.module.PLAN.items():
             for item in items:
-                for key in ("artifact", "rubric"):
-                    path = REPO_ROOT / item[key]
-                    self.assertTrue(path.is_file(), f"{bucket}/{item['name']}: нет {key} {path}")
-                if item.get("unified"):
+                for key in ("artifact", "rubric", "unified"):
+                    path = item.get(key)
+                    if not path:
+                        continue
+                    on_disk = (REPO_ROOT / path).is_file()
                     self.assertTrue(
-                        (REPO_ROOT / item["unified"]).is_file(),
-                        f"{bucket}/{item['name']}: нет единорубрикового замера {item['unified']}",
+                        on_disk or path in recorded or self.normalize(path) in recorded,
+                        f"{bucket}/{item['name']}: {key} {path} не резолвится "
+                        f"(ни на диске, ни в записанном замере)",
                     )
 
     def test_references_exist(self) -> None:
+        recorded = {
+            self.normalize(run[field]["source"])
+            for run in self.recorded_runs()
+            for field in ("unified", "typical")
+            if run.get(field) and run[field].get("source")
+        }
+        by_name = {run["name"]: run for run in self.recorded_runs()}
         for ref in self.module.REFERENCES:
+            run = by_name.get(ref["name"])
+            assert run is not None, f"{ref['name']}: нет строки в записанном замере"
+            self.assertEqual(run.get("reused_from"), ref["note"],
+                             f"{ref['name']}: provenance reused_from разошлась с планом")
             for key in ("unified", "typical"):
-                self.assertTrue((REPO_ROOT / ref[key]).is_file(), f"{ref['name']}: нет {key}")
+                self.assertEqual(
+                    self.normalize(run[key]["source"]), self.normalize(ref[key]),
+                    f"{ref['name']}: {key} в замере {run[key]['source']}, в плане {ref[key]}")
+                self.assertTrue(
+                    (REPO_ROOT / ref[key]).is_file() or self.normalize(ref[key]) in recorded,
+                    f"{ref['name']}: {key} {ref[key]} не резолвится "
+                    f"(ни на диске, ни в записанном замере)")
+
+    def test_plan_matches_recorded_measurement(self) -> None:
+        """План и записанный замер не разошлись: тег → те же пути.
+
+        Обратное направление инварианта: строка замера, которой нет в
+        плане (или с другим путём), означает, что читатель не сможет
+        атрибутировать строку — тот же класс «строка молча потеряна».
+        """
+        plan_by_tag = {
+            f"t7-{bucket}-{item['name']}": item
+            for bucket, items in self.module.PLAN.items()
+            for item in items
+        }
+        seen = set()
+        for run in self.recorded_runs():
+            tag = run.get("tag")
+            if tag is None:  # строки сравнения REFERENCES проверяет test_references_exist
+                continue
+            item = plan_by_tag.get(tag)
+            assert item is not None, f"замер {tag} не резолвится в плане"
+            seen.add(tag)
+            self.assertEqual(run["artifact"], item["artifact"],
+                             f"{tag}: артефакт в замере и плане разошлись")
+            if item.get("unified"):
+                self.assertEqual(self.normalize(run["unified"]["source"]),
+                                 self.normalize(item["unified"]),
+                                 f"{tag}: единорубриковый замер разошёлся с планом")
+        self.assertEqual(seen, set(plan_by_tag),
+                         "в плане есть строки без записи в замере")
 
     def test_parse_scores_contract(self) -> None:
         text = "| 1. Набор вариантов | 5/5 | 4/5 | 8/10 |\nИтого: 36 /40\n[важность: важно] x\n[незначительно] y"

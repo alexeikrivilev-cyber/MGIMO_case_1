@@ -24,7 +24,10 @@
 пар: «форки» (эквивалентный вход) и «против чата».
 
 Контракт CLI:
-    python3 eval/judge_agreement.py [--out DIR]
+    python3 eval/judge_agreement.py [--out DIR] [--runs-root DIR]
+
+`--runs-root` — корень прогонов (по умолчанию `eval/runs/`): тесты
+подменяют его на фикстуры `tests/fixtures/eval-runs/` (TASK-hermes-21).
 
 Коды возврата: 0 — расчёт завершён; 2 — нет данных.
 """
@@ -40,6 +43,11 @@ from collections.abc import Mapping
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+# Корень прогонов: по умолчанию — лаборатория репозитория. Тесты
+# (TASK-hermes-21) подменяют на закоммиченные фикстуры
+# `tests/fixtures/eval-runs/`: сырьё прогонов вне git, а драйвер и его
+# контракт должны оставаться проверяемыми в свежем клоне.
+RUNS_ROOT = REPO_ROOT / "eval" / "runs"
 
 EXIT_OK = 0
 EXIT_USAGE = 2
@@ -94,7 +102,7 @@ C2_BLINDPAIR_DIRS = {
 
 def c1_t12_scores() -> dict[str, float]:
     """Оценки критика #1 серии t12 под единой рубрикой (options)."""
-    path = REPO_ROOT / "eval" / "runs" / "t12-skills" / "scores" / "summary.json"
+    path = RUNS_ROOT / "t12-skills" / "scores" / "summary.json"
     records = json.loads(path.read_text(encoding="utf-8"))["records"]
     out: dict[str, float] = {}
     for r in records:
@@ -116,7 +124,7 @@ def c2_t13_scores() -> dict[str, float | None]:
     for cell_id, rel, rubric in sc.SAMPLE:
         if rubric != "unified" or not rel.startswith("options/"):
             continue
-        critic_out = REPO_ROOT / "eval" / "runs" / "t13-twocritic" / cell_id / "critic.out"
+        critic_out = RUNS_ROOT / "t13-twocritic" / cell_id / "critic.out"
         if not critic_out.is_file():
             continue
         res = sc.assess_critic_out(critic_out.read_text(encoding="utf-8", errors="replace"))
@@ -140,7 +148,7 @@ def c2_blindpair_scores() -> tuple[dict[str, float | None], list[str]]:
     class_shifts: list[str] = []
     t13 = c2_t13_scores()
     for arm, dirname in C2_BLINDPAIR_DIRS.items():
-        critic_out = REPO_ROOT / "eval" / "runs" / "t15-blindpairs-c2" / dirname / "critic.out"
+        critic_out = RUNS_ROOT / "t15-blindpairs-c2" / dirname / "critic.out"
         if not critic_out.is_file():
             continue
         res = sc.assess_critic_out(critic_out.read_text(encoding="utf-8", errors="replace"))
@@ -163,12 +171,16 @@ def implied_winner(sa: float | None, sb: float | None) -> str | None:
 
 
 def main(argv: list[str]) -> int:
+    global RUNS_ROOT
     parser = argparse.ArgumentParser(
         prog="judge_agreement.py",
         description="Согласие критиков с человеком-судьёй по слепым парам (г2, §26/§29).",
     )
     parser.add_argument("--out", default=str(REPO_ROOT / "eval" / "runs" / "t15-judge-agreement"))
+    parser.add_argument("--runs-root", default=str(RUNS_ROOT),
+                        help="корень прогонов (по умолчанию eval/runs/; тесты — фикстуры)")
     args = parser.parse_args(argv)
+    RUNS_ROOT = Path(args.runs_root)
 
     c1 = c1_t12_scores()
     c2 = c2_t13_scores()

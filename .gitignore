@@ -105,6 +105,7 @@ eval/runs/t20-gate-revision/*
 **/*.end
 **/*.jsonl
 # кроме закоммиченных фикстур/доказательств:
+!tests/fixtures/**/*.out
 !eval/runs/t16-addendum/**/*.out
 !eval/runs/t16-addendum/**/*.err
 !eval/fault-injection/*
@@ -112,14 +113,31 @@ eval/runs/t20-gate-revision/*
 !eval/runs/t18-case/critic5/critic.out
 
 # --- сырьё задач и бенчмарков перекачиваемо (URL — в скриптах) ---
-eval/tasks/*/artifacts/materials/
+# Исключение — анализируемый CSV held-out (ev-001…ev-007 считаются из
+# него; скрипт-арбитр eval/recompute_heldout_slices.py и его тест
+# читают именно его). Политика О3: «анализируемые CSV — идут» (как
+# telco-CSV демо в project/materials/).
+eval/tasks/*/artifacts/materials/*
+!eval/tasks/heldout-growth-segment/artifacts/materials/bank-additional/
+!eval/tasks/heldout-growth-segment/artifacts/materials/bank-additional/bank-additional-full.csv
+eval/tasks/heldout-growth-segment/artifacts/materials/bank-additional/*
+!eval/tasks/heldout-growth-segment/artifacts/materials/bank-additional/bank-additional-full.csv
 eval/benchmarks/dabstep/data/
 
 # --- резервные копии артефактов до ревизии ---
 **/*.critic-backup
 
 # --- сырые выводы советов (council) внутри демо-проекта ---
+# Исключение — выходы Phase 2 пяти ролей единственного прогона
+# Консилиума: это доказательство квот протокола (R1–R3), которое
+# проверяет scripts/council_quota.py (тест test_real_council_run_passes);
+# агрегированные фазы и синтез уже курированы в git.
 project/council/run-*/*.out
+!project/council/run-2026-11-16-01/phase2-product.out
+!project/council/run-2026-11-16-01/phase2-comms.out
+!project/council/run-2026-11-16-01/phase2-data.out
+!project/council/run-2026-11-16-01/phase2-devil.out
+!project/council/run-2026-11-16-01/phase2-user.out
 project/council/run-*/*.err
 project/council/run-*/*.start
 project/council/run-*/*.end

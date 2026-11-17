@@ -18,9 +18,138 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# TASK-hermes-21: сырьё прогонов (eval/runs/**) вне git. Драйверы
+# читаются на данных, доступных в свежем клоне:
+#   * judge_agreement/second_critic парсят ЗАПИСАННЫЕ оценки — фикстуры
+#     tests/fixtures/eval-runs/ (сверено: выход judge_agreement на
+#     фикстурах == выход на живых прогонах);
+#   * build_blind_pairs и выборка second_critic синтезируются во
+#     временном каталоге (там же, где фикстуры STATE.md в
+#     test_scripts.py) — проверяется контракт и слепление, не архив;
+#   * курируемый артефакт замера (eval/runs/t13-blindpairs/pairs.md)
+#     проверяется на закоммиченном файле.
+FIXTURE_RUNS = REPO_ROOT / "tests" / "fixtures" / "eval-runs"
+
+# Артефакты рук для сборщика слепых пар: подписи рук в преамбуле есть
+# (слепление снимает именно их), варианты — нейтральный текст.
+BLINDPAIR_ARMS: dict[str, tuple[str, str]] = {
+    "eval/runs/b11-plainchat/final.md": (
+        "plain-chat", "один диалог на дословный запрос РП (дизайн B11)"),
+    "eval/runs/ab-options-demo-retention/skill/final.md": (
+        "skill", "шаг 3, навык options (прогон ab-options)"),
+    "eval/runs/ab-options-demo-retention/council-lite/final.md": (
+        "council-lite", "совет 3 роли + синтез (протокол council-design §4)"),
+    "eval/runs/cl2-demo/critic-loop2/final.md": (
+        "critic-loop2", "навык + критик + точечная ревизия (прогон cl2-demo)"),
+    "eval/runs/t12-skills/options/curation/final.md": (
+        "curation#0", "курация (навык options), цепочка 0 серии t12-skills"),
+    "eval/runs/t12-skills/options/curation/final-1.md": (
+        "curation#1", "курация, цепочка 1 серии t12-skills"),
+    "eval/runs/t12-skills/options/curation/final-2.md": (
+        "curation#2", "курация, цепочка 2 серии t12-skills"),
+    "eval/runs/t12-skills/options/lean/final.md": (
+        "lean#0", "lean, цепочка 0 серии t12-skills"),
+    "eval/runs/t12-skills/options/lean/final-1.md": (
+        "lean#1", "lean, цепочка 1 серии t12-skills"),
+    "eval/runs/t12-skills/options/lean/final-2.md": (
+        "lean#2", "lean, цепочка 2 серии t12-skills"),
+    "eval/runs/t12-skills/options/hybrid/final.md": (
+        "hybrid#0", "гибрид, цепочка 0 серии t12-skills"),
+}
+
+ARM_CARD = """# options.md — шаг 3 (фикстура TASK-hermes-21)
+
+Преамбула руки {arm}: {preamble}
+
+## 1. Вариант 1 — «Первые 90 дней»
+
+- **Суть:** довести новичка до первой повторной ценностной точки за 30 дней.
+- **Что требует:** сегментацию 0–3 мес и контент-план из 3–5 сообщений.
+- **Экономика:** бюджет около нуля, broad-рассылки перераспределяются [гипотеза].
+- **Сильнейшее возражение:** метрика замерла на конфликте определений [допущение].
+
+## 2. Вариант 2 — «Риск-таргетинг»
+
+- **Суть:** скоринг сегмента риска и точечная коммуникация вместо массовой.
+- **Что требует:** выгрузку признаков и порог скоринга.
+- **Экономика:** тот же бюджет, выше плотность сигнала [гипотеза].
+- **Сильнейшее возражение:** без данных сервиса скоринг слепой [допущение].
+
+## Оставить как есть
+
+Цена бездействия: когорта 0–3 мес несёт 31.94% оттока (ev-002).
+"""
+
+
+def write_blindpair_arms(root: Path) -> None:
+    for rel, (arm, preamble) in BLINDPAIR_ARMS.items():
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(ARM_CARD.format(arm=arm, preamble=preamble), encoding="utf-8")
+
+
+# Выборка second_critic: минимальные артефакты рук без токенов рук
+# (артефакты серии t12 были чисты по ослеплению — свойство сохранено).
+RESEARCH_CARD = """# research.md — фикстура TASK-hermes-21
+
+Карточка-артефакт для проверки контракта драйвера (сухой прогон).
+
+## Ситуация
+
+- Удержание падает второй квартал подряд; числа — из записи ev-002.
+- Контракт month-to-month даёт 42.71% оттока против 2.83% у two-year.
+
+## Гипотезы
+
+- H1: структура контракта объясняет отток новичков [гипотеза].
+- H2: первые 90 дней дают измеримый рычаг [гипотеза].
+"""
+
+OPTIONS_CARD = """# options.md — фикстура TASK-hermes-21
+
+Карточка-артефакт для проверки контракта драйвера (сухой прогон).
+
+## 1. Вариант 1 — «Первые 90 дней»
+
+- **Суть:** довести новичка до первой повторной ценностной точки за 30 дней.
+- **Что требует:** сегментацию 0–3 мес и контент-план из 3–5 сообщений.
+
+## 2. Вариант 2 — «Риск-таргетинг»
+
+- **Суть:** скоринг сегмента риска и точечная коммуникация.
+
+## Оставить как есть
+
+Цена бездействия: когорта 0–3 мес несёт 31.94% оттока (ev-002).
+"""
+
+
+def write_second_critic_runs(root: Path) -> None:
+    """Каталог выборки second_critic: summary.json + артефакты клеток."""
+    import re as _re
+    records = []
+    for cell_id, rel, rubric in sc.SAMPLE:
+        parts = rel.split("/")
+        group, arm = parts[0], parts[1]
+        m = _re.search(r"final(?:-(\d))?\.md$", parts[2])
+        i = int(m.group(1)) if m and m.group(1) else 0
+        records.append({"group": group, "arm": arm, "i": i, "rubric": rubric,
+                        "total40": 20.0, "findings_total": 0,
+                        "findings_important": 0,
+                        "artifact": rel, "error": None})
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        card = OPTIONS_CARD if group in ("options", "o5b-F") else RESEARCH_CARD
+        path.write_text(card, encoding="utf-8")
+    (root / "scores").mkdir(parents=True, exist_ok=True)
+    (root / "scores" / "summary.json").write_text(
+        json.dumps({"records": records, "failures": 0}, ensure_ascii=False, indent=2),
+        encoding="utf-8")
 
 
 def load_module(name: str, path: Path):
@@ -33,7 +162,8 @@ def load_module(name: str, path: Path):
 
 bp = load_module("build_blind_pairs", REPO_ROOT / "eval" / "build_blind_pairs.py")
 sc = load_module("second_critic", REPO_ROOT / "eval" / "second_critic.py")
-sc_ja = load_module("judge_agreement", REPO_ROOT / "eval" / "judge_agreement.py")
+sc_ja: Any = load_module("judge_agreement", REPO_ROOT / "eval" / "judge_agreement.py")
+sc_ja.RUNS_ROOT = FIXTURE_RUNS  # записи оценок — из фикстур, не из прогонов
 sc_th = load_module("trigger_audit_heldout", REPO_ROOT / "eval" / "trigger_audit_heldout.py")
 ta = load_module("trigger_audit", REPO_ROOT / "eval" / "trigger_audit.py")
 ablation_stats = load_module("ablation_stats", REPO_ROOT / "eval" / "ablation_stats.py")
@@ -198,20 +328,37 @@ class TriggerHeldoutTests(unittest.TestCase):
 class BlindPairArtifactTests(unittest.TestCase):
     """Артефактные проверки слепых пар: предъявляемое не несёт имён рук."""
 
+    ARM_TOKENS = ("curation", "lean", "hybrid", "council-lite", "critic-loop2",
+                  "t12-skills", "b11-plainchat", "cl2-demo", "ab-options")
+
     def test_pairs_md_has_no_arm_tokens(self):
+        # TASK-hermes-21: сырьё прогонов вне git — сборщик прогоняется на
+        # синтезированных артефактах рук; слепление проверяется
+        # по-настоящему: подписи рук в фикстурах есть, в предъявляемом
+        # их быть не должно.
         with tempfile.TemporaryDirectory() as tmp:
+            arms_root = Path(tmp) / "arms"
+            write_blindpair_arms(arms_root)
             proc = subprocess.run(
                 [sys.executable, str(REPO_ROOT / "eval" / "build_blind_pairs.py"),
-                 "--out", tmp],
+                 "--out", tmp, "--root", str(arms_root)],
                 capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
             )
             self.assertEqual(proc.returncode, 0, proc.stderr)
             text = (Path(tmp) / "pairs.md").read_text(encoding="utf-8")
-            for token in ("curation", "lean", "hybrid", "council-lite", "critic-loop2",
-                          "t12-skills", "b11-plainchat", "cl2-demo", "ab-options"):
+            for token in self.ARM_TOKENS:
                 self.assertNotIn(token, text)
             # ключ не упоминается в предъявляемом
             self.assertNotIn("key.md", text)
+
+    def test_committed_pairs_md_has_no_arm_tokens(self):
+        # Курируемый артефакт замера (eval/runs/t13-blindpairs/pairs.md —
+        # то, что предъявлялось владельцу) тоже не несёт имён рук.
+        text = (REPO_ROOT / "eval" / "runs" / "t13-blindpairs" / "pairs.md").read_text(
+            encoding="utf-8")
+        for token in self.ARM_TOKENS:
+            self.assertNotIn(token, text)
+        self.assertNotIn("key.md", text)
 
 
 class JudgeAgreementTests(unittest.TestCase):
@@ -256,7 +403,7 @@ class JudgeAgreementTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             proc = subprocess.run(
                 [sys.executable, str(REPO_ROOT / "eval" / "judge_agreement.py"),
-                 "--out", tmp],
+                 "--out", tmp, "--runs-root", str(FIXTURE_RUNS)],
                 capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
             )
             self.assertEqual(proc.returncode, 0, proc.stderr)
@@ -320,9 +467,11 @@ class JudgeAgreementProtocolTests(unittest.TestCase):
 class CliContractTests(unittest.TestCase):
     def test_blind_pairs_build(self):
         with tempfile.TemporaryDirectory() as tmp:
+            arms_root = Path(tmp) / "arms"
+            write_blindpair_arms(arms_root)
             proc = subprocess.run(
                 [sys.executable, str(REPO_ROOT / "eval" / "build_blind_pairs.py"),
-                 "--out", tmp],
+                 "--out", tmp, "--root", str(arms_root)],
                 capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
             )
             self.assertEqual(proc.returncode, 0, proc.stderr)
@@ -334,12 +483,18 @@ class CliContractTests(unittest.TestCase):
             self.assertTrue((Path(tmp) / "key.md").is_file())
 
     def test_second_critic_dry_run(self):
-        proc = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "eval" / "second_critic.py"), "--dry-run"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
-        )
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertEqual(proc.stdout.count("[dry-run]"), 27)
+        # TASK-hermes-21: runs-dir выборки синтезируется (сырьё вне git);
+        # проверяется контракт: 27 клеток выборки резолвятся и печатаются.
+        with tempfile.TemporaryDirectory() as tmp:
+            runs_dir = Path(tmp) / "t12-skills"
+            write_second_critic_runs(runs_dir)
+            proc = subprocess.run(
+                [sys.executable, str(REPO_ROOT / "eval" / "second_critic.py"), "--dry-run",
+                 "--runs-dir", str(runs_dir)],
+                capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(proc.stdout.count("[dry-run]"), 27)
 
 
 if __name__ == "__main__":

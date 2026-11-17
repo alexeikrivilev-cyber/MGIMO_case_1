@@ -30,7 +30,11 @@
                  байты) — НЕ для предъявления до суждения.
 
 Контракт CLI:
-    python3 eval/build_blind_pairs.py [--out DIR] [--dry-run]
+    python3 eval/build_blind_pairs.py [--out DIR] [--dry-run] [--root DIR]
+
+`--root` — корень резолва артефактов рук (по умолчанию — корень
+репозитория): тесты (TASK-hermes-21) собирают пары из синтезированных
+артефактов во временном каталоге, так как сырьё прогонов вне git.
 
 Коды возврата: 0 — собрано; 2 — артефакт не найден.
 """
@@ -170,14 +174,17 @@ def main(argv: list[str]) -> int:
         description="Слепые пары для владельца (TASK-hermes-13 §2, BRIEF п.22).",
     )
     parser.add_argument("--out", default=str(REPO_ROOT / "eval" / "runs" / "t13-blindpairs"))
+    parser.add_argument("--root", default=str(REPO_ROOT),
+                        help="корень резолва артефактов рук (по умолчанию — корень репозитория)")
     args = parser.parse_args(argv)
 
     out_dir = Path(args.out)
+    arms_root = Path(args.root)
     rng = random.Random(SEED)
 
     loaded: dict[str, dict] = {}
     for arm, spec in ARMS.items():
-        path = REPO_ROOT / spec["artifact"]
+        path = arms_root / spec["artifact"]
         if not path.is_file():
             print(f"артефакт не найден: {path} (рука {arm})", file=sys.stderr)
             return EXIT_USAGE
