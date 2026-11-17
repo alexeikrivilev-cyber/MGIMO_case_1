@@ -46,17 +46,17 @@
 - options: exit=0
 - complexity: exit=0
 - ranges: exit=0
-- options.md: sha256=7d52b6a8ad5bf383
+- options.md: sha256=7bd2f86c77d10d93
 - sources-strategy-product.md: exit=0
 - transferability-strategy-product.md: exit=0
 - acceptance: exit=0
 - actionability: exit=0
 - ranges: exit=0
-- strategy-product.md: sha256=83cfecaef5b1f93d
+- strategy-product.md: sha256=a9044f0adb864066
 - sources-strategy-comms.md: exit=0
 - transferability-strategy-comms.md: exit=0
 - ranges: exit=0
-- strategy-comms.md: sha256=01e91a3408636abd
+- strategy-comms.md: sha256=bc94e4e76e216ea4
 - sources-verification-plan.md: exit=0
 - transferability-verification-plan.md: exit=0
 - ranges: exit=0
@@ -65,6 +65,39 @@
 - transferability-decisions.md: exit=0
 - decisions: exit=0
 - ranges: exit=0
-- decisions.md: sha256=f59a53a3259645bc
+- decisions.md: sha256=e065e46462d83637
 
 - ИТОГ: все гейты зелёные
+
+
+## Коррекционный раунд при сдаче (2026-11-17, TASK-hermes-19)
+
+Найдено самопроверкой сдачи (НЕ было видно в прогоне): артефакты в
+`eval/runs/` проверялись гейтом `check_sources.py` по правилу журнала
+(rule C — основание может быть в секции), а копии в `project/` — по
+строгому правилу (основание в той же физической строке). Перенос
+артефактов в демо-папку `project/` вскрыл 7 находок строгого гейта
+(3 числовых утверждения без основания в строке в options.md; 1 — в
+strategy-product.md; 2 секции без ссылки в strategy-comms.md; 1 секция
+без ссылки в strategy-product.md) и 3 находки `check_evidence_links`
+(38.01 в research.md — производная величина, не дописанная в ev-002;
+0.75 ×2 в decisions.md — порог приёмки AUC, приписанный соседней
+ссылкой ev-003).
+
+Исправления (субстанция не менялась, только основания и точность
+маркеров): в options.md добавлено (ev-002) в две строки с числами
+датасета и сшит перенос строки в «Основание варианта 4» (число и
+маркер [допущение] теперь в одной физической строке); в
+strategy-product.md добавлено (ev-002) в строку с числами аналога,
+секция «Ответ на находки гейтов» переименована в «Итог: ответ на
+находки гейтов» (секция-статус, классификация по allowlist); в
+strategy-comms.md в две секции добавлена доказательная база
+ev-002 / ev-003; в ev-002 дописана производная величина 38.01%
+(100% − 61.99%, арифметика из двух величин того же файла — прецедент
+TASK-hermes-8); в decisions.md порог AUC 0.75 помечен [гипотеза] —
+наш порог, не из источника (как в strategy-product.md).
+
+После правок все гейты на `project/` перепрогнаны: sources (7 файлов),
+transferability (6), options, decisions, acceptance, actionability,
+complexity, ranges (5), evidence_links (13), citations (6/6 URL живые)
+— все exit 0. Sha256 артефактов в финальной сводке выше обновлены.

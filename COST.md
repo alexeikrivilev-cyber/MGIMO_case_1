@@ -648,6 +648,12 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e1528193affeag6EOfT4X66xXM | О4: t18-case-ho-critic4 | step-5-preview | 23300 | 24284 | 0 | 23808 | 0 | 0 | $0.09 |
 | 2026-11-17 | ses_e152637d6ffeyONMvikSSJOOP3 | О4: t18-case-ho-strategy-product-patch | step-5-preview | 10163 | 17133 | 0 | 23680 | 0 | 0 | $0.06 |
 | 2026-11-17 | ses_e1525236effemS526qjRKYFywF | О4: t18-case-ho-strategy-comms-patch | step-5-preview | 9933 | 21710 | 0 | 23680 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e1523c3eeffe5RTY7C7fjclOPj | TASK-hermes-18 | step-5-preview | 47005 | 43960 | 0 | 1025024 | 0 | 0 | $0.27 |
+| 2026-11-17 | ses_e152025c0ffet6ORi8be2H6TiH | О4: t18-case-ho-decisions | step-5-preview | 53671 | 16975 | 0 | 0 | 0 | 0 | $0.10 |
+| 2026-11-17 | ses_e151ebc3fffeW4Ei2zJaK0rotm | О4: t18-case-ho-decisions-fix1 | step-5-preview | 38210 | 33770 | 0 | 539776 | 0 | 0 | $0.18 |
+| 2026-11-17 | ses_e151c50f1ffewNf7KoRleh7mE0 | TASK-hermes-18 | step-5-preview | 6496 | 29879 | 0 | 25536 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e151a592fffeRdOsDT1FAvy1W7 | О4: t18-case-ho-decisions-patch | step-5-preview | 40584 | 22483 | 0 | 888064 | 0 | 0 | $0.19 |
+| 2026-11-17 | ses_e151499b9ffeSFiKNJsIX3QH3k | TASK-hermes-19 | step-5-preview | 21475 | 238 | 0 | 40000 | 0 | 0 | $0.03 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

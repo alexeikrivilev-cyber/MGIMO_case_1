@@ -1,21 +1,82 @@
 # Полный путь под текущим прод-конфигом — heldout-growth-segment
 
-- старт: 2026-11-17T18:02:19.814058+00:00
+- старт: 2026-11-17T18:17:15.341698+00:00
 - конфиг: шаг 3 — база (навык options); шаги 4–5 — критик-детектор + все гейты (§32.0)
 - прод-конфиг и предрегистрация: measurements.md §32
 - модель сессий: stepfun/step-5-preview
 - контракт сессий: входы инлайном, артефакт — ответом в чат; порог годности 2000 символов + заголовок
-- brief.md перенесён дословно из eval/tasks/heldout-growth-segment/artifacts/brief.md (sha256=1777eeafce2c8513); ЧЕКПОИНТ 1 пройден ранее, источник — оператор, репетиция демо
-- brief.md: check_sources exit=0
-- шаг 1: citations exit=0
-- шаг 1: evidence-links exit=0
-- шаг 1: sources exit=0
-- research.md: session1 exit=0, символов в выходе 21561
-- research.md: раунд 1 — провал гейтов: ['sources-research.md'] → ревизия
-- research.md: fix-r1 exit=0
-- research.md: гейты зелёные (раунд 2)
-- options.md: session1 exit=0, символов в выходе 0
-- options.md: сессия без годного выхода (exit=0)
-- options.md: session2 exit=0, символов в выходе 0
-- options.md: сессия без годного выхода (exit=0)
-- options.md: ПРОВАЛ — две сессии без годного артефакта
+- options.md: session1 exit=0, символов в выходе 14342
+- options.md: раунд 1 — провал гейтов: ['sources-options.md'] → ревизия
+- options.md: fix-r1 exit=0
+- options.md: раунд 2 — провал гейтов: ['options'] → ревизия
+- options.md: fix-r2 exit=0
+- options.md: гейты зелёные (раунд 3)
+- strategy-product.md: session1 exit=0, символов в выходе 17487
+- strategy-product.md: раунд 1 — провал гейтов: ['sources-strategy-product.md'] → ревизия
+- strategy-product.md: fix-r1 exit=0
+- strategy-product.md: раунд 2 — провал гейтов: ['acceptance', 'actionability'] → ревизия
+- strategy-product.md: fix-r2 exit=0
+- strategy-product.md: раунд 3 — провал гейтов: ['ranges'] → ревизия
+- strategy-product.md: fix-r3 exit=0
+- strategy-product.md: раунд 4 — провал гейтов: ['ranges'] → ревизия
+- strategy-product.md: fix-r4 exit=0
+- strategy-product.md: гейты зелёные (раунд 5)
+- strategy-comms.md: session1 exit=0, символов в выходе 18097
+- strategy-comms.md: раунд 1 — провал гейтов: ['sources-strategy-comms.md'] → ревизия
+- strategy-comms.md: fix-r1 exit=0
+- strategy-comms.md: гейты зелёные (раунд 2)
+- verification-plan.md: session1 exit=0, символов в выходе 0
+- verification-plan.md: сессия без годного выхода (exit=0)
+- verification-plan.md: session2 exit=0, символов в выходе 13770
+- verification-plan.md: раунд 1 — провал гейтов: ['sources-verification-plan.md'] → ревизия
+- verification-plan.md: fix-r1 exit=0
+- verification-plan.md: гейты зелёные (раунд 2)
+- критик t18-case-ho-critic4: exit=0
+- strategy-product.md: patch-сессия exit=0
+- strategy-product.md: apply_revision exit=0
+- strategy-comms.md: patch-сессия exit=0
+- strategy-comms.md: apply_revision exit=0
+- verification-plan.md: patch-сессия exit=0
+- verification-plan.md: apply_revision exit=0
+- шаг 4 после критика: гейты {'sources-strategy-product.md': 0, 'transferability-strategy-product.md': 0, 'acceptance': 0, 'actionability': 0, 'ranges': 0, 'sources-strategy-comms.md': 0, 'transferability-strategy-comms.md': 0, 'sources-verification-plan.md': 0, 'transferability-verification-plan.md': 0}
+- decisions.md: session1 exit=0, символов в выходе 15752
+- decisions.md: раунд 1 — провал гейтов: ['sources-decisions.md'] → ревизия
+- decisions.md: fix-r1 exit=0
+- decisions.md: гейты зелёные (раунд 2)
+- критик t18-case-ho-critic5: exit=0
+- decisions.md: patch-сессия exit=0
+- decisions.md: apply_revision exit=0
+- шаг 5 после критика: гейты {'sources-decisions.md': 0, 'transferability-decisions.md': 0, 'decisions': 0, 'ranges': 0}
+
+## Финальная сводка гейтов
+
+- sources-research.md: exit=0
+- transferability-research.md: exit=0
+- research.md: sha256=63ba3fae0510d546
+- sources-options.md: exit=0
+- transferability-options.md: exit=0
+- options: exit=0
+- complexity: exit=0
+- ranges: exit=0
+- options.md: sha256=9a8cdb40335fc229
+- sources-strategy-product.md: exit=0
+- transferability-strategy-product.md: exit=0
+- acceptance: exit=0
+- actionability: exit=0
+- ranges: exit=0
+- strategy-product.md: sha256=4920dcab38bb4ba4
+- sources-strategy-comms.md: exit=0
+- transferability-strategy-comms.md: exit=0
+- ranges: exit=0
+- strategy-comms.md: sha256=66b9c74d516a0cf0
+- sources-verification-plan.md: exit=0
+- transferability-verification-plan.md: exit=0
+- ranges: exit=0
+- verification-plan.md: sha256=571a082ca7b75124
+- sources-decisions.md: exit=0
+- transferability-decisions.md: exit=0
+- decisions: exit=0
+- ranges: exit=0
+- decisions.md: sha256=17e2bf15304ac978
+
+- ИТОГ: все гейты зелёные
