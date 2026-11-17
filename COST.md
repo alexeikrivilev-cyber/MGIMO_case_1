@@ -32,6 +32,7 @@
 | 2026-11-17 | TASK-hermes-10: пробы изоляции и отвергнутые opencode-прогоны абляции (вне репозитория, 01:52–02:38) — 22 сессии, учтены хуком через persistent server (строки прод-таблицы с меткой «О4: t10-ablation (отвергнутые, вне репо)») | step-5-preview (OpenCode) | ~66K in | ~2.5K out (пробы) + выходы рук в тех же строках | 0 | см. строки прод-таблицы | релейбл: раннер не ставил run-метку, хук брал шаг из STATE.md |
 | 2026-11-17 | TASK-hermes-11: серия k=3 — генерация L2×3 + L3×3 на демо прямым вызовом API (6 цепочек, среда = промпт; run_ablation --repeat) + доборная цепочка L3 после сбоя провайдера (HTTP 502) — `eval/merge_l3_retry.py` | step-5-preview (API) | 57 236 (измерение: 20 685 L2 + 36 550 L3; добор 15 001 входит в L3) | 117 051 (измерение) | ~0 | $0.43 всего (в измерение вошло $0.37: L2 $0.145 + L3 $0.229; first-run L3 $0.173 включал упавшую цепочку ~$0.06 + добор $0.114 — оценка разностью) | `eval/runs/t11-k3/demo-retention/{L2,L3}/meta.json`, `.../demo-retention-l3retry/L3/meta.json` |
 | 2026-11-17 | TASK-hermes-11: пробы изоляции стенда §23.0 (`eval/iso_probe.py`, 3 сессии opencode) | step-5-preview (OpenCode) | — | — | — | ~$0.01 (строки прод-таблицы, метки «О4: t11-iso-…») | `eval/runs/t11-iso/{in,out,out-inrepo-subdir}/` |
+| 2026-11-17 | TASK-hermes-12: серия k=3 по дизайну навыков + О5 — генерация 27 цепочек прямым вызовом API (среда = промпт; research 9: curation $0.1492 / lean $0.1603 / hybrid $0.1326; options 9: curation $0.1631 / lean $0.1207 / hybrid $0.1346; o5a 3 — research lean на step-3.7-flash $0.0564; o5b-P 3 и o5b-F 3 — шаг 3 skill с research.md от step-5 / от flash: $0.1234 / $0.1605) | step-5-preview + step-3.7-flash (API) | 251 421 (измерение: usage ответов, кэша префикса нет) | 387 184 (включая reasoning; reasoning не сепарирован — 0) | ~0 | $1.2007 (формула §1.8 под модель) | `eval/runs/t12-skills/*/{curation,lean,hybrid,skill}/meta*.json`, манифест `eval/runs/t12-skills/manifest.md`; предрегистрация §25.1/§25.2 |
 ## Контур прода (prod) — метрика $/прогон для пользователя
 
 Прайс целевой среды (OpenCode, dev-контур прогонов): `step-5-preview` —
@@ -358,6 +359,73 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e183da234ffeQjssj7knDcm8HD | О4: t11-k3-demo-L3-2-unified | step-5-preview | 3800 | 9938 | 0 | 23104 | 0 | 0 | $0.03 |
 | 2026-11-17 | ses_e183cd5e2ffe3drbpw92uLb9i9 | О4: t11-k3-demo-L3-2-typical | step-5-preview | 3788 | 9965 | 0 | 22720 | 0 | 0 | $0.03 |
 | 2026-11-17 | ses_e1839e250ffejP5G0A52SyC4xE | О4: t11-k3-demo-L2-1-typical | step-5-preview | 51 | 12719 | 0 | 26752 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17f78581ffemmsP3MJB9Dgjn9 | О4: t12-res-curation-0-unified | step-5-preview | 4691 | 22069 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e17f5b2d3ffewnzA5gFs0QUkLs | О4: t12-res-curation-0-typical | step-5-preview | 6094 | 25546 | 0 | 21248 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e17f3aff6ffe6Atr3teTEe9RMs | О4: t12-res-curation-1-unified | step-5-preview | 4426 | 1248 | 0 | 23104 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e17f3745fffefYM8r6zC0k53by | О4: t12-res-curation-1-typical | step-5-preview | 5701 | 12519 | 0 | 21376 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17f23f23ffeLS7nAX7Jdz63qS | О4: t12-res-curation-2-unified | step-5-preview | 4006 | 10728 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17f150f3ffeHj4Tin02BwtnNJ | О4: t12-res-curation-2-typical | step-5-preview | 4001 | 19028 | 0 | 22656 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e17efd9f2ffepF7ydrq9kzLqWE | О4: t12-res-lean-0-unified | step-5-preview | 4730 | 23680 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e17ee065effeVFIlX8qyEIhBYE | О4: t12-res-lean-0-typical | step-5-preview | 4725 | 17904 | 0 | 22656 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e17ec9644ffel4cORv7Aiedenh | О4: t12-res-lean-1-unified | step-5-preview | 4360 | 14432 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17eb5e4cfferjPt9ILWp30dqW | О4: t12-res-lean-1-typical | step-5-preview | 4355 | 22603 | 0 | 22656 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e17e982eeffeeBVw7b2OF8Ji1K | О4: t12-res-lean-2-unified | step-5-preview | 5474 | 17457 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17e81828ffeGFxdIhXYy1ZAc1 | О4: t12-res-lean-2-typical | step-5-preview | 5469 | 16253 | 0 | 22656 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17e6f213ffeJE6J5dlHEPvyH3 | О4: t12-res-hybrid-0-unified | step-5-preview | 4118 | 14678 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17e57344ffeXe6ugTxmsHCGyd | О4: t12-res-hybrid-0-typical | step-5-preview | 4113 | 4617 | 0 | 22656 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e17e4fde6ffe90LtltA9Nku5lz | О4: t12-res-hybrid-1-unified | step-5-preview | 4512 | 32000 | 0 | 23104 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e17e237ecffevM7N7xRJk4PX6E | О4: t12-res-hybrid-1-typical | step-5-preview | 4507 | 16304 | 0 | 22656 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17e05fd3ffeLNk725v0kLqpYg | О4: t12-res-hybrid-2-unified | step-5-preview | 4039 | 15577 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17df0b60ffewrcihTJWqXifsc | О4: t12-res-hybrid-2-typical | step-5-preview | 4034 | 8614 | 0 | 22656 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17de5694ffeiKBCd6O9QB3sX8 | О4: t12-opt-curation-0-unified | step-5-preview | 3264 | 28161 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e17dbada0ffeBxBKDEvgnDBN19 | О4: t12-opt-curation-0-typical | step-5-preview | 4596 | 5842 | 0 | 21376 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e17db0bf0ffe9rL27y4HAJSq2m | О4: t12-opt-curation-1-unified | step-5-preview | 5790 | 11207 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17d9efabffe5sMV8U7eP1xk66 | О4: t12-opt-curation-1-typical | step-5-preview | 5778 | 9155 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17d9059dffeZpfITKA4jaFrO6 | О4: t12-opt-curation-2-unified | step-5-preview | 4496 | 28057 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e17d63f92ffepguLID7CzfcHRb | О4: t12-opt-curation-2-typical | step-5-preview | 4484 | 10260 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17d54b7dffejx6uvjTtGzqa8O | О4: t12-opt-lean-0-unified | step-5-preview | 25818 | 17668 | 0 | 0 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e17d3898affeKAeqa3m6w5dxjW | О4: t12-opt-lean-0-typical | step-5-preview | 2703 | 8063 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17d2aad8ffefRiHjt5Ithk2eP | О4: t12-opt-lean-1-unified | step-5-preview | 3345 | 12163 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17d1726effeV7aVi7F8umXJHp | О4: t12-opt-lean-1-typical | step-5-preview | 3333 | 16015 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17cfdc82ffeFdU4TrgKk39F6m | О4: t12-opt-lean-2-unified | step-5-preview | 2596 | 24160 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e17cdd0e0ffeYKqCeyUXEfweuq | О4: t12-opt-lean-2-typical | step-5-preview | 2584 | 8949 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17cd1682ffe2L4XBc64Xpnykk | О4: t12-opt-hybrid-0-unified | step-5-preview | 2368 | 1391 | 0 | 23168 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e17cce983ffehLQnNEsDLM2R6w | О4: t12-opt-hybrid-0-typical | step-5-preview | 2420 | 5831 | 0 | 22720 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e17cc5fdfffe7D5KkaqpBnRG77 | О4: t12-opt-hybrid-1-unified | step-5-preview | 3343 | 17295 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17caf433ffekTJlIjuhX3YTS6 | О4: t12-opt-hybrid-1-typical | step-5-preview | 3331 | 13312 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17c9b722ffeR04Cp96glQc06c | О4: t12-opt-hybrid-2-unified | step-5-preview | 3176 | 18770 | 0 | 23168 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e17c7d957ffenRrVyRDVvKwPsI | О4: t12-opt-hybrid-2-typical | step-5-preview | 3228 | 16693 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17c62332ffeSICEeq8nKxzii5 | О4: t12-o5a-lean-0-unified | step-5-preview | 4912 | 11316 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17c5076effe2Y4QwxFevlQ6e5 | О4: t12-o5a-lean-0-typical | step-5-preview | 4907 | 12098 | 0 | 22656 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17c3f42affeGvCPr5SH7tvjUv | О4: t12-o5a-lean-1-unified | step-5-preview | 4745 | 11000 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17c28274ffeJyVcsemr3Z967W | О4: t12-o5a-lean-1-typical | step-5-preview | 4740 | 15744 | 0 | 22656 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17c0feeaffetSouLPl08tNfKi | О4: t12-o5a-lean-2-unified | step-5-preview | 4873 | 8207 | 0 | 23104 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17c022d2ffeZHZFOn1SifNYUZ | О4: t12-o5a-lean-2-typical | step-5-preview | 4868 | 13753 | 0 | 22656 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17bed47affe0gTzP7h1G2jkGL | О4: t12-o5bP-skill-0-unified | step-5-preview | 4270 | 20239 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e17bcbb84ffePqh0x0x6ChI2ts | О4: t12-o5bP-skill-0-typical | step-5-preview | 4258 | 17562 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17bb48abffeDboLjodYCgfN0b | О4: t12-o5bP-skill-1-unified | step-5-preview | 4622 | 27384 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e17b908edffeZ9uReZ5aMZGnaa | О4: t12-o5bP-skill-1-typical | step-5-preview | 4610 | 16583 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17b7c789ffeo7gXH0kWvGjty7 | О4: t12-o5bP-skill-2-unified | step-5-preview | 4150 | 16184 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17b66345ffewbDfn0bgfxh27t | О4: t12-o5bP-skill-2-typical | step-5-preview | 4138 | 23924 | 0 | 22720 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e17b41680ffeHgX075Qj6kFV2O | О4: t12-o5bF-skill-0-unified | step-5-preview | 4302 | 1977 | 0 | 23104 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e17b3ced2ffeZKP4HaPDgeeaMe | О4: t12-o5bF-skill-0-typical | step-5-preview | 4480 | 6239 | 0 | 49984 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17b320b0ffe6XcR7YWbTdR2Bf | О4: t12-o5bF-skill-1-unified | step-5-preview | 3347 | 10108 | 0 | 23104 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17b23108ffeVafp6QdM2FM0iA | О4: t12-o5bF-skill-1-typical | step-5-preview | 3335 | 6221 | 0 | 22720 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e17b1ab1fffejPbkVzENNr92NE | О4: t12-o5bF-skill-2-unified | step-5-preview | 4558 | 24928 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e17afa9b8ffe2EHzjHAtRWOJSW | О4: t12-o5bF-skill-2-typical | step-5-preview | 4546 | 12532 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17ad6ceeffeSSc6esAyqU8C1X | О4: t12-res-hybrid-1-unified | step-5-preview | 32 | 12646 | 0 | 27584 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17ac599affe6YpTLyHBkh76N4 | О4: t12-hc2-draft-0-critic | step-5-preview | 53 | 16593 | 0 | 27328 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17aaff2affe6Q6aujnV54ZWwu | О4: t12-hc2-rev-0-patch | step-5-preview | 6211 | 13276 | 0 | 21248 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17aa0c0bffeJdLdh7MSRp08E5 | О4: t12-hc2-draft-1-critic | step-5-preview | 3 | 10447 | 0 | 27008 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17a8ece7ffeiC4IQ4mJpIHCfY | О4: t12-hc2-rev-1-patch | step-5-preview | 5895 | 7723 | 0 | 21248 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e17a84b65ffeZhDYLiTjZtxzRL | О4: t12-hc2-draft-2-critic | step-5-preview | 29 | 19126 | 0 | 28096 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e17a68035ffe9l349gritM7tbz | О4: t12-hc2-rev-2-patch | step-5-preview | 6764 | 1982 | 0 | 21632 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e17a36ae9ffeOYXK83bjUIk0RS | О4: t12-hc2-revised-0-unified | step-5-preview | 4730 | 18531 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e17a1d54affePrmBTG4wgpaRMn | О4: t12-hc2-revised-0-typical | step-5-preview | 53 | 21635 | 0 | 27328 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e179fad87ffebqPfSyqAQcDcB1 | О4: t12-hc2-revised-1-unified | step-5-preview | 4893 | 25985 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e179d1994ffeLYCU9BsgrtvfZ4 | О4: t12-hc2-revised-1-typical | step-5-preview | 13208 | 10735 | 0 | 14336 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e179c03b6ffemFVJkuqmgbFjsi | О4: t12-hc2-revised-2-unified | step-5-preview | 5474 | 27099 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e1799855affeIaHXPKPRbmaNT6 | О4: t12-hc2-revised-2-typical | step-5-preview | 29 | 11818 | 0 | 28096 | 0 | 0 | $0.03 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
