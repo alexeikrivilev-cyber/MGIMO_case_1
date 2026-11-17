@@ -426,6 +426,13 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e179d1994ffeLYCU9BsgrtvfZ4 | О4: t12-hc2-revised-1-typical | step-5-preview | 13208 | 10735 | 0 | 14336 | 0 | 0 | $0.04 |
 | 2026-11-17 | ses_e179c03b6ffemFVJkuqmgbFjsi | О4: t12-hc2-revised-2-unified | step-5-preview | 5474 | 27099 | 0 | 23104 | 0 | 0 | $0.08 |
 | 2026-11-17 | ses_e1799855affeIaHXPKPRbmaNT6 | О4: t12-hc2-revised-2-typical | step-5-preview | 29 | 11818 | 0 | 28096 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e178a01b1ffe3qjU9scUg7TNx9 | О4: t13-c2-research-curation-0-unified | step-5-preview | 4691 | 29106 | 0 | 23104 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e17857a14ffeJw2CBuHwsh85OM | О4: t13-c2-options-curation-0-unified | step-5-preview | 3264 | 12824 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e17830bc0ffecGpaJYVvH3Gpqb | О4: t13-c2-research-curation-1-unified | step-5-preview | 4426 | 1744 | 0 | 23104 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e1782c9e4ffeZcsC4BzW8IsEHf | О4: t13-c2-options-curation-1-unified | step-5-preview | 5790 | 18427 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e17805adfffelTA11IInXvX0gm | О4: t13-c2-research-curation-2-unified | step-5-preview | 25322 | 24460 | 0 | 1792 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e177cecbfffemQXpk0tuy2kOi9 | О4: t13-c2-options-curation-2-unified | step-5-preview | 4496 | 10735 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e177b7d1fffeKMNGEs8R8UtRZL | О4: t13-c2-research-lean-0-unified | step-5-preview | 4730 | 1415 | 0 | 23104 | 0 | 0 | $0.01 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
