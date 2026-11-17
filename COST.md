@@ -546,6 +546,32 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e1663a25dffeZozH7QT4rKy4ri | О4: t15-si-si-si-on-1-typical | step-5-preview | 4343 | 23623 | 0 | 25088 | 0 | 0 | $0.07 |
 | 2026-11-17 | ses_e16617361ffea71S8NJ0YlUvIc | О4: t15-si-si-si-on-2-unified | step-5-preview | 4419 | 17775 | 0 | 25536 | 0 | 0 | $0.05 |
 | 2026-11-17 | ses_e165f9c6bffevt13lK9IfKM3vh | О4: t15-si-si-si-on-2-typical | step-5-preview | 4414 | 16498 | 0 | 25088 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1641cfccffep3WjoaCQcMeSwt | О4: t16-si-dobor-si-off-2-unified | step-5-preview | 32 | 17412 | 0 | 31104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e163b973cffesWg0YKB50LnBfn | О4: t16-bs-council-lite | step-5-preview | 9408 | 16780 | 0 | 23808 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e1639f97affeN4poQkdwhb5Loi | TASK-hermes-15 закрыт | step-5-preview | 7804 | 21312 | 0 | 24128 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e1637e1c1ffeUfPe6t2hyBiFHz | О4: t16-bs-curation0 | step-5-preview | 3240 | 24957 | 0 | 26432 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e1635c9a0ffegEw2qGMcg0Rz9N | О4: t16-bs-hybrid0 | step-5-preview | 2408 | 16427 | 0 | 26432 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e16345783ffenPIZMILngXPNyw | О4: t16-bs-lean0 | step-5-preview | 2691 | 23257 | 0 | 26432 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e163228edffeZRZdwSvKAPck5M | О4: t16-bs-plain-chat | step-5-preview | 2123 | 5679 | 0 | 26432 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e16317e8dffeWjXwN4TJ7tlZQX | О4: t16-bs-skill | step-5-preview | 5256 | 15533 | 0 | 26432 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e162e242effeJnxqcAw59b5oGe | О4: t16-bs-council-lite | step-5-preview | 9131 | 30908 | 0 | 24128 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e162b1e2effe6R9vzSpevRRqhJ | О4: t16-bs-critic-loop2 | step-5-preview | 6183 | 12458 | 0 | 25792 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e1629cbe1ffeVbQXgrJYXNEQik | О4: t16-bs-curation0 | step-5-preview | 3283 | 17531 | 0 | 26432 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e16281180ffe9UrDMqmd30FWlt | О4: t16-bs-hybrid0 | step-5-preview | 2387 | 28767 | 0 | 26496 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e1625416effeaMbS0idn7W3KBQ | О4: t16-bs-lean0 | step-5-preview | 2670 | 32000 | 0 | 26496 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e162229adffeuJtIWiqSByr7j6 | О4: t16-bs-plain-chat | step-5-preview | 2166 | 19323 | 0 | 26432 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16200da9ffe37zN3jvOQS1220 | О4: t16-bs-skill | step-5-preview | 5299 | 32000 | 0 | 26432 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e161ab422ffeyKZ5iEE8mQ8537 | О4: t16-bs-critic-loop2 | step-5-preview | 8169 | 6111 | 0 | 23808 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e161a084dffeKOJRtWJAdFjIO5 | О4: t16-bs-curation0 | step-5-preview | 5909 | 16481 | 0 | 23808 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e16185150ffe2aYnLxAf83Am0I | О4: t16-bs-lean0 | step-5-preview | 2736 | 30272 | 0 | 26432 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e161522c7ffeelv02F0g9p1yQc | О4: t16-bs-plain-chat | step-5-preview | 2168 | 10116 | 0 | 26432 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e1614272cffeYMblGxkCtgSAxP | О4: t16-bs-skill | step-5-preview | 5301 | 15875 | 0 | 26432 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1610b5f5ffeYKJ37ghrB2uJ4e | О4: t16-bs-critic-loop2 | step-5-preview | 5315 | 15344 | 0 | 26432 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e160f4938ffeSoMh49T00aEg7c | О4: t16-bs-curation0 | step-5-preview | 2991 | 30639 | 0 | 26496 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e160c5a65ffeU6rpvBfs7D1J1V | О4: t16-bs-lean0 | step-5-preview | 2443 | 12603 | 0 | 26496 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e160b2339ffe5dK557rRlpsJt1 | О4: t16-bs-skill | step-5-preview | 5071 | 20286 | 0 | 26432 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e1606d6c1ffe9DUeryxIt68V8E | О4: t16-bs-curation0 | step-5-preview | 47 | 16277 | 0 | 29440 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1602c67bffeSbuUkdh0cGSE2m | О4: t16-trigger-heldout2 | step-5-preview | 24377 | 2685 | 0 | 0 | 0 | 0 | $0.03 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

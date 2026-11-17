@@ -92,6 +92,27 @@ class RunCriticCliTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 2)
 
 
+    def test_rubric_name_in_prompt_matches_file(self) -> None:
+        # Регрессия TASK-16: жёсткая подпись базового файла рубрики при
+        # расширенной рубрике заставляла модель молчать по критерию 5.
+        # Имя рубрики в промпте — фактическое, из аргумента.
+        module = load_module("run_critic_prompt_name_test", SCRIPTS_DIR / "run_critic.py")
+        prompt = module.build_prompt("АРТ", "РУБ", "critic",
+                                     rubric_name="eval/rubrics/hackathon-criteria-bs.md")
+        self.assertIn("=== РУБРИКА (eval/rubrics/hackathon-criteria-bs.md) ===", prompt)
+        self.assertNotIn("=== РУБРИКА (eval/rubrics/hackathon-criteria.md) ===", prompt)
+
+    def test_rubric_with_own_format_suppresses_prompt_format(self) -> None:
+        # Регрессия TASK-16: жёсткий «Итого: _ /40» в промпте конфликтовал
+        # с расширенной рубрикой (/70) — модель молчала по критерию 5.
+        # Рубрика со своим форматом — единственный контракт выхода.
+        module = load_module("run_critic_prompt_format_test", SCRIPTS_DIR / "run_critic.py")
+        with_format = module.build_prompt("АРТ", "РУБ\n\n## Формат выхода оценщика\nИтого: _ /70",
+                                          "critic")
+        self.assertNotIn("Формат ответа (строго):", with_format)
+        without_format = module.build_prompt("АРТ", "РУБ без секции формата", "critic")
+        self.assertIn("Формат ответа (строго):", without_format)
+
     def test_evidence_digest_mandate_in_prompt(self) -> None:
         # --evidence-digest добавляет мандат сверки цитат в промпт критика
         module = load_module("run_critic_prompt_test", SCRIPTS_DIR / "run_critic.py")

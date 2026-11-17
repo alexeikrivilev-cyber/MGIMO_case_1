@@ -136,6 +136,48 @@ class HookGateWiringTests(unittest.TestCase):
         appended = self._probe(REPO_ROOT / "knowledge" / "index.md")
         self.assertIn("[hook:skill-index-guard] check_skill_index.py → exit 0", appended)
 
+    # --- TASK-hermes-16 §30.1: гейты слепых зон (BRIEF п.27) -----------
+
+    def test_ranges_gate_refuses_bare_range(self) -> None:
+        """Диапазон без всякого основания в строке → хук показывает отказ."""
+        artifact = ("# options.md (фикстура пробы хука)\n\n"
+                    "## Вариант 1 — «Первые 90 дней»\n\nСуть.\n\n"
+                    "| Срок до эффекта | квартал | 4–8 недель |\n")
+        appended = self._probe(self._fixture("options.md", artifact))
+        self.assertIn("[hook:ranges-guard] check_ranges.py → exit 2", appended)
+
+    def test_complexity_gate_refuses_six_variants(self) -> None:
+        """Шесть вариантов → хук показывает отказ (вердикт человека, пара 5)."""
+        variants = "".join(
+            f"## Вариант {i} — «Механика {i}»\n\nСуть варианта {i}.\n\n"
+            for i in range(1, 7))
+        artifact = ("# options.md (фикстура пробы хука)\n\n" + variants
+                    + "## Таблица сравнения\n\n| Критерий | A | B |\n|---|---|---|\n"
+                      "| Эффект | высокий | средний |\n| Срок | квартал | месяц |\n")
+        appended = self._probe(self._fixture("options.md", artifact))
+        self.assertIn("[hook:complexity-guard] check_complexity.py → exit 2", appended)
+
+    def test_actionability_gate_refuses_missing_plan(self) -> None:
+        """Артефакт шага 4 без элементов плана → хук показывает отказ."""
+        appended = self._probe(
+            self._fixture("strategy-product.md", ARTIFACT_NO_CHECKLIST))
+        self.assertIn(
+            "[hook:actionability-guard] check_actionability.py → exit 2", appended)
+
+    def test_blindspot_gates_pass_on_clean_fixture(self) -> None:
+        """Чистая фикстура проекта → все три гейта зелёные (нет ложных)."""
+        artifact = ("# Продуктовая стратегия (фикстура пробы хука)\n\n"
+                    "Приоритеты инициатив: P0, P1, P2.\n"
+                    "Последовательность: блокер раньше всех.\n"
+                    "Пилот с контрольной группой и A/B внутри тира.\n"
+                    "Метрики успеха замеряются недельно.\n"
+                    "Критерии остановки: порог «не работает».\n\n"
+                    "Срок запуска 4–6 недель [оценка].\n")
+        appended = self._probe(self._fixture("strategy-product.md", artifact))
+        self.assertIn("[hook:ranges-guard] check_ranges.py → exit 0", appended)
+        self.assertIn("[hook:complexity-guard] check_complexity.py → exit 0", appended)
+        self.assertIn("[hook:actionability-guard] check_actionability.py → exit 0", appended)
+
 
 if __name__ == "__main__":
     unittest.main()

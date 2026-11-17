@@ -1,0 +1,349 @@
+{
+  "prereg": "measurements.md §30.2",
+  "rubric": "eval/rubrics/hackathon-criteria-bs.md",
+  "records": {
+    "council-lite": {
+      "base40": 16.0,
+      "addendum30": 14.0,
+      "total70": 30.0,
+      "items": {
+        "5.1": 4.0,
+        "5.2": 2.0,
+        "5.3": 8.0
+      },
+      "partial": false,
+      "source": "eval/runs/t16-addendum/council-lite/critic.out"
+    },
+    "critic-loop2": {
+      "base40": 20.0,
+      "addendum30": 20.0,
+      "total70": 40.0,
+      "items": {
+        "5.1": 6.0,
+        "5.2": 10.0,
+        "5.3": 4.0
+      },
+      "partial": false,
+      "source": "eval/runs/t16-addendum/critic-loop2/critic.out"
+    },
+    "curation#0": {
+      "base40": 22.0,
+      "addendum30": 20.0,
+      "total70": 42.0,
+      "items": {
+        "5.1": 2.0,
+        "5.2": 10.0,
+        "5.3": 8.0
+      },
+      "partial": false,
+      "source": "eval/runs/t16-addendum/curation0/critic.out"
+    },
+    "hybrid#0": {
+      "base40": 14.0,
+      "addendum30": 22.0,
+      "total70": 36.0,
+      "items": {
+        "5.1": 6.0,
+        "5.2": 8.0,
+        "5.3": 8.0
+      },
+      "partial": false,
+      "source": "eval/runs/t16-addendum/hybrid0/critic.out"
+    },
+    "lean#0": {
+      "base40": 16.0,
+      "addendum30": 22.0,
+      "total70": 38.0,
+      "items": {
+        "5.1": 6.0,
+        "5.2": 6.0,
+        "5.3": 10.0
+      },
+      "partial": false,
+      "source": "eval/runs/t16-addendum/lean0/critic.out"
+    },
+    "plain-chat": {
+      "base40": 20.0,
+      "addendum30": 24.0,
+      "total70": 44.0,
+      "items": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 8.0
+      },
+      "partial": false,
+      "source": "eval/runs/t16-addendum/plain-chat/critic.out"
+    },
+    "skill": {
+      "base40": 20.0,
+      "addendum30": 24.0,
+      "total70": 44.0,
+      "items": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 10.0
+      },
+      "partial": false,
+      "source": "eval/runs/t16-addendum/skill/critic.out"
+    }
+  },
+  "rows": [
+    {
+      "n": 1,
+      "cls": "chat",
+      "a": "plain-chat",
+      "b": "skill",
+      "human": "plain-chat",
+      "old_base": [
+        14.0,
+        20.0,
+        "skill"
+      ],
+      "new_base": [
+        20.0,
+        20.0,
+        "нет направления"
+      ],
+      "extended": [
+        44.0,
+        44.0,
+        "нет направления"
+      ],
+      "items_a": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 8.0
+      },
+      "items_b": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 10.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_ext": false
+    },
+    {
+      "n": 2,
+      "cls": "chat",
+      "a": "critic-loop2",
+      "b": "plain-chat",
+      "human": "plain-chat",
+      "old_base": [
+        26.0,
+        14.0,
+        "critic-loop2"
+      ],
+      "new_base": [
+        20.0,
+        20.0,
+        "нет направления"
+      ],
+      "extended": [
+        40.0,
+        44.0,
+        "plain-chat"
+      ],
+      "items_a": {
+        "5.1": 6.0,
+        "5.2": 10.0,
+        "5.3": 4.0
+      },
+      "items_b": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 8.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_ext": true
+    },
+    {
+      "n": 3,
+      "cls": "chat",
+      "a": "council-lite",
+      "b": "plain-chat",
+      "human": "council-lite",
+      "old_base": [
+        24.0,
+        14.0,
+        "council-lite"
+      ],
+      "new_base": [
+        16.0,
+        20.0,
+        "plain-chat"
+      ],
+      "extended": [
+        30.0,
+        44.0,
+        "plain-chat"
+      ],
+      "items_a": {
+        "5.1": 4.0,
+        "5.2": 2.0,
+        "5.3": 8.0
+      },
+      "items_b": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 8.0
+      },
+      "agree_old": true,
+      "agree_new": false,
+      "agree_ext": false
+    },
+    {
+      "n": 4,
+      "cls": "chat",
+      "a": "curation#0",
+      "b": "plain-chat",
+      "human": "plain-chat",
+      "old_base": [
+        22.0,
+        14.0,
+        "curation#0"
+      ],
+      "new_base": [
+        22.0,
+        20.0,
+        "curation#0"
+      ],
+      "extended": [
+        42.0,
+        44.0,
+        "plain-chat"
+      ],
+      "items_a": {
+        "5.1": 2.0,
+        "5.2": 10.0,
+        "5.3": 8.0
+      },
+      "items_b": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 8.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_ext": true
+    },
+    {
+      "n": 5,
+      "cls": "fork",
+      "a": "skill",
+      "b": "council-lite",
+      "human": "skill",
+      "old_base": [
+        20.0,
+        24.0,
+        "council-lite"
+      ],
+      "new_base": [
+        20.0,
+        16.0,
+        "skill"
+      ],
+      "extended": [
+        44.0,
+        30.0,
+        "skill"
+      ],
+      "items_a": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 10.0
+      },
+      "items_b": {
+        "5.1": 4.0,
+        "5.2": 2.0,
+        "5.3": 8.0
+      },
+      "agree_old": false,
+      "agree_new": true,
+      "agree_ext": true
+    },
+    {
+      "n": 6,
+      "cls": "fork",
+      "a": "skill",
+      "b": "critic-loop2",
+      "human": "skill",
+      "old_base": [
+        20.0,
+        26.0,
+        "critic-loop2"
+      ],
+      "new_base": [
+        20.0,
+        20.0,
+        "нет направления"
+      ],
+      "extended": [
+        44.0,
+        40.0,
+        "skill"
+      ],
+      "items_a": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 10.0
+      },
+      "items_b": {
+        "5.1": 6.0,
+        "5.2": 10.0,
+        "5.3": 4.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_ext": true
+    },
+    {
+      "n": 10,
+      "cls": "fork",
+      "a": "hybrid#0",
+      "b": "lean#0",
+      "human": "hybrid#0",
+      "old_base": [
+        16.0,
+        18.0,
+        "lean#0"
+      ],
+      "new_base": [
+        14.0,
+        16.0,
+        "lean#0"
+      ],
+      "extended": [
+        36.0,
+        38.0,
+        "lean#0"
+      ],
+      "items_a": {
+        "5.1": 6.0,
+        "5.2": 8.0,
+        "5.3": 8.0
+      },
+      "items_b": {
+        "5.1": 6.0,
+        "5.2": 6.0,
+        "5.3": 10.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_ext": false
+    }
+  ],
+  "agreement": {
+    "old_base": 1,
+    "new_base": 1,
+    "extended": 4,
+    "pairs": 7
+  },
+  "flipped_agreed": [
+    3
+  ],
+  "verdict": "НЕ ВАЛИДИРОВАН",
+  "blinding_defects": [],
+  "failures": 0
+}

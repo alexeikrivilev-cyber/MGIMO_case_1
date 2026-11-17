@@ -293,10 +293,27 @@ export const StrategyHooks: Plugin = async () => {
           const { code: tcode, out: tout } = runPython("check_transferability.py", [abs]);
           output.output += `\n\n[hook:transferability-guard] check_transferability.py → exit ${tcode}\n${tout.trim()}`;
           note(`transferability-guard: ${abs} → exit ${tcode}`);
+          // TASK-hermes-16 §30.1: гейты слепых зон human ground truth
+          // (BRIEF п.27). Диапазоны и сложность набора — на любой
+          // артефакт project/ (оба зелёные на 12 аналитических
+          // артефактах демо+held-out после правок-переносов);
+          // управляемость — вместе с чек-листом, только на
+          // strategy-product.md (на options.md гейт падал бы by
+          // design: шаг 3 останавливается на вариантах — там его
+          // находка это ИЗМЕРЕНИЕ слепой зоны, §30.1).
+          const { code: rcode, out: rout } = runPython("check_ranges.py", [abs]);
+          output.output += `\n\n[hook:ranges-guard] check_ranges.py → exit ${rcode}\n${rout.trim()}`;
+          note(`ranges-guard: ${abs} → exit ${rcode}`);
+          const { code: xcode, out: xout } = runPython("check_complexity.py", [abs]);
+          output.output += `\n\n[hook:complexity-guard] check_complexity.py → exit ${xcode}\n${xout.trim()}`;
+          note(`complexity-guard: ${abs} → exit ${xcode}`);
           if (abs.endsWith(`/${ACCEPTANCE_ARTIFACT}`)) {
             const { code: acode, out: aout } = runPython("check_acceptance.py", [abs]);
             output.output += `\n\n[hook:acceptance-guard] check_acceptance.py → exit ${acode}\n${aout.trim()}`;
             note(`acceptance-guard: ${abs} → exit ${acode}`);
+            const { code: pcode, out: pout } = runPython("check_actionability.py", [abs]);
+            output.output += `\n\n[hook:actionability-guard] check_actionability.py → exit ${pcode}\n${pout.trim()}`;
+            note(`actionability-guard: ${abs} → exit ${pcode}`);
           }
         } else if (abs === SKILLS_INDEX
                    || (abs.includes("/knowledge/skills/") && abs.endsWith("/SKILL.md"))) {

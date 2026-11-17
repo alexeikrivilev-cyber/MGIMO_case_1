@@ -141,12 +141,22 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return args
 
 
+def rubric_defines_format(rubric_text: str) -> bool:
+    """Рубрика несёт свой формат выхода — тогда промпт НЕ добавляет
+    свой (дефект TASK-16: жёсткий базовый формат в промпте конфликтовал
+    с расширенной рубрикой, и модель молчала по критерию 5, ссылаясь на
+    «запрошенный формат»). Рубрика — контракт; блок в промпте — дефолт
+    для рубрик без своего формата."""
+    return "Формат выхода оценщика" in rubric_text or "Итого" in rubric_text
+
+
 def build_prompt(
     artifact_text: str,
     rubric_text: str,
     mode: str,
     evidence_digest: str | None = None,
     package: list[tuple[str, str]] | None = None,
+    rubric_name: str = "eval/rubrics/hackathon-criteria.md",
 ) -> str:
     role = CRITIC_ROLE if mode == "critic" else SELF_ROLE
     if package:
@@ -157,7 +167,9 @@ def build_prompt(
         out_format = PACKAGE_OUTPUT_FORMAT
     else:
         artifact_block = artifact_text
-        out_format = OUTPUT_FORMAT
+        # Рубрика со своим форматом — единственный контракт выхода;
+        # иначе (рубрика без формата) — дефолтный блок промпта.
+        out_format = "" if rubric_defines_format(rubric_text) else OUTPUT_FORMAT
     mandate = ""
     if mode == "critic" and evidence_digest:
         mandate = (
@@ -176,7 +188,7 @@ def build_prompt(
         )
     return (
         f"{role}{mandate}\n\n"
-        f"=== РУБРИКА (eval/rubrics/hackathon-criteria.md) ===\n{rubric_text}\n\n"
+        f"=== РУБРИКА ({rubric_name}) ===\n{rubric_text}\n\n"
         f"=== АРТЕФАКТ ПОД ОЦЕНКУ ===\n{artifact_block}\n\n"
         f"{out_format}\n"
     )
@@ -228,7 +240,15 @@ def main(argv: list[str]) -> int:
             print(f"дайджест не найден: {digest_path}", file=sys.stderr)
             return EXIT_NOT_FOUND
         evidence_digest = digest_path.read_text(encoding="utf-8-sig", errors="replace")
-    prompt = build_prompt(artifact_text, rubric_text, args.mode, evidence_digest, package)
+    # Имя рубрики в промпте — фактическое (дефект TASK-16: жёсткая
+    # подпись базового файла при расширенной рубрике заставляла модель
+    # выдавать базовый формат «Итого /40» и молчать по критерию 5).
+    try:
+        rubric_display = rubric_path.resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        rubric_display = rubric_path.name
+    prompt = build_prompt(artifact_text, rubric_text, args.mode, evidence_digest,
+                          package, rubric_name=rubric_display)
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     artifacts_label = "+".join(p.stem for p in artifact_paths)
