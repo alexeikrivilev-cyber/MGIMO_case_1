@@ -572,6 +572,17 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e160b2339ffe5dK557rRlpsJt1 | О4: t16-bs-skill | step-5-preview | 5071 | 20286 | 0 | 26432 | 0 | 0 | $0.06 |
 | 2026-11-17 | ses_e1606d6c1ffe9DUeryxIt68V8E | О4: t16-bs-curation0 | step-5-preview | 47 | 16277 | 0 | 29440 | 0 | 0 | $0.05 |
 | 2026-11-17 | ses_e1602c67bffeSbuUkdh0cGSE2m | О4: t16-trigger-heldout2 | step-5-preview | 24377 | 2685 | 0 | 0 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e15ec0dccffeY3SCoQejr6zcvq | О4: t17-axis-council-lite | step-5-preview | 9529 | 25675 | 0 | 23808 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e15e98e02ffe0gf1vCzfkN8W7x | О4: t17-axis-critic-loop2 | step-5-preview | 7925 | 32000 | 0 | 24128 | 0 | 0 | $0.10 |
+| 2026-11-17 | ses_e15e68fccffe1KgFvjbMhMA6Fs | О4: t17-axis-curation0 | step-5-preview | 3041 | 32000 | 0 | 26752 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e15e4b826ffeZ9mRmJXx39wIwd | TASK-hermes-16 закрыт | step-5-preview | 2209 | 32000 | 0 | 26752 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e15e1b618ffedIpBAQM7aY1bj6 | О4: t17-axis-lean0 | step-5-preview | 2429 | 20546 | 0 | 26816 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e15dfe3a8ffeJHwfK10Z68lTWU | О4: t17-axis-plain-chat | step-5-preview | 6902 | 7413 | 0 | 55488 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e15df2bc8ffehGnnAfPYFT2ID4 | О4: t17-axis-skill | step-5-preview | 5057 | 21128 | 0 | 26752 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e15da26b7ffe4UCAAhVSGtsT9O | О4: t17-axis-critic-loop2 | step-5-preview | 5301 | 21067 | 0 | 26752 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e15d819d2ffeFCR8v5vqShq83z | О4: t17-axis-curation0 | step-5-preview | 33 | 22575 | 0 | 29760 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e15d5e798ffersP9nBaCsL2MyA | О4: t17-axis-hybrid0 | step-5-preview | 2145 | 16022 | 0 | 26816 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e15d46526ffeeL3rnRBUKLgmjc | О4: t17-axis-lean0 | step-5-preview | 61 | 15310 | 0 | 29184 | 0 | 0 | $0.04 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

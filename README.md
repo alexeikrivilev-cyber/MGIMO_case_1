@@ -94,12 +94,14 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 (постоянные инструкции; рабочий черновик, из которого он размещён, — в
 `docs/agents-md-staged.md`). Хуки (`.opencode/plugins/strategy-hooks.ts`):
 после записи `project/*.md` — `check_sources.py` + `check_transferability.py`
-(и `check_acceptance.py` для `strategy-product.md` — единственного дома
-приёмного чек-листа); после записи `knowledge/index.md` или любого
-`knowledge/skills/*/SKILL.md` — `check_skill_index.py` (роутер не врёт);
-после записи `STATE.md` и в конце сеанса — `check_state.py`; на каждом
-ассистентском сообщении — строка учёта в прод-таблицу `COST.md`. Лог
-хуков — `.opencode/hooks.log` (вне git).
++ `check_ranges.py` + `check_complexity.py` (и `check_acceptance.py` +
+`check_actionability.py` для `strategy-product.md` — единственного дома
+приёмного чек-листа и управленческого плана); после записи
+`knowledge/index.md` или любого `knowledge/skills/*/SKILL.md` —
+`check_skill_index.py` (роутер не врёт); после записи `STATE.md` и в
+конце сеанса — `check_state.py`; на каждом ассистентском сообщении —
+строка учёта в прод-таблицу `COST.md`. Лог хуков — `.opencode/hooks.log`
+(вне git).
 
 Проверки вручную:
 
@@ -116,6 +118,10 @@ python3 scripts/check_evidence_links.py --task all  # число → содер�
 python3 scripts/check_state.py                     # демо-задача
 python3 scripts/check_skill_index.py               # индекс навыков ↔ SKILL.md (обе стороны)
 python3 scripts/check_commit_scope.py              # состав индекса коммита (не только TASK-файл)
+python3 scripts/check_actionability.py project/strategy-product.md  # план: структурные признаки (v2, TASK-17 §31.2)
+python3 scripts/check_complexity.py project/options.md  # управляемая сложность набора вариантов (TASK-16 §30.1)
+python3 scripts/check_ranges.py project/*.md        # диапазон без основания в строке (TASK-16 §30.1)
+python3 scripts/check_pyright.py <новые файлы.py>   # статический анализ типов; две названные ошибки резолва run_critic — исключения (TASK-17 §31.3)
 python3 scripts/recover_state.py                   # если STATE.md битый — восстановит из git
 python3 scripts/cost_report.py
 python3 product/agent/skill_evolve.py verify       # журнал самоулучшения навыков целостен

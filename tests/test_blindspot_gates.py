@@ -101,35 +101,93 @@ class TestComplexity(unittest.TestCase):
 
 
 class TestActionability(unittest.TestCase):
-    PLAN_OK = ("# Стратегия\n\nПриоритеты инициатив: P0, P1, P2.\n"
-               "Последовательность: P0 раньше всех.\n"
-               "Пилот с контрольной группой и A/B внутри тира.\n"
-               "Метрики успеха замеряются недельно.\n"
-               "Критерии остановки: порог «не работает».\n")
+    # Фикстура v2 (TASK-hermes-17 §31.2): элементы плана выражены
+    # СТРУКТУРНО — метки приоритета, разделы, таблица метрик,
+    # пороговая зона. Прозаических упоминаний нет.
+    PLAN_OK = ("# Стратегия\n\n"
+               "## Приоритеты и последовательность\n\n"
+               "- P0 — измеряемость (блокер пилотов)\n"
+               "- P1 — пилот «первые 90 дней»\n"
+               "- P2 — платёжный рычаг\n\n"
+               "Пилот на когорте новичков с контрольной группой; "
+               "A/B внутри тира.\n\n"
+               "## Метрики\n\n"
+               "| Метрика | Baseline | «Работает» |\n"
+               "|---|---|---|\n"
+               "| D30 | 21% | ≥ 21% |\n\n"
+               "Критерии остановки: зона «не работает» — возврат на "
+               "рассмотрение.\n")
 
     def test_full_plan_pass(self):
         proc = run_gate(ACTIONABILITY, self.PLAN_OK)
         self.assertEqual(proc.returncode, 0, proc.stderr)
 
     def test_missing_control_group_flagged(self):
-        text = self.PLAN_OK.replace("Пилот с контрольной группой и A/B внутри тира.", "Пилот на когорте.")
+        text = self.PLAN_OK.replace(
+            "Пилот на когорте новичков с контрольной группой; "
+            "A/B внутри тира.\n\n", "")
         proc = run_gate(ACTIONABILITY, text)
         self.assertEqual(proc.returncode, 2)
         self.assertIn("контрольные группы", proc.stderr)
 
     def test_missing_priorities_flagged(self):
-        text = self.PLAN_OK.replace("Приоритеты инициативы: P0, P1, P2.", "Инициативы перечислены ниже.").replace(
-            "Приоритеты инициатив: P0, P1, P2.", "Инициативы перечислены ниже.").replace(
-            "Последовательность: P0 раньше всех.", "Последовательность: блокер раньше всех.")
+        text = self.PLAN_OK.replace(
+            "## Приоритеты и последовательность\n\n"
+            "- P0 — измеряемость (блокер пилотов)\n"
+            "- P1 — пилот «первые 90 дней»\n"
+            "- P2 — платёжный рычаг\n\n",
+            "## Инициативы\n\n- измеряемость\n- пилот\n\n")
         proc = run_gate(ACTIONABILITY, text)
         self.assertEqual(proc.returncode, 2)
         self.assertIn("приоритеты", proc.stderr)
 
     def test_missing_stop_criteria_flagged(self):
-        text = self.PLAN_OK.replace("Критерии остановки: порог «не работает».", "Откат описан.")
+        text = self.PLAN_OK.replace(
+            "Критерии остановки: зона «не работает» — возврат на "
+            "рассмотрение.\n", "Откат описан в отдельном разделе.\n")
         proc = run_gate(ACTIONABILITY, text)
         self.assertEqual(proc.returncode, 2)
         self.assertIn("критерии остановки", proc.stderr)
+
+    def test_prose_mentions_do_not_count_as_plan(self):
+        # Негативный контроль дизайна v2 (§31.2): ключевые слова в прозе
+        # («приоритет о приоритете», «порядок проверки», «Метрика не
+        # сведена», «Останов на ЧЕКПОИНТЕ 3») — НЕ структурные признаки;
+        # гейт обязан дать находки по элементам 1, 2, 4, 5.
+        text = ("# Сводка\n\n"
+                "Расхождение зафиксировано [гипотеза о приоритете].\n"
+                "Порядок проверки с позиции стоимости обсуждается.\n"
+                "Метрика не сведена: три определения в конфликте.\n"
+                "Останов на ЧЕКПОИНТЕ 3: требуется выбор человеком.\n")
+        proc = run_gate(ACTIONABILITY, text)
+        self.assertEqual(proc.returncode, 2)
+        for element in ("приоритеты", "последовательность",
+                        "метрики успеха", "критерии остановки"):
+            self.assertIn(element, proc.stderr)
+
+    def test_priority_adjective_in_variant_name_not_counted(self):
+        # Живой FP прогона v2 (hybrid): «Приоритетная поддержка» — имя
+        # варианта, не раздел приоритетов; элемент 1 не засчитывается.
+        text = ("# options.md\n\n"
+                "## Вариант 3. Приоритетная сервисная поддержка\n\n"
+                "Суть: перераспределение ресурсов.\n\n"
+                "## Метрики\n\n| Метрика | Baseline |\n|---|---|\n"
+                "| D30 | 21% |\n")
+        proc = run_gate(ACTIONABILITY, text)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("приоритеты", proc.stderr)
+
+    def test_two_priority_labels_count_as_sequence(self):
+        # ≥2 разных метки приоритета — порядок по определению: элемент 2
+        # засчитывается без раздела «Последовательность».
+        text = ("# План\n\n"
+                "Приоритеты: P0 — блокер, P1 — пилот.\n\n"
+                "Пилот с контрольной группой.\n\n"
+                "## Метрики\n\n| Метрика | Baseline |\n|---|---|\n"
+                "| D30 | 21% |\n\n"
+                "Критерии остановки: порог «не работает».\n")
+        proc = run_gate(ACTIONABILITY, text)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
 
     def test_usage_errors(self):
         proc = subprocess.run([sys.executable, str(ACTIONABILITY)],

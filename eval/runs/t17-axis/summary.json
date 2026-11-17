@@ -1,0 +1,341 @@
+{
+  "prereg": "measurements.md §31.1",
+  "hypothesis": "H-A1",
+  "rubric": "eval/rubrics/hackathon-criteria-bs.md",
+  "records": {
+    "council-lite": {
+      "base40": 28.0,
+      "axis30": 16.0,
+      "items": {
+        "5.1": 6.0,
+        "5.2": 2.0,
+        "5.3": 8.0
+      },
+      "partial": false,
+      "source": "/home/alex/projects/strategy-agent/eval/runs/t17-axis/council-lite/critic.out"
+    },
+    "critic-loop2": {
+      "base40": 30.0,
+      "axis30": 22.0,
+      "items": {
+        "5.1": 6.0,
+        "5.2": 4.0,
+        "5.3": 6.0
+      },
+      "partial": false,
+      "source": "/home/alex/projects/strategy-agent/eval/runs/t17-axis/critic-loop2/critic.out"
+    },
+    "curation#0": {
+      "base40": 16.0,
+      "axis30": 22.0,
+      "items": {
+        "5.1": 2.0,
+        "5.2": 10.0,
+        "5.3": 10.0
+      },
+      "partial": false,
+      "source": "/home/alex/projects/strategy-agent/eval/runs/t17-axis/curation0/critic.out"
+    },
+    "hybrid#0": {
+      "base40": 26.0,
+      "axis30": 22.0,
+      "items": {
+        "5.1": 6.0,
+        "5.2": 6.0,
+        "5.3": 10.0
+      },
+      "partial": false,
+      "source": "/home/alex/projects/strategy-agent/eval/runs/t17-axis/hybrid0/critic.out"
+    },
+    "lean#0": {
+      "base40": 24.0,
+      "axis30": 22.0,
+      "items": {
+        "5.1": 6.0,
+        "5.2": 8.0,
+        "5.3": 8.0
+      },
+      "partial": false,
+      "source": "/home/alex/projects/strategy-agent/eval/runs/t17-axis/lean0/critic.out"
+    },
+    "plain-chat": {
+      "base40": 14.0,
+      "axis30": 22.0,
+      "items": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 6.0
+      },
+      "partial": false,
+      "source": "/home/alex/projects/strategy-agent/eval/runs/t17-axis/plain-chat/critic.out"
+    },
+    "skill": {
+      "base40": 22.0,
+      "axis30": 22.0,
+      "items": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 8.0
+      },
+      "partial": false,
+      "source": "/home/alex/projects/strategy-agent/eval/runs/t17-axis/skill/critic.out"
+    }
+  },
+  "rows": [
+    {
+      "n": 1,
+      "cls": "chat",
+      "a": "plain-chat",
+      "b": "skill",
+      "human": "plain-chat",
+      "old_base": [
+        14.0,
+        20.0,
+        "skill"
+      ],
+      "new_base": [
+        14.0,
+        22.0,
+        "skill"
+      ],
+      "axis": [
+        22.0,
+        22.0,
+        "нет направления"
+      ],
+      "items_a": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 6.0
+      },
+      "items_b": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 8.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_axis": false
+    },
+    {
+      "n": 2,
+      "cls": "chat",
+      "a": "critic-loop2",
+      "b": "plain-chat",
+      "human": "plain-chat",
+      "old_base": [
+        26.0,
+        14.0,
+        "critic-loop2"
+      ],
+      "new_base": [
+        30.0,
+        14.0,
+        "critic-loop2"
+      ],
+      "axis": [
+        22.0,
+        22.0,
+        "нет направления"
+      ],
+      "items_a": {
+        "5.1": 6.0,
+        "5.2": 4.0,
+        "5.3": 6.0
+      },
+      "items_b": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 6.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_axis": false
+    },
+    {
+      "n": 3,
+      "cls": "chat",
+      "a": "council-lite",
+      "b": "plain-chat",
+      "human": "council-lite",
+      "old_base": [
+        24.0,
+        14.0,
+        "council-lite"
+      ],
+      "new_base": [
+        28.0,
+        14.0,
+        "council-lite"
+      ],
+      "axis": [
+        16.0,
+        22.0,
+        "plain-chat"
+      ],
+      "items_a": {
+        "5.1": 6.0,
+        "5.2": 2.0,
+        "5.3": 8.0
+      },
+      "items_b": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 6.0
+      },
+      "agree_old": true,
+      "agree_new": true,
+      "agree_axis": false
+    },
+    {
+      "n": 4,
+      "cls": "chat",
+      "a": "curation#0",
+      "b": "plain-chat",
+      "human": "plain-chat",
+      "old_base": [
+        22.0,
+        14.0,
+        "curation#0"
+      ],
+      "new_base": [
+        16.0,
+        14.0,
+        "curation#0"
+      ],
+      "axis": [
+        22.0,
+        22.0,
+        "нет направления"
+      ],
+      "items_a": {
+        "5.1": 2.0,
+        "5.2": 10.0,
+        "5.3": 10.0
+      },
+      "items_b": {
+        "5.1": 10.0,
+        "5.2": 6.0,
+        "5.3": 6.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_axis": false
+    },
+    {
+      "n": 5,
+      "cls": "fork",
+      "a": "skill",
+      "b": "council-lite",
+      "human": "skill",
+      "old_base": [
+        20.0,
+        24.0,
+        "council-lite"
+      ],
+      "new_base": [
+        22.0,
+        28.0,
+        "council-lite"
+      ],
+      "axis": [
+        22.0,
+        16.0,
+        "skill"
+      ],
+      "items_a": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 8.0
+      },
+      "items_b": {
+        "5.1": 6.0,
+        "5.2": 2.0,
+        "5.3": 8.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_axis": true
+    },
+    {
+      "n": 6,
+      "cls": "fork",
+      "a": "skill",
+      "b": "critic-loop2",
+      "human": "skill",
+      "old_base": [
+        20.0,
+        26.0,
+        "critic-loop2"
+      ],
+      "new_base": [
+        22.0,
+        30.0,
+        "critic-loop2"
+      ],
+      "axis": [
+        22.0,
+        22.0,
+        "нет направления"
+      ],
+      "items_a": {
+        "5.1": 4.0,
+        "5.2": 10.0,
+        "5.3": 8.0
+      },
+      "items_b": {
+        "5.1": 6.0,
+        "5.2": 4.0,
+        "5.3": 6.0
+      },
+      "agree_old": false,
+      "agree_new": false,
+      "agree_axis": false
+    },
+    {
+      "n": 10,
+      "cls": "fork",
+      "a": "hybrid#0",
+      "b": "lean#0",
+      "human": "hybrid#0",
+      "old_base": [
+        16.0,
+        18.0,
+        "lean#0"
+      ],
+      "new_base": [
+        26.0,
+        24.0,
+        "hybrid#0"
+      ],
+      "axis": [
+        22.0,
+        22.0,
+        "нет направления"
+      ],
+      "items_a": {
+        "5.1": 6.0,
+        "5.2": 6.0,
+        "5.3": 10.0
+      },
+      "items_b": {
+        "5.1": 6.0,
+        "5.2": 8.0,
+        "5.3": 8.0
+      },
+      "agree_old": false,
+      "agree_new": true,
+      "agree_axis": false
+    }
+  ],
+  "agreement": {
+    "old_base": 1,
+    "new_base": 2,
+    "axis_diag": 1,
+    "pairs": 7
+  },
+  "flipped_agreed": [],
+  "verdict": "ЧАСТИЧНО",
+  "blinding_defects": [],
+  "failures": 0
+}
