@@ -100,20 +100,29 @@ def validate_evidence(evidence: str, repo_root: Path) -> Tuple[bool, str]:
     Пустой evidence, ссылка на несуществующий файл или файл без следа
     замера — отказ. Fail-closed по построению: перебираем все кандидаты,
     допустим любой резолвящийся; отказ только если НИ ОДИН не подошёл.
+
+    §-указание — точная ссылка: если в evidence есть «measurements.md
+    §N» (или «§N») и такой секции нет, отказ БЕЗ отката к резолву
+    всего файла: молчаливый проброс битой ссылки через «файл-то есть»
+    прячет опечатку в основании (регрессия, найденная живой пробой
+    2026-11-17: «measurements.md §99» проходил по файлу).
     """
     if not evidence or not evidence.strip():
         return False, ("evidence обязателен: самоулучшение только по замеру "
                        "(BRIEF п.26). Дай путь к артефакту замера или «measurements.md §N»")
     reasons: list[str] = []
-    # 1) Ссылки на секции measurements.md.
-    for match in SECTION_RE.finditer(evidence):
-        section = match.group(2)
+    # 1) §-указания: точная ссылка, битая — отказ (не fallback на файл).
+    section_refs = SECTION_RE.findall(evidence)
+    if section_refs:
         measurements = repo_root / "docs" / "research" / "measurements.md"
-        if measurements.is_file():
-            body = measurements.read_text(encoding="utf-8", errors="replace")
+        body = (measurements.read_text(encoding="utf-8", errors="replace")
+                if measurements.is_file() else "")
+        for _prefix, section in section_refs:
             if f"§{section}" in body:
                 return True, f"measurements.md §{section}"
-        reasons.append(f"§{section}: секция не найдена в measurements.md")
+            reasons.append(f"§{section}: секция не найдена в measurements.md")
+        return False, ("evidence не резолвится в артефакт замера: "
+                       + "; ".join(reasons))
     # 2) Пути к файлам (бэктики и голые).
     candidates = BACKTICK_PATH_RE.findall(evidence) + BARE_PATH_RE.findall(evidence)
     for candidate in candidates:

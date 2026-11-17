@@ -120,6 +120,18 @@ class SkillEvolutionTestCase(unittest.TestCase):
         self.assertEqual(self.skill_file.read_text(encoding="utf-8"), SKILL_BODY,
                          "propose не имеет права менять файл")
 
+    def test_broken_section_ref_refused_without_file_fallback(self) -> None:
+        """Регрессия (живая проба 2026-11-17): «measurements.md §99» проходил
+        через резолв всего файла — битая точная ссылка не имеет права
+        молча деградировать до «файл-то есть»."""
+        res = self.run_cli("propose", "--skill", "testskill",
+                           "--old", "ШАБЛОННАЯ СТРОКА ДЛЯ ПАТЧА",
+                           "--new", "новая строка",
+                           "--evidence", "measurements.md §99")
+        self.assertEqual(res.returncode, 3, res.stderr)
+        self.assertIn("§99", res.stderr)
+        self.assertIn("не найдена", res.stderr)
+
     def test_apply_with_artifact_allowed(self) -> None:
         res = self.run_cli("apply", "--skill", "testskill",
                            "--old", "ШАБЛОННАЯ СТРОКА ДЛЯ ПАТЧА",
