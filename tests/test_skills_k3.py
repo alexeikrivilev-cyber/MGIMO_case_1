@@ -219,6 +219,62 @@ class StatsObservationTests(unittest.TestCase):
         self.assertEqual(set(stats.ANALYSES), {"step2", "step3", "o5a", "o5b", "hc2"})
 
 
+class TwoCriticProtocolTests(unittest.TestCase):
+    """Протокол двух критиков на серии (§27.2-А): проходы пишутся в
+    разные подкаталоги, записи несут критика, согласие считается."""
+
+    def _make_runs(self, tmp: str) -> Path:
+        runs = Path(tmp)
+        for group, arms in (("research", scorer.FAMILIES["research"]["arms"]),
+                            ("options", scorer.FAMILIES["options"]["arms"])):
+            for arm in arms:
+                arm_dir = runs / group / arm
+                arm_dir.mkdir(parents=True)
+                for name in ("final.md",):
+                    (arm_dir / name).write_text("x", encoding="utf-8")
+        return runs
+
+    def test_passes_are_separated_by_subdir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runs = self._make_runs(tmp)
+
+            def fake_run_critic(artifact, rubric, out_dir, tag):
+                (Path(out_dir)).mkdir(parents=True, exist_ok=True)
+                return {"total40": 30.0}
+
+            with mock.patch.object(scorer, "run_critic", fake_run_critic):
+                rc1 = scorer.main(["--runs-dir", tmp, "--groups", "research,options",
+                                   "--k", "1", "--critic-id", "c1", "--tag-prefix", "t13h"])
+                rc2 = scorer.main(["--runs-dir", tmp, "--groups", "research,options",
+                                   "--k", "1", "--critic-id", "c2", "--tag-prefix", "t13h2",
+                                   "--out-subdir", "scores-c2"])
+            self.assertEqual((rc1, rc2), (0, 0))
+            s1 = json.loads((runs / "scores" / "summary.json").read_text(encoding="utf-8"))["records"]
+            s2 = json.loads((runs / "scores-c2" / "summary.json").read_text(encoding="utf-8"))["records"]
+            # 3 руки × 1 цепочка × 2 рубрики × 2 группы = 12 записей на проход
+            self.assertEqual(len(s1), 12)
+            self.assertEqual(len(s2), 12)
+            self.assertTrue(all(r["critic"] == "c1" for r in s1))
+            self.assertTrue(all(r["critic"] == "c2" for r in s2))
+            # проход c2 не смешивал записи в summary прохода c1
+            self.assertTrue(all(r["critic"] != "c2" for r in s1))
+
+    def test_agreement_lines_reports_deltas_and_verdicts(self):
+        recs_a, recs_b = [], []
+        for arm in ("curation", "lean", "hybrid"):
+            for i in range(3):
+                recs_a.append({"group": "research", "arm": arm, "i": i,
+                               "rubric": "unified", "total40": 20.0 + i})
+                recs_b.append({"group": "research", "arm": arm, "i": i,
+                               "rubric": "unified", "total40": 20.0 + i + (2.0 if arm == "lean" else 0.0)})
+        payload_a, _ = stats.analyze_records(recs_a, ["step2"], crosscheck=False)
+        payload_b, _ = stats.analyze_records(recs_b, ["step2"], crosscheck=False)
+        lines = "\n".join(stats.agreement_lines(recs_a, recs_b, payload_a, payload_b))
+        # mean |Δ| по единой рубрике = 2.0 (только клетки lean сдвинуты)
+        self.assertIn("| unified | 9 | 0.67 |", lines)
+        self.assertIn("| step2 | unified | curation->lean |", lines)
+
+
 class ParserFormatTests(unittest.TestCase):
     """Контракт «Итого»: три формата выхода оценщика.
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -319,10 +320,16 @@ class RepeatSeriesTests(unittest.TestCase):
 
 class RunCriticEmptyOutputTests(unittest.TestCase):
     """Дефект «exit 0 ≠ непустой выход» (TASK-hermes-5/9): пустой выход
-    критика при успешном коде — провал прогона, не измерение."""
+    критика при успешном коде — провал прогона, не измерение.
+
+    Ключ в env — часть контракта теста: run_critic проверяет его до
+    запуска, поэтому без ключа тест падал бы на EXIT_NO_KEY (3) и
+    делал бы suite зависимой от окружения сессии.
+    """
 
     def test_empty_stdout_exit0_is_failure(self):
-        with mock.patch("subprocess.run") as run:
+        with mock.patch.dict(os.environ, {"STEPFUN_API_KEY": "test-key"}), \
+                mock.patch("subprocess.run") as run:
             run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="  \n", stderr="")
             code = run_critic.main(
                 [
@@ -335,7 +342,8 @@ class RunCriticEmptyOutputTests(unittest.TestCase):
         self.assertEqual(code, 4)
 
     def test_nonempty_stdout_exit0_is_ok(self):
-        with mock.patch("subprocess.run") as run:
+        with mock.patch.dict(os.environ, {"STEPFUN_API_KEY": "test-key"}), \
+                mock.patch("subprocess.run") as run:
             run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="Итого: 30 /40\n", stderr=""
             )

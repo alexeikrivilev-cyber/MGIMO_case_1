@@ -11,9 +11,15 @@
 по слепым парам — названо, не подменяется.
 
 Проверка ослепления: промпт критика = артефакт + рубрика; драйвер
-проверяет, что в артефктах выборки нет токенов рук (curation/lean/
+проверяет, что в артефактах выборки нет токенов рук (curation/lean/
 hybrid/o5a/o5b/hc2/flash/step-5) — иначе клетка помечается дефектом
 ослепления (критик #2 знал бы руку).
+
+Частичная оценка: если критик #2 вернул «Итого: N/20 по оценимым
+критериям, остальные — н/д» (отказ оценивать критерии 2–3 из
+артефакта шага 3), клетка — исход протокола (класс расхождения
+интерпретации рубрики), а НЕ провал прогона: исключается из
+Δ-статистики и reporting отдельной строкой.
 
 Контракт CLI:
     python3 eval/second_critic.py [--runs-dir DIR] [--dry-run]
@@ -67,6 +73,19 @@ for _arm in ("lean",):
         SAMPLE.append((f"reslean-typ-{_i}", f"research/{_arm}/final{'' if _i == 0 else f'-{_i}'}.md", "typical"))
         SAMPLE.append((f"o5alean-typ-{_i}", f"o5a/{_arm}/final{'' if _i == 0 else f'-{_i}'}.md", "typical"))
         SAMPLE.append((f"o5bF-typ-{_i}", f"o5b-F/skill/final{'' if _i == 0 else f'-{_i}'}.md", "typical"))
+
+# Частичная оценка: критик дал «Итого: N/20 по оценимым критериям» и
+# явно отказался оценивать остальные (н/д) — содержимое есть, но
+# машинно-сравнимого /40 нет. Это НЕ провал прогона и НЕ мусорный
+# выход: это исход протокола — расхождение интерпретации рубрики
+# (критик #1 такой клетке поставил /40, критик #2 часть критериев
+# счёл неоценимой из артефакта). Клетка исключается из Δ-статистики
+# и Reporting как класс расхождения. Общая логика — score_ablation.
+
+
+def assess_critic_out(text: str) -> dict:
+    """Разбор выхода критика #2: полная оценка / частичная / провал."""
+    return score_skills.assess_scores(text)
 
 
 def rubric_path(rubric: str, group: str) -> str:
@@ -134,25 +153,32 @@ def main(argv: list[str]) -> int:
         return EXIT_OK
 
     failures = 0
+    partials: list[str] = []
     for cell in cells:
         out_cell = out_dir / cell["id"]
         critic_out = out_cell / "critic.out"
         res: dict = {}
         if critic_out.is_file() and critic_out.read_text(encoding="utf-8", errors="replace").strip():
-            res = score_skills.parse_scores(critic_out.read_text(encoding="utf-8", errors="replace"))
-            if res.get("total40") is None:
+            res = assess_critic_out(critic_out.read_text(encoding="utf-8", errors="replace"))
+            if res.get("total40") is None and not res.get("partial"):
                 res["error"] = "Итого не распознан в существующем critic.out"
         else:
             tag = f"t13-c2-{cell['id']}"[:36]
             res = score_skills.run_critic(
                 Path(cell["artifact"]), rubric_path(cell["rubric"], cell["group"]), out_cell, tag
             )
+            if res.get("total40") is None:
+                res = assess_critic_out((out_cell / "critic.out").read_text(
+                    encoding="utf-8", errors="replace")) if (out_cell / "critic.out").is_file() else res
         cell["score2"] = res.get("total40")
         cell["error"] = res.get("error")
-        if res.get("error") or res.get("total40") is None:
+        if res.get("partial"):
+            partials.append(cell["id"])
+        elif res.get("error") or res.get("total40") is None:
             failures += 1
         print(f"{cell['id']}: c1={cell['score1']} c2={cell['score2']}"
-              + (f" ПРОВАЛ: {res['error']}" if res.get("error") else ""))
+              + (f" ЧАСТИЧНО: {res['error']}" if res.get("partial")
+                 else f" ПРОВАЛ: {res['error']}" if res.get("error") else ""))
 
     # Статистика согласия по рубрикам.
     lines = [
@@ -203,6 +229,20 @@ def main(argv: list[str]) -> int:
                            "cells": [{"id": c["id"], "c1": c["score1"], "c2": c["score2"]} for c in rows]}
 
     leaks = [c["id"] for c in cells if c["blinding_leak"]]
+    lines.append("## Частичные оценки (критик #2 отказался оценивать часть критериев)")
+    lines.append("")
+    if partials:
+        lines.append(f"Клеток: {len(partials)} — {partials}")
+        lines.append("")
+        lines.append("Класс расхождения интерпретации рубрики: критик #1 таким клеткам")
+        lines.append("поставил /40 (оценил все критерии), критик #2 счёл критерии 2–3")
+        lines.append("неоценимыми из артефакта шага 3 и дал оценку только по оценимым.")
+        lines.append("Для г1/г3 клетки исключены из Δ-статистики (нет машинно-сравнимой")
+        lines.append("оценки); как класс — свидетельство, что единая рубрика на артефакте")
+        lines.append("шага 3 воспринимается критиками по-разному.")
+    else:
+        lines.append("Нет.")
+    lines.append("")
     lines.append("## Проверка ослепления")
     lines.append("")
     lines.append(f"Клеток с токенами рук в артефакте: {len(leaks)}"
@@ -215,11 +255,13 @@ def main(argv: list[str]) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "twocritic-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     (out_dir / "twocritic-summary.json").write_text(
-        json.dumps({"rubrics": payload, "blinding_leaks": leaks, "failures": failures},
+        json.dumps({"rubrics": payload, "blinding_leaks": leaks, "failures": failures,
+                    "partial_assessments": partials},
                    ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    print(f"\nитог: падений {failures}; summary: {out_dir / 'twocritic-summary.md'}")
+    print(f"\nитог: падений {failures}, частичных оценок {len(partials)}; "
+          f"summary: {out_dir / 'twocritic-summary.md'}")
     return EXIT_OK if failures == 0 else EXIT_PARTIAL
 
 

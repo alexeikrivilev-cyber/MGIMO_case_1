@@ -32,7 +32,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "eval"))
 
-from score_ablation import RUBRICS, parse_scores, run_critic  # noqa: E402
+from score_ablation import RUBRICS, assess_scores, parse_scores, run_critic  # noqa: E402
 
 EXIT_OK = 0
 EXIT_PARTIAL = 1
@@ -82,6 +82,12 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--runs-dir", default=str(REPO_ROOT / "eval" / "runs" / "t12-skills"))
     parser.add_argument("--groups", default=",".join(FAMILIES))
     parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--out-subdir", default="scores",
+                        help="подкаталог runs-dir для оценок этого прохода (разделение критиков)")
+    parser.add_argument("--tag-prefix", default="t12",
+                        help="префикс тега прогона для атрибуции стоимости (COST.md)")
+    parser.add_argument("--critic-id", default="c1",
+                        help="идентификатор критика в записях (протокол двух критиков, §27.2-А)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
@@ -101,9 +107,12 @@ def main(argv: list[str]) -> int:
     failures = 0
     records: list[dict] = []
     # Слияние с существующей summary.json (урок TASK-hermes-12: прогон
-    # подмножества групп перезаписывал накопленные записи). Ключ записи —
-    # (group, arm, i, rubric); новые записи заменяют старые с тем же ключом.
-    summary_path = runs_dir / "scores" / "summary.json"
+    # подмножеством групп перезаписывал накопленные записи). Ключ записи —
+    # (critic, group, arm, i, rubric); новые записи заменяют старые с тем
+    # же ключом. Summary читается/пишется в подкаталоге прохода
+    # (--out-subdir): критические проходы разных критиков не смешиваются.
+    scores_root = runs_dir / args.out_subdir
+    summary_path = scores_root / "summary.json"
     if summary_path.is_file():
         try:
             old = json.loads(summary_path.read_text(encoding="utf-8")).get("records", [])
@@ -120,21 +129,24 @@ def main(argv: list[str]) -> int:
             for i, artifact in enumerate(files):
                 for rubric_name, rubric_path in rubrics.items():
                     code = TAG_CODES[group]
-                    tag = f"t12-{code}-{arm}-{i}-{rubric_name}"[:36]
-                    out_dir = runs_dir / "scores" / f"{group}-{arm}-{i}-{rubric_name}"
+                    tag = f"{args.tag_prefix}-{code}-{arm}-{i}-{rubric_name}"[:36]
+                    out_dir = scores_root / f"{group}-{arm}-{i}-{rubric_name}"
                     critic_out = out_dir / "critic.out"
                     res: dict = {}
                     if critic_out.is_file() and critic_out.read_text(encoding="utf-8", errors="replace").strip():
                         # Идемпотентность: уже оцененный прогон не повторяем.
-                        res = parse_scores(critic_out.read_text(encoding="utf-8", errors="replace"))
+                        res = assess_scores(critic_out.read_text(encoding="utf-8", errors="replace"))
                         res["source"] = str(critic_out)
-                        if res.get("total40") is None:
+                        if res.get("total40") is None and not res.get("partial"):
                             res["error"] = "Итого не распознан в существующем critic.out"
                     else:
                         res = run_critic(artifact, rubric_path, out_dir, tag)
+                        if res.get("total40") is None and critic_out.is_file():
+                            res = assess_scores(critic_out.read_text(encoding="utf-8", errors="replace"))
                     if "error" in res:
                         failures += 1
                     record = {
+                        "critic": args.critic_id,
                         "group": group, "arm": arm, "i": i, "rubric": rubric_name,
                         "total40": res.get("total40"),
                         "findings_total": res.get("findings_total"),
@@ -142,37 +154,39 @@ def main(argv: list[str]) -> int:
                         "artifact": str(artifact),
                         "error": res.get("error"),
                     }
-                    key = (group, arm, i, rubric_name)
+                    key = (args.critic_id, group, arm, i, rubric_name)
                     records = [r for r in records
-                               if (r.get("group"), r.get("arm"), r.get("i"), r.get("rubric")) != key]
+                               if (r.get("critic"), r.get("group"), r.get("arm"), r.get("i"), r.get("rubric")) != key]
                     records.append(record)
-                    print(f"{group}/{arm}#{i} {rubric_name}: {res.get('total40')}"
+                    print(f"{group}/{arm}#{i} {rubric_name} [{args.critic_id}]: {res.get('total40')}"
                           + (f" ПРОВАЛ: {res['error']}" if res.get("error") else ""))
 
-    (runs_dir / "scores").mkdir(parents=True, exist_ok=True)
-    (runs_dir / "scores" / "summary.json").write_text(
+    scores_root.mkdir(parents=True, exist_ok=True)
+    (scores_root / "summary.json").write_text(
         json.dumps({"records": records, "failures": failures}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     lines = [
         "# Оценивание серии навыков k=3 (TASK-hermes-12 §25.1/§25.2)",
         "",
-        "Числа — из `summary.json`; критические прогоны — `scores/<group>-<arm>-<i>-<rubric>/critic.out`",
-        "(теги COST.md «О4: t12-…»). Свежая сессия критика на артефакт × рубрику.",
+        f"Числа — из `summary.json`; критические прогоны — "
+        f"`{args.out_subdir}/<group>-<arm>-<i>-<rubric>/critic.out`",
+        f"(теги COST.md «О4: {args.tag_prefix}-…»). Свежая сессия критика на артефакт × рубрику.",
         "",
         "| Группа | Рука | # | Рубрика | /40 | findings (важно) |",
         "|---|---|---|---|---|---|",
     ]
     for r in records:
         if r.get("error") and r.get("total40") is None:
-            lines.append(f"| {r.get('group')} | {r.get('arm')} | {r.get('i')} | {r.get('rubric')} | ПРОВАЛ: {r.get('error')} | |")
+            kind = "ЧАСТИЧНАЯ ОЦЕНКА" if str(r.get("error", "")).startswith("частичная") else "ПРОВАЛ"
+            lines.append(f"| {r.get('group')} | {r.get('arm')} | {r.get('i')} | {r.get('rubric')} | {kind}: {r.get('error')} | |")
             continue
         lines.append(
             f"| {r.get('group')} | {r.get('arm')} | {r.get('i')} | {r.get('rubric')} | {r.get('total40')} "
             f"| {r.get('findings_total')} ({r.get('findings_important')}) |"
         )
-    (runs_dir / "scores" / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"\nитог: прогонов {len(records)}, падений {failures}; summary: {runs_dir / 'scores' / 'summary.md'}")
+    (scores_root / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"\nитог: прогонов {len(records)}, падений {failures}; summary: {scores_root / 'summary.md'}")
     return EXIT_OK if failures == 0 else EXIT_PARTIAL
 
 

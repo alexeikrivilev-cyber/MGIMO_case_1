@@ -33,6 +33,9 @@ def load_module(name: str, path: Path):
 
 bp = load_module("build_blind_pairs", REPO_ROOT / "eval" / "build_blind_pairs.py")
 sc = load_module("second_critic", REPO_ROOT / "eval" / "second_critic.py")
+sc_ja = load_module("judge_agreement", REPO_ROOT / "eval" / "judge_agreement.py")
+sc_th = load_module("trigger_audit_heldout", REPO_ROOT / "eval" / "trigger_audit_heldout.py")
+ta = load_module("trigger_audit", REPO_ROOT / "eval" / "trigger_audit.py")
 ablation_stats = load_module("ablation_stats", REPO_ROOT / "eval" / "ablation_stats.py")
 
 
@@ -113,6 +116,154 @@ class AgreementVerdictTests(unittest.TestCase):
         # (интервал Δ между руками ±1.96σ√2 — другая величина: 3.92/2.86).
         self.assertAlmostEqual(ablation_stats.mdd_two_arm(1, 1.41), 5.586, places=2)
         self.assertAlmostEqual(ablation_stats.mdd_two_arm(1, 1.03), 4.082, places=2)
+
+
+class PartialAssessmentTests(unittest.TestCase):
+    """Частичная оценка критика #2 («Итого: N/20 по оценимым, остальные
+    н/д») — исход протокола, не провал прогона и не мусорный выход."""
+
+    def test_full_score_not_partial(self):
+        res = sc.assess_critic_out("## Оценки\n\nИтого: 20 / 40\n\n## Findings\n")
+        self.assertEqual(res["total40"], 20.0)
+        self.assertFalse(res.get("partial"))
+
+    def test_partial_detected(self):
+        text = ("Итого: 16/20 по оценимым критериям; критерии 2 и 3 — н/д: "
+                "из options.md их не проверить (нужны README, STATE.md).")
+        res = sc.assess_critic_out(text)
+        self.assertIsNone(res["total40"])
+        self.assertTrue(res["partial"])
+        self.assertIn("частичная оценка", res["error"])
+
+    def test_partial_detected_n30_format(self):
+        # Формат из прогона held-out серии (options-lean-2-unified):
+        # «Итого: 20/30 по оцениваемому (полная шкала /40; критерий 3
+        # вне области options.md — не оценивался)».
+        text = ("Итого: 20/30 по оцениваемому (полная шкала /40; критерий 3 "
+                "вне области options.md — не оценивался).")
+        res = sc.assess_critic_out(text)
+        self.assertIsNone(res["total40"])
+        self.assertTrue(res["partial"])
+
+    def test_garbage_is_failure_not_partial(self):
+        res = sc.assess_critic_out("Критик не смог оценить артефакт.")
+        self.assertIsNone(res["total40"])
+        self.assertFalse(res.get("partial"))
+
+
+class TriggerHeldoutTests(unittest.TestCase):
+    """Аудит триггера на held-out артефактах (§27.1): кейсы из реальных
+    решений прогона, правило и формат — дословно §19.3."""
+
+    def test_cases_from_heldout_artifacts(self):
+        self.assertEqual(len(sc_th.CASES), 5)
+        for case in sc_th.CASES:
+            self.assertTrue(case["id"].startswith("ho-"))
+            self.assertIn(case["expected"], ("high", "low"))
+        # Ожидания по правилу council-design §3: необратимо/кросс-функционально
+        # → high; обратимо и один контур → low.
+        expected = {c["id"]: c["expected"] for c in sc_th.CASES}
+        self.assertEqual(expected, {"ho-1": "high", "ho-2": "low", "ho-3": "low",
+                                    "ho-4": "high", "ho-5": "low"})
+
+    def test_rule_text_parity_with_193(self):
+        # Правило триггера дословно то же, что в аудите §19.3 — меняется
+        # только блок кейсов (хеш промпта фиксируется в отчёте).
+        self.assertIn("НЕОБРАТИМО (или дорого обратить)", sc_th.AUDIT_PROMPT)
+        self.assertIn("НЕОБРАТИМО (или дорого обратить)", ta.AUDIT_PROMPT)
+        self.assertIn("high|low", sc_th.AUDIT_PROMPT)
+
+    def test_render_cases_contains_all_ids(self):
+        rendered = sc_th.render_cases()
+        for case in sc_th.CASES:
+            self.assertIn(case["id"], rendered)
+
+    def test_parse_audit_rejects_garbage(self):
+        self.assertIsNone(sc_th.parse_audit("нет массива здесь"))
+        parsed = sc_th.parse_audit('текст [{"id": "ho-1", "class": "high"}] текст')
+        self.assertEqual(parsed, [{"id": "ho-1", "class": "high"}])
+
+    def test_no_key_exit_4(self):
+        import os
+
+        env = dict(os.environ)
+        env.pop("STEPFUN_API_KEY", None)
+        proc = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "eval" / "trigger_audit_heldout.py")],
+            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120, env=env,
+        )
+        self.assertEqual(proc.returncode, 4, proc.stderr)
+
+
+class BlindPairArtifactTests(unittest.TestCase):
+    """Артефактные проверки слепых пар: предъявляемое не несёт имён рук."""
+
+    def test_pairs_md_has_no_arm_tokens(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = subprocess.run(
+                [sys.executable, str(REPO_ROOT / "eval" / "build_blind_pairs.py"),
+                 "--out", tmp],
+                capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            text = (Path(tmp) / "pairs.md").read_text(encoding="utf-8")
+            for token in ("curation", "lean", "hybrid", "council-lite", "critic-loop2",
+                          "t12-skills", "b11-plainchat", "cl2-demo", "ab-options"):
+                self.assertNotIn(token, text)
+            # ключ не упоминается в предъявляемом
+            self.assertNotIn("key.md", text)
+
+
+class JudgeAgreementTests(unittest.TestCase):
+    """г2: согласие критиков с человеком-судьёй (драйвер eval/judge_agreement.py).
+
+    Состав пар — из key.md после раскрытия; суждения — BRIEF п.27.
+    """
+
+    def test_pairs_match_key_composition(self):
+        # 10 пар: 4 «против чата», 6 форков; человеческий победитель — из BRIEF п.27.
+        self.assertEqual(len(sc_ja.PAIRS), 10)
+        chats = [p for p in sc_ja.PAIRS if p["cls"] == "chat"]
+        forks = [p for p in sc_ja.PAIRS if p["cls"] == "fork"]
+        self.assertEqual((len(chats), len(forks)), (4, 6))
+        humans = {p["n"]: p["human"] for p in sc_ja.PAIRS}
+        self.assertEqual(humans[1], "plain-chat")
+        self.assertEqual(humans[3], "council-lite")
+        self.assertEqual(humans[7], "curation#0")
+        self.assertEqual(humans[10], "hybrid#0")
+        # победитель человека всегда одна из рук пары
+        for p in sc_ja.PAIRS:
+            self.assertIn(p["human"], (p["a"], p["b"]))
+
+    def test_implied_winner_logic(self):
+        self.assertEqual(sc_ja.implied_winner(20.0, 14.0), "A")
+        self.assertEqual(sc_ja.implied_winner(14.0, 20.0), "B")
+        self.assertEqual(sc_ja.implied_winner(18.0, 18.0), "tie")
+        self.assertIsNone(sc_ja.implied_winner(None, 20.0))
+
+    def test_legacy_scores_only_for_first_critic(self):
+        # РЕГРЕСС: легаси-оценки t6 (plain-chat/skill/council-lite/cl2) —
+        # только протокол одного критика; у критика #2 на этих руках
+        # покрытия нет и подставлять чужие оценки нельзя.
+        c1 = sc_ja.c1_t12_scores()
+        c2 = sc_ja.c2_t13_scores()
+        self.assertIn("curation#0", c1)
+        self.assertIn("curation#1", c2)
+        for arm in ("plain-chat", "skill", "council-lite", "critic-loop2"):
+            self.assertNotIn(arm, c2)
+
+    def test_cli_produces_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = subprocess.run(
+                [sys.executable, str(REPO_ROOT / "eval" / "judge_agreement.py"),
+                 "--out", tmp],
+                capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            text = (Path(tmp) / "judge-agreement.md").read_text(encoding="utf-8")
+            self.assertIn("критик #1 (протокол одного)", text)
+            payload = json.loads((Path(tmp) / "judge-agreement.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(payload["pairs"]), 10)
 
 
 class CliContractTests(unittest.TestCase):

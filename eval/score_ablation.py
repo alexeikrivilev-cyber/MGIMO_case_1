@@ -84,6 +84,30 @@ def parse_scores(text: str) -> dict:
     }
 
 
+# Частичная оценка: критик отказался оценивать критерии, неоценимые из
+# артефакта шага («Итого: N/20|N/30 по оценимым, остальные — н/д»).
+# Класс протокола (TASK-hermes-13 §26.4), НЕ провал прогона: клетка
+# исключается из Δ-статистики и reporting отдельной строкой.
+PARTIAL_RE = re.compile(
+    r"Итого\s*:\s*([\d.]+)\s*/\s*(?:20|30)\b[^.\n]*"
+    r"(?:н/д|оценив|не проверить|недостаточно|вне области)",
+    re.IGNORECASE,
+)
+
+
+def assess_scores(text: str) -> dict:
+    """Разбор выхода критика: полная оценка / частичная / провал."""
+    res = parse_scores(text)
+    if res.get("total40") is not None:
+        return res
+    partial = PARTIAL_RE.search(text)
+    if partial:
+        res["partial"] = True
+        res["error"] = (f"частичная оценка: {partial.group(1)} по оценимым "
+                        "критериям, остальные — н/д (машинно-сравнимого /40 нет)")
+    return res
+
+
 def run_critic(artifact: Path, rubric: str, out_dir: Path, tag: str, timeout: int = 1800) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
