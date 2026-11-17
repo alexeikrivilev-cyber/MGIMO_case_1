@@ -102,7 +102,7 @@ ADD_RE = re.compile(
 TOTAL_RE = re.compile(
     r"Итого(?:\s+полное)?\s*:?\s*\**\s*(\d+(?:[.,]\d+)?)\s*/\s*70", re.IGNORECASE)
 BASE40_LINE_RE = re.compile(
-    r"Итого\s*:?\s*\**\s*(\d+(?:[.,]\d+)?)\s*/\s*40", re.IGNORECASE)
+    r"Итого\**\s*[|:\s]*\**\s*(\d+(?:[.,]\d+)?)\s*/\s*40", re.IGNORECASE)
 ITEM_RE = re.compile(
     r"\|\s*5\.([123])[^|]*\|[^|]*\|[^|]*\|\s*\**\s*(\d+(?:[.,]\d+)?)"
     r"(?:\s*/\s*10)?\s*\**\s*\|?", re.IGNORECASE)
