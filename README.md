@@ -100,16 +100,20 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 Проверки вручную:
 
 ```bash
-python3 -m pytest tests/ -q                        # 207/207 (или: python3 tests/test_scripts.py)
+python3 -m pytest tests/ -q                        # все юнит-тесты
 python3 scripts/check_sources.py project/brief.md project/evidence/*.md project/decisions.md
 python3 scripts/check_options.py project/options.md  # шаг 3: варианты и возражения
 python3 scripts/check_decisions.py project/decisions.md  # шаг 5: реестр решений
+python3 scripts/check_acceptance.py project/strategy-product.md  # шаг 4: 6 вопросов владельца
+python3 scripts/check_transferability.py project/*.md  # аналоги ≠ причины; деньги аналога не переносятся
 python3 scripts/council_quota.py project/council/run-*/  # протокол Консилиума
 python3 scripts/check_citations.py project/evidence/*.md  # резолвимость ссылок
 python3 scripts/check_evidence_links.py --task all  # число → содержание evidence (демо + held-out)
 python3 scripts/check_state.py                     # демо-задача
 python3 scripts/recover_state.py                   # если STATE.md битый — восстановит из git
 python3 scripts/cost_report.py
+python3 product/agent/skill_evolve.py verify       # журнал самоулучшения навыков целостен
+python3 product/agent/skill_evolve.py status --skill options  # сколько раз навык правился и на каких основаниях
 ```
 
 Проверки held-out задачи (артефакты в `eval/tasks/heldout-growth-segment/artifacts/`):

@@ -501,6 +501,32 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e16d7ada7ffe3d8Lm6s5ChKEMW | О4: t13hc2-res-lean-0-typical | step-5-preview | 4891 | 8998 | 0 | 25344 | 0 | 0 | $0.03 |
 | 2026-11-17 | ses_e16d6913affeunxu4LgLrtm6en | О4: t13hc2-res-lean-1-unified | step-5-preview | 6601 | 18553 | 0 | 25792 | 0 | 0 | $0.06 |
 | 2026-11-17 | ses_e16d40194ffeh1fznwEl93KXUA | О4: t13hc2-res-lean-1-typical | step-5-preview | 6596 | 3759 | 0 | 25344 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e16d367faffeAQOpM1Q1pPZhca | О4: t13hc2-res-lean-2-unified | step-5-preview | 7492 | 15992 | 0 | 25792 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e16d0e938ffeqrztoy9kTXArFK | О4: t13hc2-res-lean-2-typical | step-5-preview | 32443 | 11884 | 0 | 0 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16cef02cffe3vEUO5NX14dVPn | О4: t13hc2-res-hybrid-0-unified | step-5-preview | 30461 | 11269 | 0 | 640 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16cd4a3cffeuIpVXKv52ZIuiN | О4: t13hc2-res-hybrid-0-typical | step-5-preview | 6968 | 7981 | 0 | 23680 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e16cc2608ffecx8QxSUo2jWK4B | О4: t13hc2-res-hybrid-1-unified | step-5-preview | 6782 | 26350 | 0 | 23680 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e16c89b0fffe41g43ad8IzabaI | О4: t13hc2-res-hybrid-1-typical | step-5-preview | 30010 | 9369 | 0 | 0 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16c73846ffeZ1ERBCw9GbBxxx | О4: t13hc2-res-hybrid-2-unified | step-5-preview | 4532 | 14929 | 0 | 25408 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e16c4d689ffeqZ7ICyiGdgVmcW | Очередь TASK-hermes-12 закрыта | step-5-preview | 4527 | 24043 | 0 | 24960 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e16c16aa3ffejScJJ02PJTUDdm | О4: t13hc2-opt-curation-0-unified | step-5-preview | 3553 | 8210 | 0 | 25408 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e16c01932ffegb2T2BN0j52gCm | О4: t13hc2-opt-curation-0-typical | step-5-preview | 4885 | 6765 | 0 | 23680 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e16beec90ffeqJzUly7teFSbM8 | О4: t13hc2-opt-curation-1-unified | step-5-preview | 4318 | 21044 | 0 | 25408 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16bc3f8affe4CRQSBkWOv0jyR | О4: t13hc2-opt-curation-1-typical | step-5-preview | 5650 | 12081 | 0 | 23680 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e16ba9350ffeYTz3RYvkgRDBl8 | О4: t13hc2-opt-curation-2-unified | step-5-preview | 3437 | 8179 | 0 | 25408 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e16b972fdffeK688GmTnnLQyS4 | О4: t13hc2-opt-curation-2-typical | step-5-preview | 3425 | 10678 | 0 | 25024 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e16b7ad65ffeJDLL0BE5PqoTXG | Очередь TASK-hermes-12 закрыта | step-5-preview | 2572 | 14757 | 0 | 25408 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e16b5d88bffe8f0tHIRfmE18l1 | О4: t13hc2-opt-lean-0-typical | step-5-preview | 2560 | 18028 | 0 | 25024 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e16b378dcffeSAAnbPRmWy50ex | О4: t13hc2-opt-lean-1-unified | step-5-preview | 2549 | 19038 | 0 | 25408 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16b0b8ebffeppaWKOSTHa2UR4 | О4: t13hc2-opt-lean-1-typical | step-5-preview | 2537 | 12951 | 0 | 25024 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e16af1bedffeLC8WmfJ19GPjQ2 | О4: t13hc2-opt-lean-2-unified | step-5-preview | 3164 | 14274 | 0 | 25408 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e16ad9398ffeN5N17DVpIgEsIY | О4: t13hc2-opt-lean-2-typical | step-5-preview | 26781 | 24114 | 0 | 53184 | 0 | 0 | $0.10 |
+| 2026-11-17 | ses_e16ab15bdffepXYPceq2IuWgud | О4: t13hc2-opt-hybrid-0-unified | step-5-preview | 3282 | 8824 | 0 | 25408 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e16aa1c5dffe4mh83J3QF9EPHU | О4: t13hc2-opt-hybrid-0-typical | step-5-preview | 3270 | 17320 | 0 | 25024 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e16a84d88ffeVjwTVfZLaZ2sIN | О4: t13hc2-opt-hybrid-1-unified | step-5-preview | 4042 | 17993 | 0 | 25408 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16a61d01ffenyebIEJRTnrJ2S | О4: t13hc2-opt-hybrid-1-typical | step-5-preview | 4030 | 30460 | 0 | 25024 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e16a296ffffenzJ7yKVvhJWMFT | О4: t13hc2-opt-hybrid-2-unified | step-5-preview | 3858 | 12524 | 0 | 25472 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e16a12325ffe3eUcnxH2BXG2vG | О4: t13hc2-opt-hybrid-2-typical | step-5-preview | 3910 | 16363 | 0 | 25024 | 0 | 0 | $0.05 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
