@@ -39,3 +39,79 @@ eval/.cost-label
 
 # --- Lock журнала мутаций навыков (runtime, не содержимое) ---
 knowledge/skills/.evolution/.locks/
+
+# =====================================================================
+# --- Лаборатория разработки: артефакты работы организаторам не нужны ---
+# В git остаётся только курируемый набор доказательств (negation-список
+# ниже). Полный набор артефактов хранится локально и пересоздаётся
+# прогонами стенда (см. README §9 «Что в репозитории, а что — нет»).
+#
+# Правило: всё под eval/runs/ вне git, КРОМЕ перечисленных доказательств.
+eval/runs/*
+!eval/runs/t18-case/
+!eval/runs/t18-case-heldout/
+!eval/runs/t20-gate-revision/
+!eval/runs/t16-addendum/
+!eval/runs/t17-axis/
+!eval/runs/ab-options-demo-retention/
+!eval/runs/critic-matrix/
+!eval/runs/t13-blindpairs/
+!eval/runs/t18-case-launch.log
+
+# --- демо-прогон кейса: журнал, решение, артефакты, финальные гейты ---
+eval/runs/t18-case/*
+!eval/runs/t18-case/manifest.md
+!eval/runs/t18-case/case-solution.md
+!eval/runs/t18-case/self-check-6q.md
+!eval/runs/t18-case/step1-verification.md
+!eval/runs/t18-case/artifacts/
+!eval/runs/t18-case/gates/
+!eval/runs/t18-case/critic4/
+!eval/runs/t18-case/critic5/
+eval/runs/t18-case/gates/*
+!eval/runs/t18-case/gates/final-*.gate.txt
+eval/runs/t18-case/critic4/*
+!eval/runs/t18-case/critic4/findings.md
+eval/runs/t18-case/critic5/*
+!eval/runs/t18-case/critic5/findings.md
+eval/runs/t18-case/artifacts/*
+!eval/runs/t18-case/artifacts/*.md
+
+# --- held-out прогон (переносимость): журнал и проверка шага 1 ---
+eval/runs/t18-case-heldout/*
+!eval/runs/t18-case-heldout/manifest.md
+!eval/runs/t18-case-heldout/step1-verification.md
+
+# --- раунд доводки артефактов шагов 4–5 до гейтов (task 20): журнал ---
+eval/runs/t20-gate-revision/*
+!eval/runs/t20-gate-revision/manifest.md
+
+# --- регрессионные фикстуры и курируемые доказательства исследований ---
+# (t16-addendum, t17-axis, ab-options-demo-retention, critic-matrix,
+#  t13-blindpairs — читаются тестами и цитируются в measurements.md)
+
+# --- сырые выводы моделей и лог-хвосты anywhere ---
+**/*.out
+**/*.err
+**/*.start
+**/*.end
+**/*.jsonl
+# кроме закоммиченных фикстур/доказательств:
+!eval/runs/t16-addendum/**/*.out
+!eval/runs/t16-addendum/**/*.err
+!eval/fault-injection/*
+!eval/runs/t18-case/critic4/critic.out
+!eval/runs/t18-case/critic5/critic.out
+
+# --- сырьё задач и бенчмарков перекачиваемо (URL — в скриптах) ---
+eval/tasks/*/artifacts/materials/
+eval/benchmarks/dabstep/data/
+
+# --- резервные копии артефактов до ревизии ---
+**/*.critic-backup
+
+# --- сырые выводы советов (council) внутри демо-проекта ---
+project/council/run-*/*.out
+project/council/run-*/*.err
+project/council/run-*/*.start
+project/council/run-*/*.end
