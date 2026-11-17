@@ -76,6 +76,15 @@ ANALYSES: dict[str, dict] = {
         },
         "pairs": [("revised", "draft"), ("revised", "curation")],
     },
+    # H-SI1 (TASK-hermes-15 §28.1): навык с патчами по замеру против
+    # навыка без патчей. Δ = si-on − si-off (направление гипотезы).
+    "si": {
+        "arms": {
+            "si-off": (["si"], "si-off"),
+            "si-on": (["si"], "si-on"),
+        },
+        "pairs": [("si-off", "si-on")],
+    },
 }
 
 # Внешний cross-check (n=1, другая механика — §18.1/§14.3 + реcкоринг
@@ -299,6 +308,10 @@ def main(argv: list[str]) -> int:
                         help="метка сессий оценивания в COST.md (можно многократно)")
     parser.add_argument("--no-crosscheck", action="store_true",
                         help="без демо-cross-check (для серий на других задачах)")
+    parser.add_argument("--title", default="Серия k=3 по дизайну навыков + О5 — статистика (TASK-hermes-12 §25.1/§25.2/§25.3)",
+                        help="заголовок артефакта (по умолчанию — как у серии t12)")
+    parser.add_argument("--prereg", default="measurements.md §25.1/§25.2/§25.3 ДО прогонов",
+                        help="ссылка на предрегистрацию в шапке артефакта")
     args = parser.parse_args(argv)
 
     runs_dir = Path(args.runs_dir)
@@ -315,10 +328,10 @@ def main(argv: list[str]) -> int:
         return EXIT_USAGE
 
     header_lines: list[str] = [
-        "# Серия k=3 по дизайну навыков + О5 — статистика (TASK-hermes-12 §25.1/§25.2/§25.3)",
+        f"# {args.title}",
         "",
-        "Драйвер: `eval/skills_k3_stats.py` (API-вызовов нет). Предрегистрация —",
-        "measurements.md §25.1/§25.2/§25.3 ДО прогонов. Интервалы — по t (df=2 →",
+        f"Драйвер: `eval/skills_k3_stats.py` (API-вызовов нет). Предрегистрация —",
+        f"{args.prereg}. Интервалы — по t (df=2 →",
         "4.303), не по z. MDD(n=3) из измеренного шума судьи.",
         "",
         "| Рубрика | sd шума | n наблюдений шума | MDD(n=3) |",

@@ -34,6 +34,7 @@
 | 2026-11-17 | TASK-hermes-11: пробы изоляции стенда §23.0 (`eval/iso_probe.py`, 3 сессии opencode) | step-5-preview (OpenCode) | — | — | — | ~$0.01 (строки прод-таблицы, метки «О4: t11-iso-…») | `eval/runs/t11-iso/{in,out,out-inrepo-subdir}/` |
 | 2026-11-17 | TASK-hermes-12: серия k=3 по дизайну навыков + О5 — генерация 27 цепочек прямым вызовом API (среда = промпт; research 9: curation $0.1492 / lean $0.1603 / hybrid $0.1326; options 9: curation $0.1631 / lean $0.1207 / hybrid $0.1346; o5a 3 — research lean на step-3.7-flash $0.0564; o5b-P 3 и o5b-F 3 — шаг 3 skill с research.md от step-5 / от flash: $0.1234 / $0.1605) | step-5-preview + step-3.7-flash (API) | 251 421 (измерение: usage ответов, кэша префикса нет) | 387 184 (включая reasoning; reasoning не сепарирован — 0) | ~0 | $1.2007 (формула §1.8 под модель) | `eval/runs/t12-skills/*/{curation,lean,hybrid,skill}/meta*.json`, манифест `eval/runs/t12-skills/manifest.md`; предрегистрация §25.1/§25.2 |
 | 2026-11-17 | TASK-hermes-13: held-out-симметрия серии навыков — генерация 18 цепочек прямым вызовом API (среда = промпт; research 9: curation $0.1814 / lean $0.2360 / hybrid $0.2014; options 9: curation $0.1174 / lean $0.1095 / hybrid $0.1245; 0 провалов) | step-5-preview (API) | 245 253 (измерение: usage ответов, кэша префикса нет) | 268 528 (reasoning не сепарирован — 0) | ~0 | $0.9703 (формула §1.8) | `eval/runs/t13-skills-heldout/*/{curation,lean,hybrid}/meta.json`, манифест `eval/runs/t13-skills-heldout/manifest.md`; предрегистрация §27.2/§27.2-А |
+| 2026-11-17 | TASK-hermes-15: серия H-SI1 — генерация 6 цепочек шага 2 демо прямым вызовом API (среда = промпт; si-off 3 цепочки навыком ДО патчей $0.1806, si-on 3 цепочки навыком ПОСЛЕ трёх патчей по замеру $0.1590; 0 провалов, ослепление чистое) | step-5-preview (API) | 84 459 (измерение: 41 811 si-off + 42 648 si-on; кэша префикса нет) | 94 486 (reasoning не сепарирован — 0) | ~0 | $0.3396 (формула §1.8) | `eval/runs/t15-si/si/{si-off,si-on}/meta.json`, манифест `eval/runs/t15-si/manifest.md`; предрегистрация §28 + поправка §28.1 |
 ## Контур прода (prod) — метрика $/прогон для пользователя
 
 Прайс целевой среды (OpenCode, dev-контур прогонов): `step-5-preview` —
@@ -527,6 +528,24 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e16a61d01ffenyebIEJRTnrJ2S | О4: t13hc2-opt-hybrid-1-typical | step-5-preview | 4030 | 30460 | 0 | 25024 | 0 | 0 | $0.09 |
 | 2026-11-17 | ses_e16a296ffffenzJ7yKVvhJWMFT | О4: t13hc2-opt-hybrid-2-unified | step-5-preview | 3858 | 12524 | 0 | 25472 | 0 | 0 | $0.04 |
 | 2026-11-17 | ses_e16a12325ffe3eUcnxH2BXG2vG | О4: t13hc2-opt-hybrid-2-typical | step-5-preview | 3910 | 16363 | 0 | 25024 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1689c744ffeXtzt16xPunmO4v | О4: t15-c2-plain-chat | step-5-preview | 2130 | 11528 | 0 | 25408 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e16888cbdffeRupxXXqc7vr1vC | О4: t15-c2-skill | step-5-preview | 5263 | 21212 | 0 | 25408 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e16867297ffem3u1ZlGfnu2Xv1 | О4: t15-c2-council-lite | step-5-preview | 6791 | 19714 | 0 | 25408 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16833a84ffebivVJ22F1DabjJ | О4: t15-c2-critic-loop2 | step-5-preview | 3 | 15353 | 0 | 30912 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e1681a97fffedIgbO4MDLjeR56 | О4: t15-c2-lean0 | step-5-preview | 28232 | 9256 | 0 | 0 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1680aa6dffeqhm3yEtrMPEAfh | О4: t15-c2-hybrid0 | step-5-preview | 26157 | 1613 | 0 | 1792 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e16741fccffeRDLKek1f5c6jUq | О4: t15-si-si-si-off-0-unified | step-5-preview | 4804 | 13139 | 0 | 25536 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e1672b23affew3NTqbtVmYYbRK | TASK-hermes-14 закрыт полностью | step-5-preview | 11775 | 8013 | 0 | 18112 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e1671cfacffeWmoITUccu0uocO | О4: t15-si-si-si-off-1-unified | step-5-preview | 4191 | 22513 | 0 | 25536 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e166f6affffeTDeMWS6kbqhdLv | О4: t15-si-si-si-off-1-typical | step-5-preview | 5466 | 9729 | 0 | 23808 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e166e65f5ffeRn3uDfMPUeQb1l | О4: t15-si-si-si-off-2-unified | step-5-preview | 5600 | 30542 | 0 | 25536 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e166b679affee4Lj07IG8IYiyt | О4: t15-si-si-si-off-2-typical | step-5-preview | 5595 | 23443 | 0 | 25088 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e16691b78ffeUwFVugRcXQ2B6R | О4: t15-si-si-si-on-0-unified | step-5-preview | 4915 | 20045 | 0 | 25536 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e16672c62ffe5tajzdQeoATUyx | О4: t15-si-si-si-on-0-typical | step-5-preview | 4910 | 11439 | 0 | 25088 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e1665f708ffeQjvnJwaXjBntpL | О4: t15-si-si-si-on-1-unified | step-5-preview | 4348 | 23029 | 0 | 25536 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e1663a25dffeZozH7QT4rKy4ri | О4: t15-si-si-si-on-1-typical | step-5-preview | 4343 | 23623 | 0 | 25088 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e16617361ffea71S8NJ0YlUvIc | О4: t15-si-si-si-on-2-unified | step-5-preview | 4419 | 17775 | 0 | 25536 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e165f9c6bffevt13lK9IfKM3vh | О4: t15-si-si-si-on-2-typical | step-5-preview | 4414 | 16498 | 0 | 25088 | 0 | 0 | $0.05 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

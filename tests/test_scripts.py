@@ -1375,9 +1375,22 @@ class RecoverStateTests(TempDirTestCase):
         self.assertEqual((repo / "STATE.md").read_text(encoding="utf-8"), "# сломано\n")
 
     def test_real_repo_state_recovers_or_valid(self) -> None:
-        """Критерий приёмки: на валидном STATE.md репозитория — exit 0."""
-        result = run_script(RECOVER_STATE)
+        """Критерий приёмки: на живом репозитории recover_state не требует
+        восстановления и НЕ ПИШЕТ в STATE.md.
+
+        РЕГРЕСС (TASK-hermes-15): тест без --dry-run ПИСАЛ в STATE.md
+        репозитория — прогон на моментально битом STATE.md (правки агента
+        с незакрытыми токенами) откатывал его из git и стёр работу
+        очереди. Тест не имеет права менять состояние репозитория:
+        инвариант проверяется байт-в-байт. Класс — из «провалившихся
+        подходов»: инструмент, пишущий в боевой путь, создаёт гонку.
+        """
+        state_path = REPO_ROOT / "STATE.md"
+        before = state_path.read_bytes()
+        result = run_script(RECOVER_STATE, "--dry-run")
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+        self.assertEqual(state_path.read_bytes(), before,
+                         "тест не имеет права менять STATE.md репозитория")
 
 
 # --------------------------------------------------------------------------
@@ -1580,6 +1593,122 @@ class CheckCitationsTests(TempDirTestCase):
                 break
         assert result is not None
         self.assertEqual(EXIT_OK, result.returncode, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 10) check_skill_index.py — синхронность индекса и навыков (TASK-hermes-15)
+# --------------------------------------------------------------------------
+
+CHECK_SKILL_INDEX = "check_skill_index.py"
+
+
+def _skill_fixture(root: Path, name: str, front_name: str | None = None) -> Path:
+    path = root / "knowledge" / "skills" / name / "SKILL.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fm = f"---\nname: {front_name or name}\ndescription: тест\n---\n\n# {name}\n"
+    path.write_text(fm, encoding="utf-8")
+    return path
+
+
+class CheckSkillIndexTests(TempDirTestCase):
+    """Гейт «роутер не врёт» (M2/M11): индекс ↔ SKILL.md обе стороны."""
+
+    def _run(self) -> subprocess.CompletedProcess:
+        return run_script(
+            CHECK_SKILL_INDEX,
+            "--index", str(self.tmp / "knowledge" / "index.md"),
+            "--skills", str(self.tmp / "knowledge" / "skills"),
+        )
+
+    def _index(self, rows: list[tuple[str, str]]) -> Path:
+        path = self.tmp / "knowledge" / "index.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        body = "\n".join(f"| «вопрос» | {r} | `{p}` |" for r, p in rows)
+        path.write_text("# индекс\n\n| вопрос | навык | файл |\n|---|---|---|\n" + body + "\n",
+                        encoding="utf-8")
+        return path
+
+    def test_synced_index_exit_0(self) -> None:
+        _skill_fixture(self.tmp, "framing")
+        _skill_fixture(self.tmp, "options")
+        self._index([("framing", "skills/framing/SKILL.md"),
+                     ("options", "skills/options/SKILL.md")])
+        result = self._run()
+        self.assertEqual(EXIT_OK, result.returncode, result.stdout + result.stderr)
+
+    def test_skill_missing_from_index_exit_2(self) -> None:
+        """Навык есть на диске, индекс молчит — «роутер врёт» (направление 1)."""
+        _skill_fixture(self.tmp, "framing")
+        _skill_fixture(self.tmp, "options")
+        self._index([("framing", "skills/framing/SKILL.md")])
+        result = self._run()
+        self.assertEqual(EXIT_VIOLATION, result.returncode)
+        self.assertIn("options", result.stderr)
+
+    def test_index_route_to_missing_file_exit_2(self) -> None:
+        """Индекс ведёт на несуществующий файл — устаревший маршрут (направление 2)."""
+        _skill_fixture(self.tmp, "framing")
+        self._index([("framing", "skills/framing/SKILL.md"),
+                     ("critic", "skills/critic/SKILL.md")])
+        result = self._run()
+        self.assertEqual(EXIT_VIOLATION, result.returncode)
+        self.assertIn("skills/critic/SKILL.md", result.stderr)
+
+    def test_frontmatter_name_drift_exit_2(self) -> None:
+        """Каталог переименован, frontmatter отстал — класс «роутер врёт» (направление 3)."""
+        _skill_fixture(self.tmp, "framing", front_name="frame")
+        self._index([("framing", "skills/framing/SKILL.md")])
+        result = self._run()
+        self.assertEqual(EXIT_VIOLATION, result.returncode)
+        self.assertIn("frame", result.stderr)
+
+    def test_draft_dir_exempt_from_index(self) -> None:
+        """Стадирование M3: _draft намеренно вне индекса — исключение названое."""
+        _skill_fixture(self.tmp, "framing")
+        _skill_fixture(self.tmp, "_draft")
+        self._index([("framing", "skills/framing/SKILL.md")])
+        result = self._run()
+        self.assertEqual(EXIT_OK, result.returncode, result.stdout + result.stderr)
+
+    def test_repo_index_is_synced(self) -> None:
+        """Критерий приёмки на живом репозитории: обе стороны зелёные."""
+        result = run_script(CHECK_SKILL_INDEX)
+        self.assertEqual(EXIT_OK, result.returncode, result.stdout + result.stderr)
+
+
+# --------------------------------------------------------------------------
+# 11) check_commit_scope.py — состав коммита (TASK-hermes-15, ретро M9)
+# --------------------------------------------------------------------------
+
+CHECK_COMMIT_SCOPE = "check_commit_scope.py"
+
+
+class CheckCommitScopeTests(TempDirTestCase):
+    """Гейт класса «преждевременный коммит» (8 повторов в истории)."""
+
+    def _run(self, *names: str) -> subprocess.CompletedProcess:
+        return run_script(CHECK_COMMIT_SCOPE, "--names", ",".join(names))
+
+    def test_only_task_files_refused(self) -> None:
+        result = self._run("TASK-hermes-15.md")
+        self.assertEqual(EXIT_VIOLATION, result.returncode)
+        self.assertIn("преждевременный коммит", result.stderr)
+
+    def test_task_file_case_insensitive(self) -> None:
+        result = self._run("task-6.md", "Task-7.MD")
+        self.assertEqual(EXIT_VIOLATION, result.returncode)
+
+    def test_task_file_with_work_allowed(self) -> None:
+        result = self._run("TASK-hermes-15.md", "LOG.md", "STATE.md")
+        self.assertEqual(EXIT_OK, result.returncode, result.stderr)
+
+    def test_work_only_allowed(self) -> None:
+        result = self._run("LOG.md")
+        self.assertEqual(EXIT_OK, result.returncode, result.stderr)
+
+    def test_empty_staged_set_allowed(self) -> None:
+        result = self._run()
+        self.assertEqual(EXIT_OK, result.returncode, result.stderr)
 
 
 if __name__ == "__main__":

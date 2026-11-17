@@ -215,8 +215,24 @@ class StatsObservationTests(unittest.TestCase):
         self.assertAlmostEqual(d["delta"], 2.0, places=6)
         self.assertIsNotNone(d["ci95"])
 
-    def test_analyses_registry_has_all_five(self):
-        self.assertEqual(set(stats.ANALYSES), {"step2", "step3", "o5a", "o5b", "hc2"})
+    def test_si_analysis_delta_direction(self):
+        """H-SI1: Δ = si-on − si-off (направление гипотезы §28.1)."""
+        recs = []
+        for i in range(3):
+            recs.append({"group": "si", "arm": "si-off", "i": i,
+                         "rubric": "unified", "total40": 20.0 + i})
+            recs.append({"group": "si", "arm": "si-on", "i": i,
+                         "rubric": "unified", "total40": 22.0 + i})
+        off = stats.observations(recs, ["si"], "si-off", "unified")
+        on = stats.observations(recs, ["si"], "si-on", "unified")
+        self.assertEqual(off, [20.0, 21.0, 22.0])
+        self.assertEqual(on, [22.0, 23.0, 24.0])
+        d = stats.delta_summary(stats.arm_summary(off), stats.arm_summary(on))
+        self.assertAlmostEqual(d["delta"], 2.0, places=6)
+
+    def test_analyses_registry_has_all_analyses(self):
+        self.assertEqual(set(stats.ANALYSES),
+                         {"step2", "step3", "o5a", "o5b", "hc2", "si"})
 
 
 class TwoCriticProtocolTests(unittest.TestCase):
@@ -296,6 +312,30 @@ class ParserFormatTests(unittest.TestCase):
 
     def test_unparseable_is_none(self):
         self.assertIsNone(scorer.parse_scores("оценки нет, только находки")["total40"])
+
+    def test_partial_new_format_not_counted_as_full(self):
+        """РЕГРЕСС (TASK-hermes-15, живая проба): «Итого: 24/40 по
+        оценимому (10+6+8); критерий 3 не оценим» — частичная оценка
+        НОВОГО формата. Без покрытия 24 counted как полная /40 и меняла
+        знак Δ серии (si-off-2-unified)."""
+        text = ("## Оценки\n"
+                "| 1. Проработанность | 5/5 | 5/5 | 10/10 |\n"
+                "| 3. Имплементация | н/о | н/о | н/о |\n"
+                "Итого: 24/40 по оценимому (10+6+8); критерий 3 не оценим "
+                "по одному артефакту.\n")
+        res = scorer.assess_scores(text)
+        self.assertTrue(res["partial"])
+        self.assertIsNone(res["total40"])
+        self.assertIn("частичная оценка", res["error"])
+
+    def test_full_score_with_parenthetical_stays_full(self):
+        """Полная оценка с примечанием не становится частичной."""
+        for text in ("Итого: 18 /40 (нормировка: 4.5/10)",
+                     "Итого: 14/ 40 (баллы — по проходу 2; сумма прохода 1 — 11/20)",
+                     "Итого: 36 /40"):
+            res = scorer.assess_scores(text)
+            self.assertFalse(res.get("partial"), text)
+            self.assertIsNotNone(res["total40"], text)
 
 
 class SummaryMergeTests(unittest.TestCase):

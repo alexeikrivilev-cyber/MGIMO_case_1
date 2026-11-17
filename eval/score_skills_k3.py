@@ -47,12 +47,16 @@ FAMILIES = {
     "o5b-P": {"arms": ("skill",), "typical": "rubric-options.md"},
     "o5b-F": {"arms": ("skill",), "typical": "rubric-options.md"},
     "hc2": {"arms": ("revised",), "typical": "rubric-research.md"},
+    # H-SI1 (TASK-hermes-15 §28.1): навык с патчами по замеру против
+    # навыка без патчей; артефакт — research, поэтому типовая рубрика
+    # исследовательская.
+    "si": {"arms": ("si-off", "si-on"), "typical": "rubric-research.md"},
 }
 
 # Короткие код группы для тега (хук режет «Шаг» до 40 символов, плюс
 # префикс «О4: » от run_critic — тег обязан быть ≤36).
 TAG_CODES = {"research": "res", "options": "opt", "o5a": "o5a", "o5b-P": "o5bP",
-             "o5b-F": "o5bF", "hc2": "hc2"}
+             "o5b-F": "o5bF", "hc2": "hc2", "si": "si"}
 
 CHAIN_FILES = ("final.md", "final-1.md", "final-2.md")
 
@@ -141,14 +145,31 @@ def main(argv: list[str]) -> int:
                             res["error"] = "Итого не распознан в существующем critic.out"
                     else:
                         res = run_critic(artifact, rubric_path, out_dir, tag)
-                        if res.get("total40") is None and critic_out.is_file():
-                            res = assess_scores(critic_out.read_text(encoding="utf-8", errors="replace"))
-                    if "error" in res:
+                        # Переразбор свежего выхода через assess_scores:
+                        # run_critic зовёт parse_scores напрямую и НЕ ловит
+                        # частичную оценку нового формата («24/40 по
+                        # оценимому» counted как полная — дефект
+                        # TASK-hermes-15, менявший знак Δ).
+                        if critic_out.is_file():
+                            reparsed = assess_scores(
+                                critic_out.read_text(encoding="utf-8", errors="replace"))
+                            reparsed["source"] = str(critic_out)
+                            if (reparsed.get("total40") is None
+                                    and not reparsed.get("partial")
+                                    and not res.get("error")):
+                                reparsed["error"] = "Итого не распознан в critic.out"
+                            res = reparsed
+                    if res.get("error") and not res.get("partial"):
+                        # Частичная оценка — класс протокола (§26.4), не
+                        # провал прогона: она не должна удовать exit-код.
                         failures += 1
                     record = {
                         "critic": args.critic_id,
                         "group": group, "arm": arm, "i": i, "rubric": rubric_name,
-                        "total40": res.get("total40"),
+                        # Частичная оценка — не сравнимая клетка (§26.4):
+                        # total40 = None, класс назван в error.
+                        "total40": None if res.get("partial") else res.get("total40"),
+                        "partial": bool(res.get("partial")),
                         "findings_total": res.get("findings_total"),
                         "findings_important": res.get("findings_important"),
                         "artifact": str(artifact),
@@ -159,7 +180,8 @@ def main(argv: list[str]) -> int:
                                if (r.get("critic"), r.get("group"), r.get("arm"), r.get("i"), r.get("rubric")) != key]
                     records.append(record)
                     print(f"{group}/{arm}#{i} {rubric_name} [{args.critic_id}]: {res.get('total40')}"
-                          + (f" ПРОВАЛ: {res['error']}" if res.get("error") else ""))
+                          + (f" ЧАСТИЧНО: {res['error']}" if res.get("partial")
+                             else f" ПРОВАЛ: {res['error']}" if res.get("error") else ""))
 
     scores_root.mkdir(parents=True, exist_ok=True)
     (scores_root / "summary.json").write_text(

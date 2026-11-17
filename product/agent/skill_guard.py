@@ -111,9 +111,40 @@ def validate_evidence(evidence: str, repo_root: Path) -> Tuple[bool, str]:
         return False, ("evidence обязателен: самоулучшение только по замеру "
                        "(BRIEF п.26). Дай путь к артефакту замера или «measurements.md §N»")
     reasons: list[str] = []
-    # 1) §-указания: точная ссылка, битая — отказ (не fallback на файл).
+    # Кандидаты-файлы (бэктики и голые пути) — резолвим ДО разбора §:
+    # если evidence называет файл, §N в той же строке относится к НЕМУ.
+    named: list[tuple[str, Path]] = []
+    for candidate in BACKTICK_PATH_RE.findall(evidence) + BARE_PATH_RE.findall(evidence):
+        resolved = _resolves_to_existing(candidate, repo_root)
+        if resolved is not None:
+            named.append((candidate, resolved))
     section_refs = SECTION_RE.findall(evidence)
     if section_refs:
+        # §-указания: точная ссылка, битая — отказ (не fallback на файл).
+        # Названный файл, который НЕ measurements.md: секция принадлежит
+        # ему. Иначе evidence «<другой-файл>.md §N» молча резолвился бы
+        # в measurements.md §N — чужой документ (дефект найден живой
+        # пробой TASK-hermes-15: «…decomposition.md §13» проходил как
+        # measurements.md §13 — раздел про живую ре-проверку ссылок).
+        foreign = [(c, p) for c, p in named if p.name != "measurements.md"]
+        if foreign:
+            for candidate, path in foreign:
+                body = path.read_text(encoding="utf-8", errors="replace")
+                missing = [s for _prefix, s in section_refs if f"§{s}" not in body]
+                if missing:
+                    reasons.append(f"{candidate}: секция "
+                                   + "/".join(f"§{m}" for m in missing)
+                                   + " не найдена в этом файле (проброс на "
+                                     "measurements.md запрещён)")
+                    continue
+                if not _looks_like_measurement(path):
+                    reasons.append(f"{candidate}: файл есть, но не похож на артефакт "
+                                   "замера (нет вердикта/итога/Δ/MDD)")
+                    continue
+                return True, (str(path.relative_to(repo_root)) + " "
+                              + " ".join(f"§{s}" for _prefix, s in section_refs))
+            return False, ("evidence не резолвится в артефакт замера: "
+                           + "; ".join(reasons))
         measurements = repo_root / "docs" / "research" / "measurements.md"
         body = (measurements.read_text(encoding="utf-8", errors="replace")
                 if measurements.is_file() else "")

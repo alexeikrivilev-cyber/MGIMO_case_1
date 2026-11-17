@@ -36,3 +36,6 @@ eval/benchmarks/dabstep/data/
 
 # --- Метка прогона для хука cost-append (TASK-hermes-6 п.4: STATE.md раннеры не трогают) ---
 eval/.cost-label
+
+# --- Lock журнала мутаций навыков (runtime, не содержимое) ---
+knowledge/skills/.evolution/.locks/

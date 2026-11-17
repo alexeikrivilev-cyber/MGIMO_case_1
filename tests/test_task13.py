@@ -266,6 +266,57 @@ class JudgeAgreementTests(unittest.TestCase):
             self.assertEqual(len(payload["pairs"]), 10)
 
 
+class JudgeAgreementProtocolTests(unittest.TestCase):
+    """TASK-hermes-15 §29: протокол двух критиков против человека.
+
+    Проверяют метрики ПРОТОКОЛА (среднее/единогласно) на записанных
+    артефактах добора — без API: регрессия ловит потерю покрытия или
+    тихий слом чтений.
+    """
+
+    def test_second_critic_coverage_is_complete(self):
+        # Добор t15 закрыл покрытие: все 6 артефактов вне t12 имеют
+        # полную оценку критика #2 (артефакты eval/runs/t15-blindpairs-c2/).
+        scores, _shifts = sc_ja.c2_blindpair_scores()
+        self.assertEqual(set(scores), {"plain-chat", "skill", "council-lite",
+                                       "critic-loop2", "lean#0", "hybrid#0"})
+        for arm, value in scores.items():
+            self.assertIsNotNone(value, f"{arm}: покрытие потеряно")
+
+    def test_class_shift_detector_names_only_real_partials(self):
+        # «Нет покрытия» ≠ «частичная оценка»: сдвиг класса фиксируется
+        # только там, где t13 дал частичную оценку, а t15 — полную.
+        _scores, shifts = sc_ja.c2_blindpair_scores()
+        self.assertEqual(set(shifts), {"lean#0: t13 частичная → t15 полная 16.0",
+                                       "hybrid#0: t13 частичная → t15 полная 20.0"})
+
+    def test_protocol_readings_on_recorded_data(self):
+        # На записанных оценках: среднее покрывает все 10 пар; единогласие
+        # молчит там, где критики разошлись между собой (§26.4).
+        c1_t12 = sc_ja.c1_t12_scores()
+        c2 = dict(sc_ja.c2_t13_scores())
+        c2.update(sc_ja.c2_blindpair_scores()[0])
+
+        def c1_of(arm: str):
+            # Как в драйвере: легаси-оценки t6 — только для критика #1.
+            return c1_t12.get(arm, sc_ja.C1_LEGACY.get(arm))
+
+        rows = []
+        for pair in sc_ja.PAIRS:
+            sa1, sb1 = c1_of(pair["a"]), c1_of(pair["b"])
+            sa2, sb2 = c2.get(pair["a"]), c2.get(pair["b"])
+            w1, w2 = sc_ja.implied_winner(sa1, sb1), sc_ja.implied_winner(sa2, sb2)
+            mean_w = (sc_ja.implied_winner((sa1 + sa2) / 2, (sb1 + sb2) / 2)
+                      if None not in (sa1, sb1, sa2, sb2) else None)
+            unan = None if w1 is None or w2 is None else (
+                "no-direction" if w1 != w2 else w1)
+            rows.append({"mean": mean_w, "unan": unan})
+        self.assertTrue(all(r["mean"] is not None for r in rows),
+                        "среднее чтение потеряло покрытие")
+        silent = sum(1 for r in rows if r["unan"] == "no-direction")
+        self.assertEqual(silent, 5)  # замер §29.1: протокол молчит на 5/10
+
+
 class CliContractTests(unittest.TestCase):
     def test_blind_pairs_build(self):
         with tempfile.TemporaryDirectory() as tmp:

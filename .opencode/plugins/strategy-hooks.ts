@@ -39,10 +39,17 @@ const SCRIPTS_DIR = resolve(REPO_ROOT, "scripts");
 const COST_MD = resolve(REPO_ROOT, "COST.md");
 const STATE_MD = resolve(REPO_ROOT, "STATE.md");
 const HOOKS_LOG = resolve(REPO_ROOT, ".opencode/hooks.log");
+const SKILLS_INDEX = resolve(REPO_ROOT, "knowledge/index.md");
 // Метка прогона раннеров (run_critic.py, run_ab.py) — ОТДЕЛЬНЫЙ файл:
 // STATE.md принадлежит агенту, общий файл давал гонку read/write
 // (правки агента затирались restore'ом метки; TASK-hermes-6 п.4).
 const RUN_LABEL = resolve(REPO_ROOT, "eval/.cost-label");
+
+// Артефакт шага 4 с приёмным чек-листом 6 вопросов (TASK-hermes-14 §3):
+// гейт check_acceptance винтит ТОЛЬКО на нём — comms и verification-plan
+// несут указатели, а не копию чек-листа («один дом факта»), поэтому на
+// них гейт падал бы by design и превратился бы в ложную тревогу.
+const ACCEPTANCE_ARTIFACT = "strategy-product.md";
 
 // Прод-прайс step-5-preview, $ за 1M токенов (§1.8 прайс-документа).
 // Формула: input×1.00 + cache.read×0.10 + output×2.70 (в метриках OpenCode
@@ -278,6 +285,26 @@ export const StrategyHooks: Plugin = async () => {
           const { code, out } = runPython("check_sources.py", [abs]);
           output.output += `\n\n[hook:sources-guard] check_sources.py → exit ${code}\n${out.trim()}`;
           note(`sources-guard: ${abs} → exit ${code}`);
+          // TASK-hermes-15 П.4: гейты задачи 14 были «вручную + в навыках» —
+          // теперь они проводные. Переносимость — на любой артефакт
+          // project/ (калибрована на 15/15, §task-14); приёмный
+          // чек-лист — только на strategy-product.md (единственный дом
+          // чек-листа; на comms/verification гейт падал бы by design).
+          const { code: tcode, out: tout } = runPython("check_transferability.py", [abs]);
+          output.output += `\n\n[hook:transferability-guard] check_transferability.py → exit ${tcode}\n${tout.trim()}`;
+          note(`transferability-guard: ${abs} → exit ${tcode}`);
+          if (abs.endsWith(`/${ACCEPTANCE_ARTIFACT}`)) {
+            const { code: acode, out: aout } = runPython("check_acceptance.py", [abs]);
+            output.output += `\n\n[hook:acceptance-guard] check_acceptance.py → exit ${acode}\n${aout.trim()}`;
+            note(`acceptance-guard: ${abs} → exit ${acode}`);
+          }
+        } else if (abs === SKILLS_INDEX
+                   || (abs.includes("/knowledge/skills/") && abs.endsWith("/SKILL.md"))) {
+          // TASK-hermes-15 П.2.1: роутер не врёт (M2/M11). Гейт сам
+          // исключает _draft (стадирование M3).
+          const { code, out } = runPython("check_skill_index.py");
+          output.output += `\n\n[hook:skill-index-guard] check_skill_index.py → exit ${code}\n${out.trim()}`;
+          note(`skill-index-guard: ${abs} → exit ${code}`);
         }
       } catch (error) {
         note(`tool.execute.after ошибка: ${String(error)}`);

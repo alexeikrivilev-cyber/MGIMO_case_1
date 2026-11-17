@@ -53,6 +53,19 @@ NOTES_BODY = """# Просто заметки
 Здесь записаны мысли о работе. Никаких выводов, таблиц и расчётов.
 """
 
+# Файл с вердиктами применимости и собственной §-нумерацией (аналог
+# docs/research/mattpocock-decomposition.md в живом репозитории).
+DECOMPOSITION_BODY = """# Декомпозиция (тест)
+
+## 1. Разбор
+
+Замер: применимость оценивается вердиктом по механике.
+
+## 13. Что берём в работу
+
+Ссылка на этот раздел — «§13». Итог: 6 адаптаций.
+"""
+
 
 class SkillEvolutionTestCase(unittest.TestCase):
     def setUp(self) -> None:
@@ -66,6 +79,7 @@ class SkillEvolutionTestCase(unittest.TestCase):
         (research / "measurements.md").write_text(MEASUREMENTS_BODY, encoding="utf-8")
         (research / "artifact.md").write_text(ARTIFACT_BODY, encoding="utf-8")
         (research / "notes.md").write_text(NOTES_BODY, encoding="utf-8")
+        (research / "decomposition.md").write_text(DECOMPOSITION_BODY, encoding="utf-8")
         self.env = dict(os.environ, STRATEGY_AGENT_ROOT=str(self.root))
         self.skill_file = self.root / "knowledge" / "skills" / "testskill" / "SKILL.md"
 
@@ -131,6 +145,29 @@ class SkillEvolutionTestCase(unittest.TestCase):
         self.assertEqual(res.returncode, 3, res.stderr)
         self.assertIn("§99", res.stderr)
         self.assertIn("не найдена", res.stderr)
+
+    def test_foreign_file_section_attaches_to_named_file(self) -> None:
+        """Регрессия (живая проба TASK-hermes-15): evidence «<файл>.md §N»,
+        где файл — НЕ measurements.md: §N принадлежит названному файлу."""
+        res = self.run_cli("propose", "--skill", "testskill",
+                           "--old", "ШАБЛОННАЯ СТРОКА ДЛЯ ПАТЧА",
+                           "--new", "новая строка",
+                           "--evidence", "docs/research/decomposition.md §13")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertIn("decomposition.md §13", res.stdout)
+
+    def test_foreign_file_missing_section_no_cross_document_fallback(self) -> None:
+        """Регрессия (живая проба TASK-hermes-15): «…decomposition.md §13»
+        резолвился как measurements.md §13 — ЧУЖОЙ документ. Названный
+        файл без такой секции — отказ, без проброса на measurements.md."""
+        res = self.run_cli("propose", "--skill", "testskill",
+                           "--old", "ШАБЛОННАЯ СТРОКА ДЛЯ ПАТЧА",
+                           "--new", "новая строка",
+                           "--evidence", "docs/research/artifact.md §28")
+        self.assertEqual(res.returncode, 3, res.stderr)
+        self.assertIn("artifact.md", res.stderr)
+        self.assertIn("§28", res.stderr)
+        self.assertNotIn("measurements.md §28", res.stdout)
 
     def test_apply_with_artifact_allowed(self) -> None:
         res = self.run_cli("apply", "--skill", "testskill",

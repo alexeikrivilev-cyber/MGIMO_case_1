@@ -93,9 +93,13 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 Что происходит внутри: инструкции агента грузятся из `AGENTS.md`
 (постоянные инструкции; рабочий черновик, из которого он размещён, — в
 `docs/agents-md-staged.md`). Хуки (`.opencode/plugins/strategy-hooks.ts`):
-после записи `project/*.md` — `check_sources.py`; после записи `STATE.md` и в
-конце сеанса — `check_state.py`; на каждом ассистентском сообщении — строка
-учёта в прод-таблицу `COST.md`. Лог хуков — `.opencode/hooks.log` (вне git).
+после записи `project/*.md` — `check_sources.py` + `check_transferability.py`
+(и `check_acceptance.py` для `strategy-product.md` — единственного дома
+приёмного чек-листа); после записи `knowledge/index.md` или любого
+`knowledge/skills/*/SKILL.md` — `check_skill_index.py` (роутер не врёт);
+после записи `STATE.md` и в конце сеанса — `check_state.py`; на каждом
+ассистентском сообщении — строка учёта в прод-таблицу `COST.md`. Лог
+хуков — `.opencode/hooks.log` (вне git).
 
 Проверки вручную:
 
@@ -110,6 +114,8 @@ python3 scripts/council_quota.py project/council/run-*/  # протокол Ко
 python3 scripts/check_citations.py project/evidence/*.md  # резолвимость ссылок
 python3 scripts/check_evidence_links.py --task all  # число → содержание evidence (демо + held-out)
 python3 scripts/check_state.py                     # демо-задача
+python3 scripts/check_skill_index.py               # индекс навыков ↔ SKILL.md (обе стороны)
+python3 scripts/check_commit_scope.py              # состав индекса коммита (не только TASK-файл)
 python3 scripts/recover_state.py                   # если STATE.md битый — восстановит из git
 python3 scripts/cost_report.py
 python3 product/agent/skill_evolve.py verify       # журнал самоулучшения навыков целостен
@@ -129,8 +135,10 @@ python3 product/agent/skill_evolve.py status --skill options  # сколько �
 | Что | Файл | Зачем |
 |---|---|---|
 | Проверка вариантов | `scripts/check_options.py` | ≥3 варианта, среди них «оставить как есть»; у каждого возражение и маркер типа утверждения |
-| Навыки шагов 3–4 | `knowledge/skills/options|strategy-product|strategy-comms|verification/SKILL.md` | методика шага; карта «вопрос → навык» — `knowledge/index.md` |
+| Навыки шагов 3–4 | `knowledge/skills/options\|strategy-product\|strategy-comms\|verification/SKILL.md` | методика шага; карта «вопрос → навык» — `knowledge/index.md` |
 | Шаблоны шагов 2–4 | `templates/research.md`, `options.md`, `strategy-product.md`, `strategy-comms.md`, `verification-plan.md` | копия файла → `project/<артефакт>.md`; шапка каждого шаблона указывает навык и проверки |
+| Черновики навыков | `knowledge/skills/_draft/` | стадирование (M3): новый/непроверенный навык живёт здесь и не попадает в индекс; выпуск — решением PO с замером (правило — в `_draft/README.md`) |
+| HITL-цикл | `templates/hitl-loop.sh` | шаги, доступные только человеку (доступ к внутренним системам, пароли): агент готовит скрипт, человек выполняет, агент парсит `Captured KEY=VALUE`; самопроверка — `bash templates/hitl-loop.sh --demo` |
 
 ## Портируемость (Cursor / Claude Code / Codex / GigaCode / Gemini CLI)
 
