@@ -56,7 +56,15 @@ eval/runs/*
 !eval/runs/ab-options-demo-retention/
 !eval/runs/critic-matrix/
 !eval/runs/t13-blindpairs/
+!eval/runs/t7-rescore/
+!eval/runs/t17-actionability/
 !eval/runs/t18-case-launch.log
+
+# --- точечные курируемые доказательства, читаемые тестами и цитируемые в измерениях ---
+eval/runs/t7-rescore/*
+!eval/runs/t7-rescore/summary.json
+eval/runs/t17-actionability/*
+!eval/runs/t17-actionability/gates-vs-human-v2.md
 
 # --- демо-прогон кейса: журнал, решение, артефакты, финальные гейты ---
 eval/runs/t18-case/*
