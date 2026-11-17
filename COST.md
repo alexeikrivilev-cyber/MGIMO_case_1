@@ -226,6 +226,15 @@ international price list, доступ 2026-11-16).
 | 2026-11-16 | ses_e194f7185ffewQdgZ1gTYxX9Cz | О4: t7-clc-demo-final-typical | step-5-preview | 10678 | 15314 | 0 | 22720 | 0 | 0 | $0.05 |
 | 2026-11-16 | ses_e194e5f5dffek3bYvbHQUKFwFB | О4: t7-clc-heldout-final-typical | step-5-preview | 6546 | 10840 | 0 | 22720 | 0 | 0 | $0.04 |
 | 2026-11-16 | ses_e194d9adbffe0tBHEuVXirgcq3 | О4: t7-digest-research | step-5-preview | 13 | 29946 | 0 | 34240 | 0 | 0 | $0.08 |
+| 2026-11-16 | ses_e19394f1bffe6fUhnmslIiDLGG | О4: t8-noise-run1 | step-5-preview | 13 | 18748 | 0 | 28992 | 0 | 0 | $0.05 |
+| 2026-11-16 | ses_e1937ee64ffeHhW19u1gGEzJs3 | О4: t8-noise-run2 | step-5-preview | 13 | 12957 | 0 | 28992 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e193702a2ffezMdUu46cUAne32 | О4: t8-noise-run3 | step-5-preview | 13 | 12022 | 0 | 28992 | 0 | 0 | $0.04 |
+| 2026-11-16 | ses_e19362e7bffeiRAFmNMb1yB4eY | О4: t8-noise-run4 | step-5-preview | 13 | 9537 | 0 | 28992 | 0 | 0 | $0.03 |
+| 2026-11-16 | ses_e193586b0ffe1CHdLAyBWMTply | О4: t8-noise-run5 | step-5-preview | 13 | 6808 | 0 | 28992 | 0 | 0 | $0.02 |
+| 2026-11-16 | ses_e193499c6ffeEMNxSFNB1LyZ0J | О4: t8-step4-critic-draft | step-5-preview | 4811 | 17921 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e19336d97ffeSK3Vp7EV5mInFo | О4: ab-runs-t8-step4-revision | step-5-preview | 58030 | 21452 | 0 | 386176 | 0 | 0 | $0.15 |
+| 2026-11-17 | ses_e19318e70ffeEwfX72w9eWDMk2 | О4: t8-step4-score-draft | step-5-preview | 11 | 28437 | 0 | 27904 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e192f9e50fferb97AZVWp4OJA2 | О4: t8-step4-score-final | step-5-preview | 28506 | 14404 | 0 | 0 | 0 | 0 | $0.07 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

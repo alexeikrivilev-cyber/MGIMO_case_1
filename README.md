@@ -83,12 +83,13 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 Проверки вручную:
 
 ```bash
-python3 -m pytest tests/ -q                        # 116/116 (или: python3 tests/test_scripts.py)
+python3 -m pytest tests/ -q                        # 207/207 (или: python3 tests/test_scripts.py)
 python3 scripts/check_sources.py project/brief.md project/evidence/*.md project/decisions.md
 python3 scripts/check_options.py project/options.md  # шаг 3: варианты и возражения
 python3 scripts/check_decisions.py project/decisions.md  # шаг 5: реестр решений
 python3 scripts/council_quota.py project/council/run-*/  # протокол Консилиума
 python3 scripts/check_citations.py project/evidence/*.md  # резолвимость ссылок
+python3 scripts/check_evidence_links.py --task all  # число → содержание evidence (демо + held-out)
 python3 scripts/check_state.py                     # демо-задача
 python3 scripts/recover_state.py                   # если STATE.md битый — восстановит из git
 python3 scripts/cost_report.py
@@ -96,7 +97,7 @@ python3 scripts/cost_report.py
 
 Проверки held-out задачи (артефакты в `eval/tasks/heldout-growth-segment/artifacts/`):
 `check_sources.py` по каждому артефакту, `check_options.py` по options.md,
-`check_state.py` по `artifacts/STATE.md`.
+`check_state.py` по `artifacts/STATE.md`, `check_evidence_links.py --task heldout-growth-segment`.
 
 Прерывание и возобновление: остановите прогон на середине шага (Ctrl-C или
 внешний kill) — затем новый чат: `opencode run "Прочитай STATE.md и LOG.md
