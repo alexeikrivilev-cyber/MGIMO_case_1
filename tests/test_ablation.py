@@ -271,6 +271,52 @@ class AblationCliTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0)
 
 
+class RepeatSeriesTests(unittest.TestCase):
+    """Серия k=N (TASK-hermes-11 §24.1): независимые цепочки на руку."""
+
+    def test_repeat_generates_independent_chains(self):
+        # три цепочки: каждая со своим черновиком; суффиксы draft-1/final-1
+        with tempfile.TemporaryDirectory() as tmp:
+            arm_dir = Path(tmp) / "L2"
+            arm_dir.mkdir(parents=True)
+            answers = iter(["черновик-A", "черновик-B", "черновик-C"])
+            with mock.patch.object(run_ablation, "api_generate") as gen:
+                gen.side_effect = lambda prompt, key, timeout: self._fake(next(answers))
+                for idx in range(3):
+                    final, meta, ok = run_ablation.run_chain("L2", "промпт", arm_dir, "key", 60, idx)
+                    self.assertTrue(ok)
+                    self.assertEqual(final, f"черновик-{'ABC'[idx]}")
+                    self.assertEqual(len(meta), 1)
+            self.assertTrue((arm_dir / "draft.md").is_file())
+            self.assertTrue((arm_dir / "draft-1.md").is_file())
+            self.assertTrue((arm_dir / "draft-2.md").is_file())
+            # final*.md пишет main() (цепочка возвращает текст), не run_chain
+            self.assertFalse((arm_dir / "final.md").exists())
+            self.assertEqual(gen.call_count, 3)
+
+    def test_l3_chain_runs_check_gate(self):
+        # L3: черновик + гейт (мок run_checks) + ревизия при нарушении
+        with tempfile.TemporaryDirectory() as tmp:
+            arm_dir = Path(tmp) / "L3"
+            arm_dir.mkdir(parents=True)
+            with mock.patch.object(run_ablation, "api_generate") as gen, \
+                 mock.patch.object(run_ablation, "run_checks") as checks:
+                gen.side_effect = [self._fake("черновик"), self._fake("исправлено")]
+                checks.side_effect = [(False, "draft.md:1: нарушение"), (True, "ok")]
+                final, meta, ok = run_ablation.run_chain("L3", "промпт", arm_dir, "key", 60, 0)
+            self.assertTrue(ok)
+            self.assertEqual(final, "исправлено")
+            self.assertEqual([m["name"] for m in meta], ["draft", "revision0"])
+            self.assertTrue((arm_dir / "round1.md").is_file())
+            self.assertTrue((arm_dir / "integrity-round0.json").is_file())
+
+    @staticmethod
+    def _fake(text: str):
+        res = run_ablation.SessionResult()
+        res.text = text
+        return res
+
+
 class RunCriticEmptyOutputTests(unittest.TestCase):
     """Дефект «exit 0 ≠ непустой выход» (TASK-hermes-5/9): пустой выход
     критика при успешном коде — провал прогона, не измерение."""

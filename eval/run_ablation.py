@@ -320,6 +320,48 @@ def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def run_chain(arm: str, prompt: str, arm_dir: Path, key: str, timeout: int, idx: int) -> tuple[str, list[dict], bool]:
+    """Одна цепочка генерации руки: черновик (+ гейт проверок для L3).
+
+    idx — номер цепочки в серии k=N (0 → файлы без суффикса, как в
+    серии n=1; >0 → draft-<idx>.md / final-<idx>.md).
+    """
+    suffix = "" if idx == 0 else f"-{idx}"
+    sessions_meta: list[dict] = []
+
+    draft_res = api_generate(prompt, key, timeout)
+    draft = draft_res.answer
+    (arm_dir / f"draft{suffix}.out").write_text(draft, encoding="utf-8")
+    (arm_dir / f"draft{suffix}.md").write_text(draft, encoding="utf-8")
+    sessions_meta.append({"name": f"draft{suffix}", **draft_res.to_meta()})
+    if draft_res.error or not draft:
+        return "", sessions_meta, False
+
+    final = draft
+    if arm == "L3":
+        rounds = 0
+        checks_log = ""
+        while rounds < MAX_REVISION_ROUNDS:
+            ok, output = run_checks(arm_dir / f"draft{suffix}.md" if rounds == 0 else arm_dir / f"round{rounds}{suffix}.md")
+            checks_log += f"\n=== раунд {rounds} ===\n{output}\n"
+            (arm_dir / f"checks{suffix}.md").write_text(checks_log.strip() + "\n", encoding="utf-8")
+            if ok:
+                break
+            rev_res = api_generate(build_revision_prompt(final, output), key, timeout)
+            revised = rev_res.answer
+            sessions_meta.append({"name": f"revision{rounds}{suffix}", **rev_res.to_meta()})
+            if rev_res.error or not revised:
+                return final, sessions_meta, False
+            report = integrity_report(final, revised)
+            (arm_dir / f"integrity-round{rounds}{suffix}.json").write_text(
+                json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            (arm_dir / f"round{rounds + 1}{suffix}.md").write_text(revised, encoding="utf-8")
+            final = revised
+            rounds += 1
+    return final, sessions_meta, True
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="run_ablation.py",
@@ -330,6 +372,13 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--out", default=None)
     parser.add_argument("--timeout", type=int, default=600)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        help="независимых генераций на руку (серия k=N, TASK-hermes-11 §24.1); "
+        "каждая пишется в draft-<i>.md, финал — последняя",
+    )
     args = parser.parse_args(argv)
 
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
@@ -368,7 +417,7 @@ def main(argv: list[str]) -> int:
         f"Модель: {API_MODEL}, прямой вызов API (temperature {TEMPERATURE}, "
         f"reasoning {REASONING_EFFORT}); среда генерации = промпт (без инструментов)",
         "",
-        "| Слой | Промпт (символов) | sha256 | Генерации | Итог |",
+        "| Цепочка | Промпт (символов) | sha256 | Генерации | Итог |",
         "|---|---|---|---|---|",
     ]
     failures = 0
@@ -379,53 +428,31 @@ def main(argv: list[str]) -> int:
         prompt = prompts[arm]
         (arm_dir / "prompt.md").write_text(prompt, encoding="utf-8")
         sessions_meta: list[dict] = []
+        arm_ok = True
 
-        # Раунд 0 (для всех слоёв) и ревизии (только L3).
-        draft_res = api_generate(prompt, key, args.timeout)
-        draft = draft_res.answer
-        (arm_dir / "draft.out").write_text(draft, encoding="utf-8")
-        sessions_meta.append({"name": "draft", **draft_res.to_meta()})
-        if draft_res.error or not draft:
-            failures += 1
+        for idx in range(args.repeat):
+            final, chain_meta, ok = run_chain(arm, prompt, arm_dir, key, args.timeout, idx)
+            sessions_meta.extend(chain_meta)
+            if not ok or not final:
+                arm_ok = False
+                manifest.append(
+                    f"| {arm}#{idx} | {len(prompt)} | {sha256_text(prompt)} | {len(chain_meta)} "
+                    f"| FAIL {chain_meta[-1].get('error') or 'пустой ответ'} |"
+                )
+                continue
+            (arm_dir / f"final{'' if idx == 0 else f'-{idx}'}.md").write_text(final, encoding="utf-8")
             manifest.append(
-                f"| {arm} | {len(prompt)} | {sha256_text(prompt)} | 1 "
-                f"| FAIL {draft_res.error or 'пустой ответ'} |"
+                f"| {arm}#{idx} | {len(prompt)} | {sha256_text(prompt)} | {len(chain_meta)} "
+                f"| OK (${sum(s['cost_usd'] for s in chain_meta):.4f}, ответ {len(final)} символов) |"
             )
-            write_json(arm_dir / "meta.json", {"sessions": sessions_meta})
-            continue
+            print(f"arm {arm}#{idx}: {len(chain_meta)} генераций, ответ {len(final)} символов")
 
-        final = draft
-        checks_log = ""
-        if arm == "L3":
-            rounds = 0
-            while rounds < MAX_REVISION_ROUNDS:
-                draft_path = arm_dir / ("draft.md" if rounds == 0 else f"round{rounds}.md")
-                draft_path.write_text(final, encoding="utf-8")
-                ok, output = run_checks(draft_path)
-                checks_log += f"\n=== раунд {rounds} ===\n{output}\n"
-                (arm_dir / "checks.md").write_text(checks_log.strip() + "\n", encoding="utf-8")
-                if ok:
-                    break
-                rev_res = api_generate(
-                    build_revision_prompt(final, output), key, args.timeout
-                )
-                revised = rev_res.answer
-                sessions_meta.append({"name": f"revision{rounds}", **rev_res.to_meta()})
-                if rev_res.error or not revised:
-                    failures += 1
-                    break
-                report = integrity_report(final, revised)
-                (arm_dir / f"integrity-round{rounds}.json").write_text(
-                    json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
-                )
-                (arm_dir / f"round{rounds + 1}.md").write_text(revised, encoding="utf-8")
-                final = revised
-                rounds += 1
-
-        (arm_dir / "final.md").write_text(final, encoding="utf-8")
+        if not arm_ok:
+            failures += 1
         meta = {
             "task": args.task,
             "arm": arm,
+            "repeat": args.repeat,
             "model": API_MODEL,
             "api": API_BASE,
             "prompt_sha256_16": sha256_text(prompt),
@@ -441,11 +468,6 @@ def main(argv: list[str]) -> int:
             },
         }
         write_json(arm_dir / "meta.json", meta)
-        manifest.append(
-            f"| {arm} | {len(prompt)} | {sha256_text(prompt)} | {len(sessions_meta)} "
-            f"| OK (${meta['cost_usd_total']:.4f}, ответ {len(final)} символов) |"
-        )
-        print(f"arm {arm}: {len(sessions_meta)} генераций, ${meta['cost_usd_total']:.4f}, ответ {len(final)} символов")
 
     manifest.append("")
     manifest.append(f"Финиш (UTC): {datetime.now(timezone.utc).isoformat()}")

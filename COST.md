@@ -29,7 +29,9 @@
 
 | 2026-11-17 | TASK-hermes-10: генерация слоёв абляции L0–L3, демо + held-out (прямой вызов API /chat/completions, 8 артефактов; хуки не при чём — как DABstep) | step-5-preview (API) | 70 162 (cache-miss; кэша префикса нет) | 143 528 (включая reasoning) | ~0 | $0.46 | `eval/runs/t10-ablation/*/meta.json` (usage ответа) |
 | 2026-11-17 | TASK-hermes-10: смоук-прогон L0 прямым вызовом (артефакт перезаписан фоновым прогоном — точные токены не сохранены) | step-5-preview (API) | — | — | — | ~$0.04 (оценка по выводу прогона) | отмечено честно |
-| 2026-11-17 | TASK-hermes-10: пробы изоляции и отвергнутные opencode-прогоны абляции (вне репозитория, 01:52–02:38) — 22 сессии, учтены хуком через persistent server (строки прод-таблицы с меткой «О4: t10-ablation (отвергнутые, вне репо)») | step-5-preview (OpenCode) | ~66K in | ~2.5K out (пробы) + выходы рук в тех же строках | 0 | см. строки прод-таблицы | релейбл: раннер не ставил run-метку, хук брал шаг из STATE.md |
+| 2026-11-17 | TASK-hermes-10: пробы изоляции и отвергнутые opencode-прогоны абляции (вне репозитория, 01:52–02:38) — 22 сессии, учтены хуком через persistent server (строки прод-таблицы с меткой «О4: t10-ablation (отвергнутые, вне репо)») | step-5-preview (OpenCode) | ~66K in | ~2.5K out (пробы) + выходы рук в тех же строках | 0 | см. строки прод-таблицы | релейбл: раннер не ставил run-метку, хук брал шаг из STATE.md |
+| 2026-11-17 | TASK-hermes-11: серия k=3 — генерация L2×3 + L3×3 на демо прямым вызовом API (6 цепочек, среда = промпт; run_ablation --repeat) + доборная цепочка L3 после сбоя провайдера (HTTP 502) — `eval/merge_l3_retry.py` | step-5-preview (API) | 57 236 (измерение: 20 685 L2 + 36 550 L3; добор 15 001 входит в L3) | 117 051 (измерение) | ~0 | $0.43 всего (в измерение вошло $0.37: L2 $0.145 + L3 $0.229; first-run L3 $0.173 включал упавшую цепочку ~$0.06 + добор $0.114 — оценка разностью) | `eval/runs/t11-k3/demo-retention/{L2,L3}/meta.json`, `.../demo-retention-l3retry/L3/meta.json` |
+| 2026-11-17 | TASK-hermes-11: пробы изоляции стенда §23.0 (`eval/iso_probe.py`, 3 сессии opencode) | step-5-preview (OpenCode) | — | — | — | ~$0.01 (строки прод-таблицы, метки «О4: t11-iso-…») | `eval/runs/t11-iso/{in,out,out-inrepo-subdir}/` |
 ## Контур прода (prod) — метрика $/прогон для пользователя
 
 Прайс целевой среды (OpenCode, dev-контур прогонов): `step-5-preview` —
@@ -331,6 +333,31 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e1869b907ffevjhS9GNnPGVzZg | О4: t10-cl2r2-t10-cl2-r2-session-r2 | step-5-preview | 8974 | 25575 | 0 | 21568 | 0 | 0 | $0.08 |
 | 2026-11-17 | ses_e1868099cffeq014Ott7e5hNUp | О4: t10-cl2r2-heldout-score-unified | step-5-preview | 8415 | 15963 | 0 | 23104 | 0 | 0 | $0.05 |
 | 2026-11-17 | ses_e1866b834ffeNYjubIOkN1dgEK | О4: t10-cl2r2-heldout-score-typical | step-5-preview | 8403 | 11352 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e185698dfffeiA1vW25LiUSkrw | Очередь TASK-hermes-10 закрыта | step-5-preview | 19559 | 655 | 0 | 1792 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e1856793affel8M1SPMaZ5BBt5 | О4: t11-iso-out | step-5-preview | 104 | 607 | 0 | 21248 | 0 | 0 | $0.00 |
+| 2026-11-17 | ses_e18549a13ffeIIBxwOaMcqlNw2 | О4: t11-iso-in | step-5-preview | 40 | 513 | 0 | 21312 | 0 | 0 | $0.00 |
+| 2026-11-17 | ses_e18548192ffe9zJgAuEAfQjKRi | О4: t11-iso-out | step-5-preview | 40 | 889 | 0 | 21312 | 0 | 0 | $0.00 |
+| 2026-11-17 | ses_e1852d489ffewJV3DIcGrjRqPg | О4: t11-k3-demo-L4-0-unified | step-5-preview | 25 | 20278 | 0 | 29376 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e1851522bffe2vk98dXW0aGmE1 | Очередь TASK-hermes-10 закрыта | step-5-preview | 13 | 9794 | 0 | 28992 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e18509984ffePkG4ZGDNz6XJ8b | О4: t11-k3-demo-L4-1-unified | step-5-preview | 25 | 9704 | 0 | 29376 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e184fda2cffelTSrJ5lCoQs4ik | О4: t11-k3-demo-L4-1-typical | step-5-preview | 13 | 13432 | 0 | 28992 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e184ed086ffe06HLHbf5A0GQSL | О4: t11-k3-demo-L4-2-unified | step-5-preview | 25 | 11168 | 0 | 29376 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e184def94ffeebZTf5UibzaTy3 | О4: t11-k3-demo-L4-2-typical | step-5-preview | 13 | 13262 | 0 | 28992 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e184c724bffeIFUbfw78u0k501 | О4: t11-k3-demo-L2-0-unified | step-5-preview | 26078 | 22186 | 0 | 50688 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e184ac81bffedwiWZDGJimwXEY | О4: t11-k3-demo-L2-0-typical | step-5-preview | 4453 | 12937 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e1849bdaaffeQByuOFJBkzH5tE | О4: t11-k3-demo-L3-0-unified | step-5-preview | 4017 | 11880 | 0 | 23168 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e184984eaffeGiPgKS3WrF02uo | О4: t11-k3-demo-L3-0-typical | step-5-preview | 49 | 10969 | 0 | 27136 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e1848c2c4ffeCoa3E2IncASx52 | О4: t11-k3-demo-L3-0-typical | step-5-preview | 4069 | 8327 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e18489c15ffeEGdVA7ObARfH0i | Очередь TASK-hermes-10 закрыта | step-5-preview | 37 | 18249 | 0 | 26752 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e18453919ffeX9d30sNcA7WL0r | О4: t11-k3-demo-L2-1-unified | step-5-preview | 4095 | 7652 | 0 | 23104 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e18448dd6ffeiOzjy7QWV6hP0t | О4: t11-k3-demo-L2-1-typical | step-5-preview | 4083 | 32000 | 0 | 22720 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e18422938ffeW2k00Y0eOcjbcJ | О4: t11-k3-demo-L2-2-unified | step-5-preview | 4387 | 11110 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e18413a25ffeQ6fWSX6BoB7qPy | О4: t11-k3-demo-L2-2-typical | step-5-preview | 14768 | 12688 | 0 | 89600 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e184035a9ffeCWKB24ss8ekj61 | О4: t11-k3-demo-L3-1-unified | step-5-preview | 3643 | 15339 | 0 | 23168 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e183f08b1ffeq3fGvX44npI58Y | О4: t11-k3-demo-L3-1-typical | step-5-preview | 3695 | 13370 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e183da234ffeQjssj7knDcm8HD | О4: t11-k3-demo-L3-2-unified | step-5-preview | 3800 | 9938 | 0 | 23104 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e183cd5e2ffe3drbpw92uLb9i9 | О4: t11-k3-demo-L3-2-typical | step-5-preview | 3788 | 9965 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e1839e250ffejP5G0A52SyC4xE | О4: t11-k3-demo-L2-1-typical | step-5-preview | 51 | 12719 | 0 | 26752 | 0 | 0 | $0.04 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
