@@ -274,6 +274,11 @@ def main(argv: list[str]) -> int:
         tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-5:]
         print("\n".join(tail), file=sys.stderr)
         return EXIT_RUN_FAILED
+    # Дефект «exit 0 ≠ непустой выход» (TASK-hermes-5/9): провайдер может
+    # вернуть успешный код с пустым ответом — такой прогон НЕ измерение.
+    if not (proc.stdout or "").strip():
+        print("критик вернул ПУСТОЙ выход при exit=0 — прогон не засчитан", file=sys.stderr)
+        return EXIT_RUN_FAILED
     print(f"оценки и находки: {out_dir / 'critic.out'}")
     return EXIT_OK
 

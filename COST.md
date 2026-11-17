@@ -27,6 +27,9 @@
 | 2026-11-16 | О4: дизайн навыков — руки lean + hybrid на демо (2 сессии) + скоринг (2) | step-5-preview (OpenCode, хук) | — | — | $0.37 | `eval/runs/ab-skills-demo-retention/` |
 | 2026-11-17 | TASK-hermes-7: бенчмарк DABstep — 3 повтора dev-10 (r2/r3 улучшенный агент best-effort + применимость, r4 база — шум-контроль; прямой вызов API, не через хук) | step-5-preview (API) | 1,730,700 (cache-miss 303,948 + cache-read 1,426,752) | 274,396 | $2.61 | `eval/benchmarks/dabstep/runs/2026-11-17-t7-run2|run3-improved|run4-baseline/results.json` (разбор: r2 $0.86 + r3 $1.10 + r4 $0.66) |
 
+| 2026-11-17 | TASK-hermes-10: генерация слоёв абляции L0–L3, демо + held-out (прямой вызов API /chat/completions, 8 артефактов; хуки не при чём — как DABstep) | step-5-preview (API) | 70 162 (cache-miss; кэша префикса нет) | 143 528 (включая reasoning) | ~0 | $0.46 | `eval/runs/t10-ablation/*/meta.json` (usage ответа) |
+| 2026-11-17 | TASK-hermes-10: смоук-прогон L0 прямым вызовом (артефакт перезаписан фоновым прогоном — точные токены не сохранены) | step-5-preview (API) | — | — | — | ~$0.04 (оценка по выводу прогона) | отмечено честно |
+| 2026-11-17 | TASK-hermes-10: пробы изоляции и отвергнутные opencode-прогоны абляции (вне репозитория, 01:52–02:38) — 22 сессии, учтены хуком через persistent server (строки прод-таблицы с меткой «О4: t10-ablation (отвергнутые, вне репо)») | step-5-preview (OpenCode) | ~66K in | ~2.5K out (пробы) + выходы рук в тех же строках | 0 | см. строки прод-таблицы | релейбл: раннер не ставил run-метку, хук брал шаг из STATE.md |
 ## Контур прода (prod) — метрика $/прогон для пользователя
 
 Прайс целевой среды (OpenCode, dev-контур прогонов): `step-5-preview` —
@@ -276,6 +279,58 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e18dc7dcbffem2QQxr6fPrAEoO | О4: t9-gate-demo-strategy-product | step-5-preview | 11 | 15233 | 0 | 27904 | 0 | 0 | $0.04 |
 | 2026-11-17 | ses_e18db43feffev2uZjh43RduPyk | О4: t9-gate-demo-strategy-comms | step-5-preview | 9 | 10734 | 0 | 26560 | 0 | 0 | $0.03 |
 | 2026-11-17 | ses_e18da86cfffeoWhDDVajJ1s93i | О4: t9-gate-demo-verification-plan | step-5-preview | 30 | 12725 | 0 | 26304 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e18cc0ff9ffeCS6Muk73na5KB7 | О4: t10-probe | step-5-preview | 52 | 294 | 0 | 21248 | 0 | 0 | $0.00 |
+| 2026-11-17 | ses_e18c67235ffekkr5qt8RbB8TFj | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 21274 | 12686 | 0 | 182912 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18c5588cffeC4qF3LqYVdktxE | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 4820 | 16468 | 0 | 21248 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e18c424d9ffemMVs55qIGR1e0w | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 6895 | 21684 | 0 | 21248 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18c29f27ffe0B4ziCJrD7gOD7 | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 78710 | 21761 | 0 | 169280 | 0 | 0 | $0.15 |
+| 2026-11-17 | ses_e18c107d4ffeSMcVo5fzsuYaNa | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 63901 | 58871 | 0 | 1350464 | 0 | 0 | $0.36 |
+| 2026-11-17 | ses_e18b9102effeczRnXmyYN9qzJr | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 17 | 7820 | 0 | 24256 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e18b87489ffe07uJJ3jhuPL5Zy | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 25427 | 19207 | 0 | 640 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e18b6eaecffeiBQNuLjJf7QiVx | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 31791 | 8814 | 0 | 145280 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18b62913ffeOEAeoG9WgTZRtz | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 10031 | 20988 | 0 | 18112 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18b4761effeM04741mHC93HY7 | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 20456 | 25725 | 0 | 289088 | 0 | 0 | $0.12 |
+| 2026-11-17 | ses_e18b2caf9ffez9eUwOhibza4A7 | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 9716 | 7693 | 0 | 1856 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e18b22e17ffeIZTT5if6NzbYUs | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 7351 | 18974 | 0 | 6016 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e18b0822bffeq7IDHHgtvsQ1UF | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 31514 | 30750 | 0 | 252864 | 0 | 0 | $0.14 |
+| 2026-11-17 | ses_e18ae34baffeUiCyPglcL5QNYH | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 6866 | 24750 | 0 | 8576 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18ac73fbffeCAGJNQ0EIGB2X1 | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 6474 | 6115 | 0 | 8512 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e18ac09c9ffe5M6IChVtut8kA7 | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 26736 | 9442 | 0 | 234880 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e18a9050cffeOZG0TnGMDcU6Ju | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 3060 | 6686 | 0 | 8512 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e18a85eadffeblj6JlZhtXL8qC | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 4791 | 9745 | 0 | 8576 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e18a7ae32ffex3IbhbTH3YKX4v | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 18 | 19807 | 0 | 15424 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e18a64f6fffe833pWuR5fQ3549 | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 18 | 17545 | 0 | 15424 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e18a51753ffe6nUzy5WmMmqlcd | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 32494 | 35546 | 0 | 322176 | 0 | 0 | $0.16 |
+| 2026-11-17 | ses_e18a2ca1fffeRdy8uUwztw0jA9 | О4: t10-ablation (отвергнутые, вне репо) | step-5-preview | 30730 | 14466 | 0 | 478976 | 0 | 0 | $0.12 |
+| 2026-11-17 | ses_e188d5dbdffee4AxIUsAsnt4bP | О4: t10-score-demo-L0-unified | step-5-preview | 3526 | 32000 | 0 | 23104 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e188b0a7affeH8QompiKCiNaEu | О4: t10-score-demo-L0-typical | step-5-preview | 3514 | 8975 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e188a5285ffePhNujXcGHc5Cuh | О4: t10-score-demo-L1-unified | step-5-preview | 3861 | 18065 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1888f817ffeyKL1ICenRBm8UA | О4: t10-score-demo-L1-typical | step-5-preview | 3849 | 5807 | 0 | 22720 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e18887fb6ffeevyBNBA9DbqWBD | О4: t10-score-demo-L2-unified | step-5-preview | 4588 | 11893 | 0 | 23104 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e1887852bfferx7CEYWOPDBnrB | О4: t10-score-demo-L2-typical | step-5-preview | 4576 | 16097 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e18866020ffeD5cVc5LekQzFjn | О4: t10-score-demo-L3-unified | step-5-preview | 5330 | 20106 | 0 | 23168 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e1884d5a1ffeWXtdu2wT8Tx9j9 | О4: t10-score-demo-L3-typical | step-5-preview | 5382 | 10145 | 0 | 22720 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e188401b8ffe5PE3rt0QTF07as | О4: t10-score-demo-L4-unified | step-5-preview | 6297 | 25784 | 0 | 23104 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e188235eeffevZcTR6pn91pJb4 | О4: t10-score-demo-L4-typical | step-5-preview | 13 | 13915 | 0 | 28992 | 0 | 0 | $0.04 |
+| 2026-11-17 | ses_e18811ec6ffesiWFikVgIfJXqZ | О4: t10-score-heldout-L0-unified | step-5-preview | 2009 | 17094 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e187fd09effeoeMF60Z0HhUqLP | О4: t10-score-heldout-L0-typical | step-5-preview | 1997 | 8573 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e187f332fffeIv7W0rYBBsvtSf | О4: t10-score-heldout-L1-unified | step-5-preview | 3433 | 25288 | 0 | 23104 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e187d75f7ffeC3YTYiLZw0JeXH | О4: t10-score-heldout-L1-typical | step-5-preview | 3421 | 16482 | 0 | 22720 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e187c3c1effexSnHbvD4KE3w09 | О4: t10-score-heldout-L2-unified | step-5-preview | 4747 | 14964 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e187b0a9cffeSCcTOeimmXb4ze | О4: t10-score-heldout-L2-typical | step-5-preview | 4735 | 9583 | 0 | 22720 | 0 | 0 | $0.03 |
+| 2026-11-17 | ses_e187a2823ffeozo8AZnDY09FhN | О4: t10-score-heldout-L3-unified | step-5-preview | 38610 | 12555 | 0 | 30016 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e18791e57ffe6k1bfHxbMDu7f6 | О4: t10-score-heldout-L3-typical | step-5-preview | 5115 | 5555 | 0 | 22720 | 0 | 0 | $0.02 |
+| 2026-11-17 | ses_e187889feffenzlDsXqS5gnAPi | О4: t10-score-heldout-L4-unified | step-5-preview | 9183 | 19472 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e187732dcffeScoMMscWihO1Zx | О4: t10-score-heldout-L4-typical | step-5-preview | 9171 | 22233 | 0 | 22720 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e18714e59ffeveY7pXqAzEwLMo | О4: t10-score-demo-L0-unified-r2 | step-5-preview | 6 | 1953 | 0 | 26624 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e186f9470ffeb3Xs9k2ffjEjTt | О4: t10-cl2r2-demo-critic2 | step-5-preview | 27925 | 22760 | 0 | 51712 | 0 | 0 | $0.09 |
+| 2026-11-17 | ses_e186e0308ffesSTnFAEl1WxBaW | О4: t10-cl2r2-t10-cl2-r2-session-r2 | step-5-preview | 15251 | 16336 | 0 | 96000 | 0 | 0 | $0.07 |
+| 2026-11-17 | ses_e186cf221ffe6eIelYi9Gfazct | О4: t10-cl2r2-demo-score-unified | step-5-preview | 6406 | 1273 | 0 | 23104 | 0 | 0 | $0.01 |
+| 2026-11-17 | ses_e186cc859ffebrQLRNnU4fxuwc | О4: t10-cl2r2-demo-score-typical | step-5-preview | 27323 | 17644 | 0 | 1792 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e186b57eeffeAaEAmf3niHxsac | О4: t10-cl2r2-heldout-critic2 | step-5-preview | 7583 | 19385 | 0 | 23104 | 0 | 0 | $0.06 |
+| 2026-11-17 | ses_e1869b907ffevjhS9GNnPGVzZg | О4: t10-cl2r2-t10-cl2-r2-session-r2 | step-5-preview | 8974 | 25575 | 0 | 21568 | 0 | 0 | $0.08 |
+| 2026-11-17 | ses_e1868099cffeq014Ott7e5hNUp | О4: t10-cl2r2-heldout-score-unified | step-5-preview | 8415 | 15963 | 0 | 23104 | 0 | 0 | $0.05 |
+| 2026-11-17 | ses_e1866b834ffeNYjubIOkN1dgEK | О4: t10-cl2r2-heldout-score-typical | step-5-preview | 8403 | 11352 | 0 | 22720 | 0 | 0 | $0.04 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
