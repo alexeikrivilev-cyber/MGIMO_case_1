@@ -56,19 +56,44 @@
 - sources-strategy-comms.md: exit=0
 - transferability-strategy-comms.md: exit=0
 - ranges: exit=0
-- strategy-comms.md: sha256=bc94e4e76e216ea4
+- strategy-comms.md: sha256=cc69de997a2c37e1
 - sources-verification-plan.md: exit=0
 - transferability-verification-plan.md: exit=0
 - ranges: exit=0
-- verification-plan.md: sha256=aae199a6e5e19293
+- verification-plan.md: sha256=7373bfb1f6fc71c4
 - sources-decisions.md: exit=0
 - transferability-decisions.md: exit=0
 - decisions: exit=0
 - ranges: exit=0
-- decisions.md: sha256=e065e46462d83637
+- decisions.md: sha256=906e68a1ff023151
 
 - ИТОГ: все гейты зелёные
 
+
+## Уточнение сводки хешей (2026-11-18, самопроверкой сдачи)
+
+Финальная сводка выше записана в конце прогона. После прогона прошли два
+корректировочных раунда (описаны в этом же файле ниже): TASK-hermes-19
+(перенос артефактов в `project/` вскрыл находки строгого гейта) и
+TASK-hermes-20 (ревизия strategy-comms.md, verification-plan.md,
+decisions.md до гейтов приёмки и плана). Три хеша в сводке
+(strategy-comms, verification-plan, decisions) остались от состояния
+«конец прогона» и не были обновлены — расхождение найдено сверкой
+`sha256sum` при подготовке примера (`examples/proof.md`), здесь
+исправлено. Актуальные значения (первые 16 символов sha256, соглашение
+драйвера `eval/run_full_case.py`, `sha256_of`):
+
+| Артефакт | sha256 (актуальный) |
+|---|---|
+| research.md | 4b223a6e037339c4 |
+| options.md | 7bd2f86c77d10d93 |
+| strategy-product.md | a9044f0adb864066 |
+| strategy-comms.md | cc69de997a2c37e1 |
+| verification-plan.md | 7373bfb1f6fc71c4 |
+| decisions.md | 906e68a1ff023151 |
+
+Копии в `eval/runs/t18-case/artifacts/` и `project/` побайтово identical
+(сверено); гейты на `project/` после обоих раундов — exit 0.
 
 ## Коррекционный раунд при сдаче (2026-11-17, TASK-hermes-19)
 
