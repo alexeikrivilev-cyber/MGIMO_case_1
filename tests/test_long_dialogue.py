@@ -20,6 +20,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -40,6 +42,16 @@ DRIVER = load_module("run_long_dialogue_test", REPO_ROOT / "eval" / "run_long_di
 SCORER = load_module("score_long_dialogue_test", REPO_ROOT / "eval" / "score_long_dialogue.py")
 
 RUNS = REPO_ROOT / "eval" / "runs" / "t23-longdialogue"
+
+# `STATE.md` — файл разработки вне git (политика «артефакты работы не в
+# git»): в свежем клоне его нет, поэтому тесты сида руки B обязаны быть
+# явно обусловлены. Урок TASK-hermes-21: тест, читающий файл вне git,
+# зелёный локально и красный у организатора. Сид руки B воспроизводим из
+# копии `eval/runs/t23-longdialogue/B/state-as-used.md` (она в git).
+HAS_STATE_FILE = (REPO_ROOT / "STATE.md").is_file()
+requires_state_file = unittest.skipUnless(
+    HAS_STATE_FILE, "STATE.md вне git — тест сида руки B выполняется только в dev-окружении"
+)
 
 
 class TestTurnsFrozen(unittest.TestCase):
@@ -85,6 +97,7 @@ class TestSeedAssembly(unittest.TestCase):
         self.assertIn("project/verification-plan.md", prompt)
         self.assertNotIn("project/decisions.md", prompt)
 
+    @requires_state_file
     def test_arm_b_seed_has_state_and_relevant_artifact(self):
         prompt, components = DRIVER.build_seed("B", 2)
         roles = [c["role"] for c in components]
@@ -99,6 +112,7 @@ class TestSeedAssembly(unittest.TestCase):
         self.assertNotIn("resume-карта", prompt)
         self.assertTrue(prompt.rstrip().endswith(DRIVER.TURNS[2]))
 
+    @requires_state_file
     def test_arms_differ_only_by_state_bridge_on_same_turn(self):
         prompt_b, _ = DRIVER.build_seed("B", 9)
         prompt_c, _ = DRIVER.build_seed("C", 9)
@@ -129,12 +143,13 @@ class TestSeedAssembly(unittest.TestCase):
         self.assertNotIn("промпт", seen["cmd"], "промпт не должен быть argv-аргументом")
 
     def test_answer_record_metadata_is_blockquote(self):
-        """Журнальная шапка не должна давать находок гейта sources."""
-        import sys
+        """Журнальная шапка не должна давать находок гейта sources.
 
-        sys.path.insert(0, str(REPO_ROOT / "scripts"))
-        import check_sources
-
+        Гейт исключает блокцитаты из проверки — поэтому шапка поворота
+        (вопрос, sessionID, статус) идёт блокцитатой, и проверяется ровно
+        то, что ответил агент. Прогон — субпроцессом: правило гейта не
+        копируется в тест (один дом факта).
+        """
         record = DRIVER.answer_record_text(
             "A", 5, "ses_test", "OK", 1,
             "Экономика: при оттоке 30% когорта теряет больше подписчиков [прогноз].",
@@ -142,8 +157,12 @@ class TestSeedAssembly(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "turn-05.answer.md"
             path.write_text(record, encoding="utf-8")
-            problems = check_sources.check_file(path)
-        self.assertEqual(problems, [], f"шапка журнала даёт находки гейта: {problems}")
+            proc = subprocess.run(
+                [sys.executable, str(REPO_ROOT / "scripts" / "check_sources.py"), str(path)],
+                capture_output=True, text=True, timeout=120,
+            )
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn("нарушений нет", proc.stdout)
 
 
 class TestM1Anchors(unittest.TestCase):
@@ -301,6 +320,39 @@ class TestVerdictRule(unittest.TestCase):
         verdict = SCORER.verdict_for_arm(self.metrics(m2_first=1.0, m2_last=0.80), self.m3(False))
         self.assertEqual(verdict["m2_drop_pp"], 20.0)
         self.assertEqual(verdict["verdict"], "Деградации не обнаружено")
+
+
+class TestArmAContinuation(unittest.TestCase):
+    """Регресс дефекта первого прогона: сид не пересылается на каждом повороте.
+
+    Предрегистрация §3: повороты 2–12 идут в ту же сессию голым текстом
+    вопроса. Первый прогон пересылал полный сид (131K символов) каждый
+    поворот — контекст сессии рос на сид за поворот, цена поворота выросла
+    на 45%, и рука A measureла другую архитектуру, чем заявленная.
+    Дефектные данные сохранены в `A-defective-contract/`.
+    """
+
+    def test_turn_one_has_full_seed(self):
+        prompt, _, cont = DRIVER.prompt_for_turn("A", 1, None, [])
+        self.assertFalse(cont)
+        self.assertGreater(len(prompt), 100_000, "поворот 1 несёт полный сид")
+
+    def test_turns_2_to_12_are_bare_questions(self):
+        _, components, _ = DRIVER.prompt_for_turn("A", 1, None, [])
+        for turn in range(2, 13):
+            prompt, comps, cont = DRIVER.prompt_for_turn("A", turn, "ses_test", components)
+            self.assertTrue(cont, f"поворот {turn} — продолжение сессии")
+            self.assertEqual(prompt, DRIVER.TURNS[turn], f"поворот {turn} — голый вопрос")
+            self.assertLess(len(prompt), 200)
+            self.assertEqual(comps, components, "компоненты сида те же, что в повороте 1")
+
+    @requires_state_file
+    def test_hands_b_and_c_always_fresh_session_with_seed(self):
+        for arm in ("B", "C"):
+            prompt, _, cont = DRIVER.prompt_for_turn(arm, 5, "ses_ignored", [])
+            self.assertFalse(cont, f"рука {arm} не продолжает чужую сессию")
+            self.assertIn(DRIVER.TURNS[5], prompt)
+            self.assertGreater(len(prompt), 5_000, f"рука {arm} несёт полный сид")
 
 
 class TestParseTurns(unittest.TestCase):

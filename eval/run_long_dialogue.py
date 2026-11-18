@@ -195,7 +195,7 @@ def build_seed(arm: str, turn: int) -> tuple[str, list[dict[str, str]]]:
 
 
 def write_prompt_record(arm_dir: Path, arm: str, turn: int, prompt: str,
-                        components: list[dict[str, str]]) -> None:
+                        components: list[dict[str, str]], continuing: bool = False) -> None:
     """Журнальная запись промпта.
 
     Рука A: полный сид хранится один раз в `A/seed.md`, повороты 2–12 —
@@ -216,19 +216,20 @@ def write_prompt_record(arm_dir: Path, arm: str, turn: int, prompt: str,
         "",
     ]
     lines += [f"- `{c['path']}` ({c['role']}) — `{c['sha256']}`" for c in components]
-    if arm == "A":
+    lines += ["", "## Сборка", ""]
+    if continuing:
         lines += [
-            "",
-            "## Сборка",
-            "",
+            "Поворот в ОДНОЙ сессии руки A: промпт — голый текст вопроса РП "
+            f"({len(prompt)} символов), сид уже в истории сессии.",
+            "Полный сид — `seed.md` (sha256 — в `seed-manifest.json`).",
+        ]
+    elif arm == "A":
+        lines += [
             "Полный промпт = `seed.md` (sha256 — в `seed-manifest.json`) + вопрос РП.",
             "Повороты 2–12 отправлялись в ту же сессию голым текстом вопроса.",
         ]
     else:
         lines += [
-            "",
-            "## Сборка",
-            "",
             "Полный промпт = компоненты в порядке списка (шаблон, затем "
             + ("`STATE.md` (копия — `B/state-as-used.md`), затем " if arm == "B" else "")
             + "артефакты) + вопрос РП.",
@@ -358,11 +359,29 @@ def answer_record_text(arm: str, turn: int, session_id: str | None, status: str,
     )
 
 
+def prompt_for_turn(arm: str, turn: int, session_id: str | None,
+                    seed_components: list[dict[str, str]]) -> tuple[str, list[dict[str, str]], bool]:
+    """Промпт поворота и флаг «продолжение той же сессии».
+
+    Рука A: поворот 1 несёт полный сид, повороты 2–12 — голый текст вопроса
+    (предрегистрация §3: сид уже живёт в истории сессии). Дефект первого
+    прогона TASK-hermes-23 — сид пересылался на каждом повороте, из-за чего
+    контекст сессии рос на 131K символов за поворот и цена поворота росла
+    на 45%; данные того прогона сохранены в `A-defective-contract/`.
+    Руки B и C: каждый поворот — свежая сессия с полным сидом.
+    """
+    if arm == "A" and session_id is not None:
+        return TURNS[turn], seed_components, True
+    prompt, components = build_seed(arm, turn)
+    return prompt, components, False
+
+
 def run_hand(arm: str, turns: list[int], timeout: int, out_root: Path) -> int:
     arm_dir = out_root / arm
     arm_dir.mkdir(parents=True, exist_ok=True)
     session_id: str | None = None
     failures = 0
+    seed_components: list[dict[str, str]] = []
 
     if arm == "A":
         # Сид одной сессии — в журнал целиком (это якорь воспроизводимости).
@@ -394,8 +413,15 @@ def run_hand(arm: str, turns: list[int], timeout: int, out_root: Path) -> int:
         )
 
     for turn in turns:
-        prompt, components = build_seed(arm, turn)
-        write_prompt_record(arm_dir, arm, turn, prompt, components)
+        # Рука A, повороты 2–12: голый текст вопроса — сид уже живёт в
+        # сессии (предрегистрация §3). Дефект первого прогона (сид
+        # пересылался каждый поворот → контекст рос на 131K символов за
+        # поворот) исправлен здесь; данные дефектного прогона сохранены в
+        # `A-defective-contract/` и учтены в COST.md.
+        prompt, components, continuing = prompt_for_turn(arm, turn, session_id, seed_components)
+        if not continuing and arm == "A":
+            seed_components = components
+        write_prompt_record(arm_dir, arm, turn, prompt, components, continuing)
 
         # Метка прогона: рука A — одна сессия на 12 поворотов (хук мержит
         # строки по sessionID, поэтому поповоротные метки в COST.md для A

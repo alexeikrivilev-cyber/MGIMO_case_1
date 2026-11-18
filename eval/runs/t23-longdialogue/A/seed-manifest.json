@@ -1,0 +1,58 @@
+{
+  "arm": "A",
+  "seed_sha256": "597b719603809846f541ee499c507a16b58a368d77c6fe744dbfcf539a64810b",
+  "seed_chars": 130996,
+  "components": [
+    {
+      "role": "шаблон промпта",
+      "path": "eval/runs/t23-longdialogue/prompt-template.md",
+      "sha256": "93b994f63c2569e247da3d501346f016ba56e4ca829cfcad70c47be9caa792f3"
+    },
+    {
+      "role": "РАМКА ЗАДАЧИ",
+      "path": "project/brief.md",
+      "sha256": "badb0c1916fa0cf451bb364b82f1620e35251d6d6d5ca47861380c1fa3e66471"
+    },
+    {
+      "role": "АРТЕФАКТ — ИССЛЕДОВАНИЕ (шаг 2)",
+      "path": "project/research.md",
+      "sha256": "4b223a6e037339c4a98f653a51adf38336eecf85dc11b04c0b43bf7245d4ed40"
+    },
+    {
+      "role": "АРТЕФАКТ — ВАРИАНТЫ (шаг 3)",
+      "path": "project/options.md",
+      "sha256": "7bd2f86c77d10d938f4d3b4dee2650ac45f644c93433449b1b48342f2928509c"
+    },
+    {
+      "role": "АРТЕФАКТ — ПРОДУКТОВАЯ СТРАТЕГИЯ (шаг 4)",
+      "path": "project/strategy-product.md",
+      "sha256": "a9044f0adb864066e4bd88334c6e0b00514f7398ca4244ddf1d138f6a02d070f"
+    },
+    {
+      "role": "АРТЕФАКТ — КОММУНИКАЦИОННАЯ СТРАТЕГИЯ (шаг 4)",
+      "path": "project/strategy-comms.md",
+      "sha256": "cc69de997a2c37e10fe0c9ce8520cfd8c1ea1a6771179e8b39cf10d6776fdefa"
+    },
+    {
+      "role": "АРТЕФАКТ — ПЛАН ПРОВЕРКИ (шаг 4)",
+      "path": "project/verification-plan.md",
+      "sha256": "7373bfb1f6fc71c4505dd339831a274ae1491d5b02b4e7c16512f24b85990566"
+    },
+    {
+      "role": "ДОКАЗАТЕЛЬСТВО — бенчмарки Mixpanel",
+      "path": "project/evidence/ev-001-mixpanel-benchmarks.md",
+      "sha256": "f29e76b0a0ada3ce009868db5fe61a8a2e2381307cf428c8ae7fed84c33e821f"
+    },
+    {
+      "role": "ДОКАЗАТЕЛЬСТВО — датасет IBM Telco Churn",
+      "path": "project/evidence/ev-002-telco-dataset-stats.md",
+      "sha256": "a4c68be1b107865ab741dd7ef8ea1f6b9940538b005b0e416696a776c2049c87"
+    },
+    {
+      "role": "ДОКАЗАТЕЛЬСТВО — драйверы оттока (arXiv)",
+      "path": "project/evidence/ev-003-arxiv-churn-drivers.md",
+      "sha256": "6429dbd31819c4d391f04cf10431d1aae22be07ce1d97069731ab6847527ff6e"
+    }
+  ],
+  "note": "сид один на все 12 поворотов; повороты 2–12 — голый текст вопроса в той же сессии"
+}

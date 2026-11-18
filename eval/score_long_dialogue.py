@@ -116,6 +116,11 @@ NUMBER_RE = re.compile(
     r"(?<![\d.,])(\d+(?:[ \u00a0]\d{3})*(?:[.,]\d+)?)(\s*(?:%|п\.п\.|млн|тыс|трлн|млрд|K|M)?)"
 )
 YEAR_RE = re.compile(r"^\d{4}$")
+# Идентификаторы и даты — не числовые утверждения: без этой зачистки
+# sessionID («ses_e1108c355ffe…») и «2026-11-17» давали бы «контрадикции»
+# в КАЖДОМ повороте — дефект измерителя, а не свойство агента.
+ID_TOKEN_RE = re.compile(r"\b(?:ses|prt|msg|ses_)[_-][A-Za-z0-9]{6,}|\b[A-Za-z]*_[A-Za-z0-9]{16,}\b")
+ISO_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 
 
 def _decimals(text: str) -> int:
@@ -135,10 +140,22 @@ def _sig_decimals(value: float) -> int:
     return len(text.split(".", 1)[1]) if "." in text else 0
 
 
+def strip_non_claims(text: str) -> str:
+    """Убрать из текста идентификаторы и ISO-даты перед извлечением чисел.
+
+    Журнальная шапка ответа несёт sessionID (`ses_…`), а агент называет
+    даты решений («2026-11-17»): цифры внутри них — не утверждения о
+    проекте. Дефект найден разбором первых находок M1 (контрадикция в
+    КАЖДОМ повороте из-за «1108» внутри sessionID) и исправлен в
+    измерителе, а не спрятан в отчёте.
+    """
+    return ISO_DATE_RE.sub(" ", ID_TOKEN_RE.sub(" ", text))
+
+
 def extract_numbers(text: str) -> list[tuple[float, str, str, str]]:
     """Числа ответа: (значение, как в тексте, единица, без единицы)."""
     found: list[tuple[float, str, str, str]] = []
-    for match in NUMBER_RE.finditer(text):
+    for match in NUMBER_RE.finditer(strip_non_claims(text)):
         raw, unit = match.group(1), (match.group(2) or "").strip()
         plain = raw.replace(" ", "").replace("\u00a0", "").replace(",", ".")
         try:

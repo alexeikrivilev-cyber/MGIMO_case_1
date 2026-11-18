@@ -1,0 +1,2044 @@
+{
+  "arms": {
+    "A": {
+      "metrics": {
+        "1": {
+          "status": "OK",
+          "answer_chars": 1103,
+          "m1": {
+            "claims": 12,
+            "ok": 11,
+            "contradictions": 1,
+            "unverified": 0,
+            "contradiction_details": [
+              {
+                "value": 58.05,
+                "as_written": "58.05 %",
+                "verdict": "контрадикция",
+                "anchor": 56.21,
+                "anchor_meaning": "отток при tenure 0–3 мес, n = 1 062",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 61,
+            "output": 835,
+            "reasoning": 0,
+            "cache_read": 70848,
+            "cost_usd_provider": 0.009971,
+            "cost_usd_formula": 0.0094,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1103
+          },
+          "gate_exit": 0
+        },
+        "2": {
+          "status": "OK",
+          "answer_chars": 1092,
+          "m1": {
+            "claims": 4,
+            "ok": 4,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 87,
+            "output": 540,
+            "reasoning": 0,
+            "cache_read": 71680,
+            "cost_usd_provider": 0.009203,
+            "cost_usd_formula": 0.008713,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 2
+          },
+          "m5": {
+            "chars": 1092
+          },
+          "gate_exit": 0
+        },
+        "3": {
+          "status": "OK",
+          "answer_chars": 964,
+          "m1": {
+            "claims": 5,
+            "ok": 5,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 75,
+            "output": 627,
+            "reasoning": 0,
+            "cache_read": 72256,
+            "cost_usd_provider": 0.009511,
+            "cost_usd_formula": 0.008994,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 3
+          },
+          "m5": {
+            "chars": 964
+          },
+          "gate_exit": 0
+        },
+        "4": {
+          "status": "OK",
+          "answer_chars": 1365,
+          "m1": {
+            "claims": 5,
+            "ok": 5,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 88,
+            "output": 1204,
+            "reasoning": 0,
+            "cache_read": 72896,
+            "cost_usd_provider": 0.011316,
+            "cost_usd_formula": 0.010628,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 4
+          },
+          "m5": {
+            "chars": 1365
+          },
+          "gate_exit": 0
+        },
+        "5": {
+          "status": "OK",
+          "answer_chars": 1723,
+          "m1": {
+            "claims": 16,
+            "ok": 11,
+            "contradictions": 5,
+            "unverified": 0,
+            "contradiction_details": [
+              {
+                "value": 630.0,
+                "as_written": "630 тыс",
+                "verdict": "контрадикция",
+                "anchor": 613,
+                "anchor_meaning": "n когорты первого месяца",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 84.0,
+                "as_written": "84 тыс",
+                "verdict": "контрадикция",
+                "anchor": 90,
+                "anchor_meaning": "дней — окно пилота «Первые 90 дней»",
+                "anchor_source": "strategy-product.md"
+              },
+              {
+                "value": 189.0,
+                "as_written": "189 тыс",
+                "verdict": "контрадикция",
+                "anchor": 199,
+                "anchor_meaning": "тыс. единиц — нижняя граница эффекта таргетинга",
+                "anchor_source": "strategy-product.md"
+              },
+              {
+                "value": 70.0,
+                "as_written": "70 %",
+                "verdict": "контрадикция",
+                "anchor": 73.56,
+                "anchor_meaning": "отток с аддонами внутри 0–3 мес",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 100.0,
+                "as_written": "100 %",
+                "verdict": "контрадикция",
+                "anchor": 96.52,
+                "anchor_meaning": "доля month-to-month среди новичков",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 7,
+            "grounded": 5,
+            "share": 0.7143,
+            "ungrounded_lines": [
+              15,
+              16
+            ],
+            "gate_problems": 2
+          },
+          "m4": {
+            "input": 45,
+            "output": 2302,
+            "reasoning": 0,
+            "cache_read": 74176,
+            "cost_usd_provider": 0.014687,
+            "cost_usd_formula": 0.013678,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 5
+          },
+          "m5": {
+            "chars": 1723
+          },
+          "gate_exit": 2
+        },
+        "6": {
+          "status": "OK",
+          "answer_chars": 953,
+          "m1": {
+            "claims": 3,
+            "ok": 3,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 73,
+            "output": 584,
+            "reasoning": 0,
+            "cache_read": 76480,
+            "cost_usd_provider": 0.009822,
+            "cost_usd_formula": 0.009298,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 6
+          },
+          "m5": {
+            "chars": 953
+          },
+          "gate_exit": 0
+        },
+        "7": {
+          "status": "OK",
+          "answer_chars": 1788,
+          "m1": {
+            "claims": 4,
+            "ok": 3,
+            "contradictions": 1,
+            "unverified": 0,
+            "contradiction_details": [
+              {
+                "value": 23.0,
+                "as_written": "23",
+                "verdict": "контрадикция",
+                "anchor": 21.75,
+                "anchor_meaning": "доля e-check в бакете 49+",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 43,
+            "output": 1139,
+            "reasoning": 0,
+            "cache_read": 77120,
+            "cost_usd_provider": 0.011517,
+            "cost_usd_formula": 0.01083,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 7
+          },
+          "m5": {
+            "chars": 1788
+          },
+          "gate_exit": 0
+        },
+        "8": {
+          "status": "OK",
+          "answer_chars": 1029,
+          "m1": {
+            "claims": 2,
+            "ok": 2,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 57,
+            "output": 952,
+            "reasoning": 0,
+            "cache_read": 78272,
+            "cost_usd_provider": 0.011093,
+            "cost_usd_formula": 0.010455,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 8
+          },
+          "m5": {
+            "chars": 1029
+          },
+          "gate_exit": 0
+        },
+        "9": {
+          "status": "OK",
+          "answer_chars": 1137,
+          "m1": {
+            "claims": 2,
+            "ok": 2,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 74,
+            "output": 1079,
+            "reasoning": 0,
+            "cache_read": 79232,
+            "cost_usd_provider": 0.011591,
+            "cost_usd_formula": 0.010911,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 9
+          },
+          "m5": {
+            "chars": 1137
+          },
+          "gate_exit": 0
+        },
+        "10": {
+          "status": "OK",
+          "answer_chars": 1432,
+          "m1": {
+            "claims": 8,
+            "ok": 6,
+            "contradictions": 0,
+            "unverified": 2,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 23,
+            "output": 1189,
+            "reasoning": 0,
+            "cache_read": 80384,
+            "cost_usd_provider": 0.011987,
+            "cost_usd_formula": 0.011272,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 10
+          },
+          "m5": {
+            "chars": 1432
+          },
+          "gate_exit": 0
+        },
+        "11": {
+          "status": "OK",
+          "answer_chars": 521,
+          "m1": {
+            "claims": 3,
+            "ok": 3,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 80,
+            "output": 265,
+            "reasoning": 0,
+            "cache_read": 81536,
+            "cost_usd_provider": 0.009405,
+            "cost_usd_formula": 0.008949,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 11
+          },
+          "m5": {
+            "chars": 521
+          },
+          "gate_exit": 0
+        },
+        "12": {
+          "status": "OK",
+          "answer_chars": 1742,
+          "m1": {
+            "claims": 13,
+            "ok": 12,
+            "contradictions": 0,
+            "unverified": 1,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 59,
+            "output": 1103,
+            "reasoning": 0,
+            "cache_read": 81856,
+            "cost_usd_provider": 0.011921,
+            "cost_usd_formula": 0.011223,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 12
+          },
+          "m5": {
+            "chars": 1742
+          },
+          "gate_exit": 0
+        }
+      },
+      "m3": {
+        "probes": {
+          "3": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          },
+          "6": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          },
+          "11": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          }
+        },
+        "drift_last_vs_first": false
+      },
+      "verdict": {
+        "contradiction_turns": [
+          1,
+          5,
+          7
+        ],
+        "m2_drop_pp": 0.0,
+        "m3_drift": false,
+        "triggered": [
+          "M1: контрадикции в 3 поворотах [1, 5, 7]"
+        ],
+        "verdict": "Деградация подтверждена"
+      },
+      "totals": {
+        "input_tokens": 765,
+        "output_tokens": 11819,
+        "cache_read_tokens": 916736,
+        "usd_formula": 0.1244,
+        "tool_calls": 0,
+        "patch_parts": 0,
+        "failed_turns": []
+      }
+    },
+    "B": {
+      "metrics": {
+        "1": {
+          "status": "OK",
+          "answer_chars": 1143,
+          "m1": {
+            "claims": 12,
+            "ok": 11,
+            "contradictions": 1,
+            "unverified": 0,
+            "contradiction_details": [
+              {
+                "value": 39.88,
+                "as_written": "39.88 п.п.",
+                "verdict": "контрадикция",
+                "anchor": 41.64,
+                "anchor_meaning": "отток без TechSupport, n = 3 473",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 49643,
+            "output": 1147,
+            "reasoning": 0,
+            "cache_read": 16320,
+            "cost_usd_provider": 0.057069,
+            "cost_usd_formula": 0.054372,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1143
+          },
+          "gate_exit": 0
+        },
+        "2": {
+          "status": "OK",
+          "answer_chars": 1095,
+          "m1": {
+            "claims": 2,
+            "ok": 2,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 0,
+            "share": 0.0,
+            "ungrounded_lines": [
+              15
+            ],
+            "gate_problems": 1
+          },
+          "m4": {
+            "input": 14283,
+            "output": 2209,
+            "reasoning": 0,
+            "cache_read": 49024,
+            "cost_usd_provider": 0.026673,
+            "cost_usd_formula": 0.02515,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1095
+          },
+          "gate_exit": 2
+        },
+        "3": {
+          "status": "OK",
+          "answer_chars": 1306,
+          "m1": {
+            "claims": 9,
+            "ok": 9,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 16821,
+            "output": 1942,
+            "reasoning": 0,
+            "cache_read": 56384,
+            "cost_usd_provider": 0.0293,
+            "cost_usd_formula": 0.027703,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1306
+          },
+          "gate_exit": 0
+        },
+        "4": {
+          "status": "OK",
+          "answer_chars": 1642,
+          "m1": {
+            "claims": 2,
+            "ok": 2,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 69818,
+            "output": 2356,
+            "reasoning": 0,
+            "cache_read": 1792,
+            "cost_usd_provider": 0.080268,
+            "cost_usd_formula": 0.076358,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1642
+          },
+          "gate_exit": 0
+        },
+        "5": {
+          "status": "OK",
+          "answer_chars": 1262,
+          "m1": {
+            "claims": 28,
+            "ok": 13,
+            "contradictions": 8,
+            "unverified": 7,
+            "contradiction_details": [
+              {
+                "value": 70.0,
+                "as_written": "70 %",
+                "verdict": "контрадикция",
+                "anchor": 73.56,
+                "anchor_meaning": "отток с аддонами внутри 0–3 мес",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 70.0,
+                "as_written": "70 %",
+                "verdict": "контрадикция",
+                "anchor": 73.56,
+                "anchor_meaning": "отток с аддонами внутри 0–3 мес",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 630.0,
+                "as_written": "630 тыс",
+                "verdict": "контрадикция",
+                "anchor": 613,
+                "anchor_meaning": "n когорты первого месяца",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 189.0,
+                "as_written": "189 тыс",
+                "verdict": "контрадикция",
+                "anchor": 199,
+                "anchor_meaning": "тыс. единиц — нижняя граница эффекта таргетинга",
+                "anchor_source": "strategy-product.md"
+              },
+              {
+                "value": 630.0,
+                "as_written": "630 тыс",
+                "verdict": "контрадикция",
+                "anchor": 613,
+                "anchor_meaning": "n когорты первого месяца",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 560.7,
+                "as_written": "560.7 тыс",
+                "verdict": "контрадикция",
+                "anchor": 613,
+                "anchor_meaning": "n когорты первого месяца",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 69.3,
+                "as_written": "69.3",
+                "verdict": "контрадикция",
+                "anchor": 73.56,
+                "anchor_meaning": "отток с аддонами внутри 0–3 мес",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 69.3,
+                "as_written": "69.3",
+                "verdict": "контрадикция",
+                "anchor": 73.56,
+                "anchor_meaning": "отток с аддонами внутри 0–3 мес",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 6,
+            "grounded": 3,
+            "share": 0.5,
+            "ungrounded_lines": [
+              11,
+              13,
+              14
+            ],
+            "gate_problems": 3
+          },
+          "m4": {
+            "input": 15234,
+            "output": 4775,
+            "reasoning": 0,
+            "cache_read": 56384,
+            "cost_usd_provider": 0.036107,
+            "cost_usd_formula": 0.033765,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1262
+          },
+          "gate_exit": 2
+        },
+        "6": {
+          "status": "OK",
+          "answer_chars": 987,
+          "m1": {
+            "claims": 6,
+            "ok": 6,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 4,
+            "grounded": 3,
+            "share": 0.75,
+            "ungrounded_lines": [
+              13
+            ],
+            "gate_problems": 1
+          },
+          "m4": {
+            "input": 59,
+            "output": 745,
+            "reasoning": 0,
+            "cache_read": 73152,
+            "cost_usd_provider": 0.009941,
+            "cost_usd_formula": 0.009386,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 987
+          },
+          "gate_exit": 2
+        },
+        "7": {
+          "status": "OK",
+          "answer_chars": 1856,
+          "m1": {
+            "claims": 9,
+            "ok": 6,
+            "contradictions": 2,
+            "unverified": 1,
+            "contradiction_details": [
+              {
+                "value": 23.0,
+                "as_written": "23",
+                "verdict": "контрадикция",
+                "anchor": 21.75,
+                "anchor_meaning": "доля e-check в бакете 49+",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 200.0,
+                "as_written": "200",
+                "verdict": "контрадикция",
+                "anchor": 199,
+                "anchor_meaning": "тыс. единиц — нижняя граница эффекта таргетинга",
+                "anchor_source": "strategy-product.md"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 6354,
+            "output": 1525,
+            "reasoning": 0,
+            "cache_read": 56384,
+            "cost_usd_provider": 0.017104,
+            "cost_usd_formula": 0.01611,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1856
+          },
+          "gate_exit": 0
+        },
+        "8": {
+          "status": "OK",
+          "answer_chars": 776,
+          "m1": {
+            "claims": 3,
+            "ok": 3,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 8343,
+            "output": 480,
+            "reasoning": 0,
+            "cache_read": 56384,
+            "cost_usd_provider": 0.016061,
+            "cost_usd_formula": 0.015277,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 776
+          },
+          "gate_exit": 0
+        },
+        "9": {
+          "status": "OK",
+          "answer_chars": 1394,
+          "m1": {
+            "claims": 3,
+            "ok": 3,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 0,
+            "share": 0.0,
+            "ungrounded_lines": [
+              15
+            ],
+            "gate_problems": 1
+          },
+          "m4": {
+            "input": 6713,
+            "output": 771,
+            "reasoning": 0,
+            "cache_read": 56384,
+            "cost_usd_provider": 0.015225,
+            "cost_usd_formula": 0.014433,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1394
+          },
+          "gate_exit": 2
+        },
+        "10": {
+          "status": "OK",
+          "answer_chars": 1140,
+          "m1": {
+            "claims": 3,
+            "ok": 3,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 15223,
+            "output": 1568,
+            "reasoning": 0,
+            "cache_read": 56384,
+            "cost_usd_provider": 0.02651,
+            "cost_usd_formula": 0.025095,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1140
+          },
+          "gate_exit": 0
+        },
+        "11": {
+          "status": "OK",
+          "answer_chars": 948,
+          "m1": {
+            "claims": 5,
+            "ok": 5,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 49,
+            "output": 1127,
+            "reasoning": 0,
+            "cache_read": 73152,
+            "cost_usd_provider": 0.011072,
+            "cost_usd_formula": 0.010407,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 948
+          },
+          "gate_exit": 0
+        },
+        "12": {
+          "status": "OK",
+          "answer_chars": 1793,
+          "m1": {
+            "claims": 12,
+            "ok": 12,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 8575,
+            "output": 1042,
+            "reasoning": 0,
+            "cache_read": 64640,
+            "cost_usd_provider": 0.018847,
+            "cost_usd_formula": 0.017852,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1793
+          },
+          "gate_exit": 0
+        }
+      },
+      "m3": {
+        "probes": {
+          "3": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          },
+          "6": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          },
+          "11": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          }
+        },
+        "drift_last_vs_first": false
+      },
+      "verdict": {
+        "contradiction_turns": [
+          1,
+          5,
+          7
+        ],
+        "m2_drop_pp": 0.0,
+        "m3_drift": false,
+        "triggered": [
+          "M1: контрадикции в 3 поворотах [1, 5, 7]"
+        ],
+        "verdict": "Деградация подтверждена"
+      },
+      "totals": {
+        "input_tokens": 211115,
+        "output_tokens": 19687,
+        "cache_read_tokens": 616384,
+        "usd_formula": 0.3259,
+        "tool_calls": 0,
+        "patch_parts": 0,
+        "failed_turns": []
+      }
+    },
+    "C": {
+      "metrics": {
+        "1": {
+          "status": "OK",
+          "answer_chars": 753,
+          "m1": {
+            "claims": 12,
+            "ok": 11,
+            "contradictions": 1,
+            "unverified": 0,
+            "contradiction_details": [
+              {
+                "value": 58.05,
+                "as_written": "58.05 %",
+                "verdict": "контрадикция",
+                "anchor": 56.21,
+                "anchor_meaning": "отток при tenure 0–3 мес, n = 1 062",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 5,
+            "grounded": 5,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 9576,
+            "output": 709,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.014648,
+            "cost_usd_formula": 0.01389,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 753
+          },
+          "gate_exit": 0
+        },
+        "2": {
+          "status": "OK",
+          "answer_chars": 1021,
+          "m1": {
+            "claims": 9,
+            "ok": 6,
+            "contradictions": 2,
+            "unverified": 1,
+            "contradiction_details": [
+              {
+                "value": 3875.0,
+                "as_written": "3 875",
+                "verdict": "контрадикция",
+                "anchor": 3473,
+                "anchor_meaning": "n когорты без TechSupport",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 39.88,
+                "as_written": "39.88 п.п.",
+                "verdict": "контрадикция",
+                "anchor": 41.64,
+                "anchor_meaning": "отток без TechSupport, n = 3 473",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 1,
+            "share": 0.5,
+            "ungrounded_lines": [
+              17
+            ],
+            "gate_problems": 1
+          },
+          "m4": {
+            "input": 6920,
+            "output": 637,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.011654,
+            "cost_usd_formula": 0.01104,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1021
+          },
+          "gate_exit": 2
+        },
+        "3": {
+          "status": "OK",
+          "answer_chars": 862,
+          "m1": {
+            "claims": 6,
+            "ok": 6,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 16818,
+            "output": 516,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.021647,
+            "cost_usd_formula": 0.020611,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 862
+          },
+          "gate_exit": 0
+        },
+        "4": {
+          "status": "OK",
+          "answer_chars": 1370,
+          "m1": {
+            "claims": 5,
+            "ok": 5,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 1,
+            "share": 0.5,
+            "ungrounded_lines": [
+              11
+            ],
+            "gate_problems": 1
+          },
+          "m4": {
+            "input": 15224,
+            "output": 4339,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.031406,
+            "cost_usd_formula": 0.029339,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1370
+          },
+          "gate_exit": 2
+        },
+        "5": {
+          "status": "OK",
+          "answer_chars": 1946,
+          "m1": {
+            "claims": 29,
+            "ok": 15,
+            "contradictions": 13,
+            "unverified": 1,
+            "contradiction_details": [
+              {
+                "value": 79.0,
+                "as_written": "79 %",
+                "verdict": "контрадикция",
+                "anchor": 73.56,
+                "anchor_meaning": "отток с аддонами внутри 0–3 мес",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 70.0,
+                "as_written": "70 %",
+                "verdict": "контрадикция",
+                "anchor": 73.56,
+                "anchor_meaning": "отток с аддонами внутри 0–3 мес",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 630.0,
+                "as_written": "630 тыс",
+                "verdict": "контрадикция",
+                "anchor": 613,
+                "anchor_meaning": "n когорты первого месяца",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 189.0,
+                "as_written": "189 тыс",
+                "verdict": "контрадикция",
+                "anchor": 199,
+                "anchor_meaning": "тыс. единиц — нижняя граница эффекта таргетинга",
+                "anchor_source": "strategy-product.md"
+              },
+              {
+                "value": 1.66,
+                "as_written": "1.66 млн",
+                "verdict": "контрадикция",
+                "anchor": 1.9,
+                "anchor_meaning": "ежемесячный отток зрелого рынка, %",
+                "anchor_source": "ev-003"
+              },
+              {
+                "value": 189.0,
+                "as_written": "189 тыс",
+                "verdict": "контрадикция",
+                "anchor": 199,
+                "anchor_meaning": "тыс. единиц — нижняя граница эффекта таргетинга",
+                "anchor_source": "strategy-product.md"
+              },
+              {
+                "value": 84.0,
+                "as_written": "84 тыс",
+                "verdict": "контрадикция",
+                "anchor": 90,
+                "anchor_meaning": "дней — окно пилота «Первые 90 дней»",
+                "anchor_source": "strategy-product.md"
+              },
+              {
+                "value": 189.0,
+                "as_written": "189 тыс",
+                "verdict": "контрадикция",
+                "anchor": 199,
+                "anchor_meaning": "тыс. единиц — нижняя граница эффекта таргетинга",
+                "anchor_source": "strategy-product.md"
+              },
+              {
+                "value": 24.3,
+                "as_written": "24.3",
+                "verdict": "контрадикция",
+                "anchor": 26.54,
+                "anchor_meaning": "накопленный отток датасета",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 26.3,
+                "as_written": "26.3 %",
+                "verdict": "контрадикция",
+                "anchor": 26.54,
+                "anchor_meaning": "накопленный отток датасета",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 33.3,
+                "as_written": "33.3",
+                "verdict": "контрадикция",
+                "anchor": 33.52,
+                "anchor_meaning": "отток без стриминг-аддонов (по базе)",
+                "anchor_source": "ev-002"
+              },
+              {
+                "value": 35.3,
+                "as_written": "35.3 %",
+                "verdict": "контрадикция",
+                "anchor": 34,
+                "anchor_meaning": "докризисный уровень удержания на 30-й день",
+                "anchor_source": "brief.md"
+              },
+              {
+                "value": 84.0,
+                "as_written": "84 тыс",
+                "verdict": "контрадикция",
+                "anchor": 90,
+                "anchor_meaning": "дней — окно пилота «Первые 90 дней»",
+                "anchor_source": "strategy-product.md"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 11,
+            "grounded": 8,
+            "share": 0.7273,
+            "ungrounded_lines": [
+              11,
+              15,
+              24
+            ],
+            "gate_problems": 3
+          },
+          "m4": {
+            "input": 15231,
+            "output": 5945,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.036214,
+            "cost_usd_formula": 0.033683,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1946
+          },
+          "gate_exit": 2
+        },
+        "6": {
+          "status": "OK",
+          "answer_chars": 705,
+          "m1": {
+            "claims": 4,
+            "ok": 4,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 56,
+            "output": 298,
+            "reasoning": 0,
+            "cache_read": 40768,
+            "cost_usd_provider": 0.005214,
+            "cost_usd_formula": 0.004937,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 705
+          },
+          "gate_exit": 0
+        },
+        "7": {
+          "status": "OK",
+          "answer_chars": 1380,
+          "m1": {
+            "claims": 4,
+            "ok": 3,
+            "contradictions": 1,
+            "unverified": 0,
+            "contradiction_details": [
+              {
+                "value": 23.0,
+                "as_written": "23",
+                "verdict": "контрадикция",
+                "anchor": 21.75,
+                "anchor_meaning": "доля e-check в бакете 49+",
+                "anchor_source": "ev-002"
+              }
+            ]
+          },
+          "m2": {
+            "claims": 1,
+            "grounded": 1,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 6351,
+            "output": 483,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.010598,
+            "cost_usd_formula": 0.010055,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1380
+          },
+          "gate_exit": 0
+        },
+        "8": {
+          "status": "OK",
+          "answer_chars": 1467,
+          "m1": {
+            "claims": 8,
+            "ok": 8,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 4,
+            "grounded": 4,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 8340,
+            "output": 1591,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.015991,
+            "cost_usd_formula": 0.015036,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1467
+          },
+          "gate_exit": 0
+        },
+        "9": {
+          "status": "OK",
+          "answer_chars": 2017,
+          "m1": {
+            "claims": 4,
+            "ok": 4,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 6710,
+            "output": 2335,
+            "reasoning": 0,
+            "cache_read": 24000,
+            "cost_usd_provider": 0.016509,
+            "cost_usd_formula": 0.015415,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 2017
+          },
+          "gate_exit": 0
+        },
+        "10": {
+          "status": "OK",
+          "answer_chars": 1349,
+          "m1": {
+            "claims": 8,
+            "ok": 8,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 2,
+            "grounded": 2,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 8372,
+            "output": 1651,
+            "reasoning": 0,
+            "cache_read": 30848,
+            "cost_usd_provider": 0.01692,
+            "cost_usd_formula": 0.015915,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1349
+          },
+          "gate_exit": 0
+        },
+        "11": {
+          "status": "OK",
+          "answer_chars": 1075,
+          "m1": {
+            "claims": 7,
+            "ok": 7,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 46,
+            "output": 487,
+            "reasoning": 0,
+            "cache_read": 40768,
+            "cost_usd_provider": 0.005768,
+            "cost_usd_formula": 0.005438,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 1075
+          },
+          "gate_exit": 0
+        },
+        "12": {
+          "status": "OK",
+          "answer_chars": 2662,
+          "m1": {
+            "claims": 17,
+            "ok": 17,
+            "contradictions": 0,
+            "unverified": 0,
+            "contradiction_details": []
+          },
+          "m2": {
+            "claims": 3,
+            "grounded": 3,
+            "share": 1.0,
+            "ungrounded_lines": [],
+            "gate_problems": 0
+          },
+          "m4": {
+            "input": 8572,
+            "output": 2169,
+            "reasoning": 0,
+            "cache_read": 32256,
+            "cost_usd_provider": 0.018825,
+            "cost_usd_formula": 0.017654,
+            "tool_calls": 0,
+            "patch_parts": 0,
+            "assistant_messages": 1
+          },
+          "m5": {
+            "chars": 2662
+          },
+          "gate_exit": 0
+        }
+      },
+      "m3": {
+        "probes": {
+          "3": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          },
+          "6": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          },
+          "11": {
+            "metric_named": true,
+            "baseline_21": true,
+            "baseline_34_context": true,
+            "wrong_baseline_candidates": []
+          }
+        },
+        "drift_last_vs_first": false
+      },
+      "verdict": {
+        "contradiction_turns": [
+          1,
+          2,
+          5,
+          7
+        ],
+        "m2_drop_pp": 0.0,
+        "m3_drift": false,
+        "triggered": [
+          "M1: контрадикции в 4 поворотах [1, 2, 5, 7]"
+        ],
+        "verdict": "Деградация подтверждена"
+      },
+      "totals": {
+        "input_tokens": 102216,
+        "output_tokens": 21160,
+        "cache_read_tokens": 336640,
+        "usd_formula": 0.193,
+        "tool_calls": 0,
+        "patch_parts": 0,
+        "failed_turns": []
+      }
+    }
+  },
+  "cost_rows": [
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11118ccbffeyXBggcQ4a2S3aA",
+      "label": "t23-longdialogue: проба механики CLI (argv)",
+      "model": "step-5-preview",
+      "in": "23661",
+      "out": "3",
+      "reasoning": "0",
+      "cache_read": "0",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e110f61e7ffe6ev7s7VNFuCFWy",
+      "label": "t23-longdialogue: проба механики CLI (stdin)",
+      "model": "step-5-preview",
+      "in": "44",
+      "out": "3",
+      "reasoning": "0",
+      "cache_read": "23616",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.00"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1108c355ffe0LFFnL4JlL3GJu",
+      "label": "t23-longdialogue-A (дефектный прогон: сид пересылался каждый поворот)",
+      "model": "step-5-preview",
+      "in": "591263",
+      "out": "12200",
+      "reasoning": "0",
+      "cache_read": "3448576",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.97"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1104fa3affegc9ax8eTzfwSab",
+      "label": "t23-longdialogue-B-t01",
+      "model": "step-5-preview",
+      "in": "49643",
+      "out": "1147",
+      "reasoning": "0",
+      "cache_read": "16320",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.05"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1104cd01ffeiDad171rfK9xeL",
+      "label": "t23-longdialogue-B-t02",
+      "model": "step-5-preview",
+      "in": "14283",
+      "out": "2209",
+      "reasoning": "0",
+      "cache_read": "49024",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.03"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11049139ffehdUcMxKyeAZ33t",
+      "label": "t23-longdialogue-B-t03",
+      "model": "step-5-preview",
+      "in": "16821",
+      "out": "1942",
+      "reasoning": "0",
+      "cache_read": "56384",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.03"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11045b30ffeyNSa3ZQnErcFze",
+      "label": "t23-longdialogue-B-t04",
+      "model": "step-5-preview",
+      "in": "69818",
+      "out": "2356",
+      "reasoning": "0",
+      "cache_read": "1792",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.08"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11040788ffeInBSyHpNz04xlp",
+      "label": "t23-longdialogue-B-t05",
+      "model": "step-5-preview",
+      "in": "15234",
+      "out": "4775",
+      "reasoning": "0",
+      "cache_read": "56384",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.03"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11038f35ffeiLV4fYqpMYtJP7",
+      "label": "t23-longdialogue-B-t06",
+      "model": "step-5-preview",
+      "in": "59",
+      "out": "745",
+      "reasoning": "0",
+      "cache_read": "73152",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11036c03ffedArQ3t3N3R1n3O",
+      "label": "t23-longdialogue-B-t07",
+      "model": "step-5-preview",
+      "in": "6354",
+      "out": "1525",
+      "reasoning": "0",
+      "cache_read": "56384",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11033c0effeknj7P9Iwy6q71U",
+      "label": "t23-longdialogue-B-t08",
+      "model": "step-5-preview",
+      "in": "8343",
+      "out": "480",
+      "reasoning": "0",
+      "cache_read": "56384",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11031a8cffeSI2TpCnlMEp5sd",
+      "label": "t23-longdialogue-B-t09",
+      "model": "step-5-preview",
+      "in": "6713",
+      "out": "771",
+      "reasoning": "0",
+      "cache_read": "56384",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1102f72effecyYcpD5nypf3lX",
+      "label": "t23-longdialogue-B-t10",
+      "model": "step-5-preview",
+      "in": "15223",
+      "out": "1568",
+      "reasoning": "0",
+      "cache_read": "56384",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.03"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1102bde8ffezAwQn9nEH7PTQt",
+      "label": "t23-longdialogue-B-t11",
+      "model": "step-5-preview",
+      "in": "49",
+      "out": "1127",
+      "reasoning": "0",
+      "cache_read": "73152",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11029467ffecTS8PhVusudJVb",
+      "label": "t23-longdialogue-B-t12",
+      "model": "step-5-preview",
+      "in": "8575",
+      "out": "1042",
+      "reasoning": "0",
+      "cache_read": "64640",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1100f1acffe6Iiwk6zWMiF0KY",
+      "label": "t23-longdialogue-C-t01",
+      "model": "step-5-preview",
+      "in": "9576",
+      "out": "709",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1100d101ffe3u1uNmgrEAFk7u",
+      "label": "t23-longdialogue-C-t02",
+      "model": "step-5-preview",
+      "in": "6920",
+      "out": "637",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e1100b271ffekIGeyHArvQruvt",
+      "label": "t23-longdialogue-C-t03",
+      "model": "step-5-preview",
+      "in": "16818",
+      "out": "516",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e110093d8ffeFBbOKK68Dla7zZ",
+      "label": "t23-longdialogue-C-t04",
+      "model": "step-5-preview",
+      "in": "15224",
+      "out": "4339",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.03"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e11002d08ffeE8YY97KMTv7yOs",
+      "label": "t23-longdialogue-C-t05",
+      "model": "step-5-preview",
+      "in": "15231",
+      "out": "5945",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.03"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10ffac5bffeK8L0RjWBptipTh",
+      "label": "t23-longdialogue-C-t06",
+      "model": "step-5-preview",
+      "in": "56",
+      "out": "298",
+      "reasoning": "0",
+      "cache_read": "40768",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.00"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10ff93c0ffeMOnYMjuvRm2jqg",
+      "label": "t23-longdialogue-C-t07",
+      "model": "step-5-preview",
+      "in": "6351",
+      "out": "483",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10ff797cffe0aPZJ435F2maYb",
+      "label": "t23-longdialogue-C-t08",
+      "model": "step-5-preview",
+      "in": "8340",
+      "out": "1591",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10ff458effe0xtg6nHEXeOdD1",
+      "label": "t23-longdialogue-C-t09",
+      "model": "step-5-preview",
+      "in": "6710",
+      "out": "2335",
+      "reasoning": "0",
+      "cache_read": "24000",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10fefd79ffeQbpkW957OwpG8s",
+      "label": "t23-longdialogue-C-t10",
+      "model": "step-5-preview",
+      "in": "8372",
+      "out": "1651",
+      "reasoning": "0",
+      "cache_read": "30848",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10feca84ffeOXUtqsrMx1ORTt",
+      "label": "t23-longdialogue-C-t11",
+      "model": "step-5-preview",
+      "in": "46",
+      "out": "487",
+      "reasoning": "0",
+      "cache_read": "40768",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10feaf5effei4rNUMZlAefj4n",
+      "label": "t23-longdialogue-C-t12",
+      "model": "step-5-preview",
+      "in": "8572",
+      "out": "2169",
+      "reasoning": "0",
+      "cache_read": "32256",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.02"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10fa7e71ffeSTXgF1x17TPOqW",
+      "label": "t23-longdialogue-probe-continue",
+      "model": "step-5-preview",
+      "in": "185",
+      "out": "193",
+      "reasoning": "0",
+      "cache_read": "47488",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.01"
+    },
+    {
+      "date": "2026-11-18",
+      "session_id": "ses_e10f96d01ffe2m3vIsB4iilq2P",
+      "label": "t23-longdialogue-A",
+      "model": "step-5-preview",
+      "in": "765",
+      "out": "11819",
+      "reasoning": "0",
+      "cache_read": "916736",
+      "cache_write": "0",
+      "search": "0",
+      "usd": "$0.12"
+    }
+  ],
+  "m5_delta_a_minus_c": {
+    "1": 350,
+    "2": 71,
+    "3": 102,
+    "4": -5,
+    "5": -223,
+    "6": 248,
+    "7": 408,
+    "8": -438,
+    "9": -880,
+    "10": 83,
+    "11": -554,
+    "12": -920
+  }
+}

@@ -663,6 +663,33 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e14f93180ffepn2BXGDQlFRVVh | О4: t20-gate-rev-verification-plan-patch | step-5-preview | 8269 | 4205 | 0 | 23680 | 0 | 0 | $0.02 |
 | 2026-11-18 | ses_e11118ccbffeyXBggcQ4a2S3aA | t23-longdialogue: проба механики CLI (argv) | step-5-preview | 23661 | 3 | 0 | 0 | 0 | 0 | $0.02 |
 | 2026-11-18 | ses_e110f61e7ffe6ev7s7VNFuCFWy | t23-longdialogue: проба механики CLI (stdin) | step-5-preview | 44 | 3 | 0 | 23616 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e1108c355ffe0LFFnL4JlL3GJu | t23-longdialogue-A (дефектный прогон: сид пересылался каждый поворот) | step-5-preview | 591263 | 12200 | 0 | 3448576 | 0 | 0 | $0.97 |
+| 2026-11-18 | ses_e1104fa3affegc9ax8eTzfwSab | t23-longdialogue-B-t01 | step-5-preview | 49643 | 1147 | 0 | 16320 | 0 | 0 | $0.05 |
+| 2026-11-18 | ses_e1104cd01ffeiDad171rfK9xeL | t23-longdialogue-B-t02 | step-5-preview | 14283 | 2209 | 0 | 49024 | 0 | 0 | $0.03 |
+| 2026-11-18 | ses_e11049139ffehdUcMxKyeAZ33t | t23-longdialogue-B-t03 | step-5-preview | 16821 | 1942 | 0 | 56384 | 0 | 0 | $0.03 |
+| 2026-11-18 | ses_e11045b30ffeyNSa3ZQnErcFze | t23-longdialogue-B-t04 | step-5-preview | 69818 | 2356 | 0 | 1792 | 0 | 0 | $0.08 |
+| 2026-11-18 | ses_e11040788ffeInBSyHpNz04xlp | t23-longdialogue-B-t05 | step-5-preview | 15234 | 4775 | 0 | 56384 | 0 | 0 | $0.03 |
+| 2026-11-18 | ses_e11038f35ffeiLV4fYqpMYtJP7 | t23-longdialogue-B-t06 | step-5-preview | 59 | 745 | 0 | 73152 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e11036c03ffedArQ3t3N3R1n3O | t23-longdialogue-B-t07 | step-5-preview | 6354 | 1525 | 0 | 56384 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e11033c0effeknj7P9Iwy6q71U | t23-longdialogue-B-t08 | step-5-preview | 8343 | 480 | 0 | 56384 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e11031a8cffeSI2TpCnlMEp5sd | t23-longdialogue-B-t09 | step-5-preview | 6713 | 771 | 0 | 56384 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e1102f72effecyYcpD5nypf3lX | t23-longdialogue-B-t10 | step-5-preview | 15223 | 1568 | 0 | 56384 | 0 | 0 | $0.03 |
+| 2026-11-18 | ses_e1102bde8ffezAwQn9nEH7PTQt | t23-longdialogue-B-t11 | step-5-preview | 49 | 1127 | 0 | 73152 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e11029467ffecTS8PhVusudJVb | t23-longdialogue-B-t12 | step-5-preview | 8575 | 1042 | 0 | 64640 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e1100f1acffe6Iiwk6zWMiF0KY | t23-longdialogue-C-t01 | step-5-preview | 9576 | 709 | 0 | 24000 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e1100d101ffe3u1uNmgrEAFk7u | t23-longdialogue-C-t02 | step-5-preview | 6920 | 637 | 0 | 24000 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e1100b271ffekIGeyHArvQruvt | t23-longdialogue-C-t03 | step-5-preview | 16818 | 516 | 0 | 24000 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e110093d8ffeFBbOKK68Dla7zZ | t23-longdialogue-C-t04 | step-5-preview | 15224 | 4339 | 0 | 24000 | 0 | 0 | $0.03 |
+| 2026-11-18 | ses_e11002d08ffeE8YY97KMTv7yOs | t23-longdialogue-C-t05 | step-5-preview | 15231 | 5945 | 0 | 24000 | 0 | 0 | $0.03 |
+| 2026-11-18 | ses_e10ffac5bffeK8L0RjWBptipTh | t23-longdialogue-C-t06 | step-5-preview | 56 | 298 | 0 | 40768 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e10ff93c0ffeMOnYMjuvRm2jqg | t23-longdialogue-C-t07 | step-5-preview | 6351 | 483 | 0 | 24000 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ff797cffe0aPZJ435F2maYb | t23-longdialogue-C-t08 | step-5-preview | 8340 | 1591 | 0 | 24000 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e10ff458effe0xtg6nHEXeOdD1 | t23-longdialogue-C-t09 | step-5-preview | 6710 | 2335 | 0 | 24000 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e10fefd79ffeQbpkW957OwpG8s | t23-longdialogue-C-t10 | step-5-preview | 8372 | 1651 | 0 | 30848 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e10feca84ffeOXUtqsrMx1ORTt | t23-longdialogue-C-t11 | step-5-preview | 46 | 487 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10feaf5effei4rNUMZlAefj4n | t23-longdialogue-C-t12 | step-5-preview | 8572 | 2169 | 0 | 32256 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e10fa7e71ffeSTXgF1x17TPOqW | t23-longdialogue-probe-continue | step-5-preview | 185 | 193 | 0 | 47488 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10f96d01ffe2m3vIsB4iilq2P | t23-longdialogue-A | step-5-preview | 765 | 11819 | 0 | 916736 | 0 | 0 | $0.12 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

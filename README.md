@@ -74,7 +74,7 @@
 ```bash
 python3 -m venv .venv && . .venv/bin/activate    # изолированное окружение (один раз)
 python3 -m pip install -r requirements.txt        # единственная зависимость — pytest
-python3 -m pytest tests/ -q                                   # 511 тестов
+python3 -m pytest tests/ -q                                   # 514 тестов
 python3 scripts/check_sources.py project/brief.md project/research.md \
   project/options.md project/strategy-product.md \
   project/strategy-comms.md project/verification-plan.md \
@@ -402,7 +402,7 @@ README есть путь проверки.
 
 | Утверждение | Как проверить |
 |---|---|
-| «511 тестов зелёные» | `python3 -m pytest tests/ -q` (без ключей, без сети; зелёное и в свежем клоне — TASK-hermes-21) |
+| «514 тестов зелёные» | `python3 -m pytest tests/ -q` (без ключей, без сети; зелёное и в свежем клоне — TASK-hermes-21) |
 | «Гейты ловят дефекты» | `python3 scripts/check_sources.py <файл с числом без основания>` — ненулевой код возврата; негативные Controls в тестах |
 | «Артефакты демо зелёные» | команды §1.1 на `project/*.md` — exit 0 |
 | «Каждое число несёт основание» | `check_evidence_links --task all` — число резолвится в cited ev-N |
@@ -413,6 +413,7 @@ README есть путь проверки.
 | «Секретов нет» | `.opencode/opencode.json` — `{env:STEPFUN_API_KEY}`; `git log -p --all | grep -c "sk-"` → 0 |
 | «Продолжение после перерыва работает» | прецедент task 18: возобновление зафиксировано в manifest прогона (`eval/runs/t18-case/manifest.md`) |
 | «Пример диалога — не выдумка» | `examples/dialogue.md` + `examples/proof.md`: каждая цитата отсылает к файлу записи, хеши артефактов сверяемы (`sha256sum`), метки стоимости различимы (`t18-case` vs `t18-case-ho-`) |
+| «Длинный диалог не деградирует» | `examples/long-dialogue.md` (12 поворотов одной сессии) + `eval/runs/t23-longdialogue/summary.md`: предрегистрация ДО прогонов, три руки с контролем, метрики M1–M5, вердикт по правилу; пересчёт — `python3 eval/score_long_dialogue.py` |
 
 Состав репозитория и что в нём намеренно НЕТ:
 
@@ -459,6 +460,7 @@ README есть путь проверки.
 | [`project/README.md`](project/README.md) | демо-проект: как читать артефакты |
 | [`examples/dialogue.md`](examples/dialogue.md) | пример полного диалога: от запроса РП до шести артефактов, с раундами ревизии и находками критика |
 | [`examples/proof.md`](examples/proof.md) | доказательство, что пример — запись реального прогона: журнал, хеши, метки стоимости, чем проверить самому |
+| [`examples/long-dialogue.md`](examples/long-dialogue.md) | пример длинного диалога: 12 поворотов РП в одной сессии (эксперимент TASK-hermes-23), дословные ответы, выводы гейтов, вердикт |
 | [`eval/runs/t18-case/manifest.md`](eval/runs/t18-case/manifest.md) | журнал демо-прогона: сессии, ревизии, коды гейтов, sha256 |
 
 Портируемость: единый источник истины — `AGENTS.md` (стандарт
