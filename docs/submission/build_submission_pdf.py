@@ -21,16 +21,50 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-ROOT = Path("/home/alex/projects/strategy-agent")
+# Корень репозитория — от расположения файла, не от домашнего каталога автора:
+# скрипт должен запускаться на любой машине из клона.
+ROOT = Path(__file__).resolve().parents[2]
 SUB = ROOT / "docs" / "submission"
-FONT_DIR = Path("/home/alex/.openclaw/workspace/media/fonts")
 OUT = SUB / "описание-работы.pdf"
 
 W, H = 1240, 1754          # A4 @150dpi
 MARGIN = 90
-FONT = FONT_DIR / "PTSans-Regular.ttf"
-FONT_B = FONT_DIR / "PTSans-Bold.ttf"
-MONO = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+
+
+def _first_existing(*candidates: Path) -> Path:
+    """Первый существующий шрифт из списка кандидатов."""
+    for c in candidates:
+        if c.is_file():
+            return c
+    return candidates[-1]
+
+
+# Шрифты ищутся по кандидатам: каталог автора (воспроизводит исходный
+# PDF байт-в-байт), каталог рядом со скриптом (клон), затем системные;
+# при отсутствии PT Sans берётся DejaVu — тот же состав глифов для
+# кириллицы, поэтому PDF остаётся читаемым на любой машине.
+_LOCAL_FONTS = SUB / "fonts"
+_AUTHOR_FONTS = Path("/home/alex/.openclaw/workspace/media/fonts")
+_SYS_PT = Path("/usr/share/fonts/truetype/pt-sans")
+_SYS_DEJAVU = Path("/usr/share/fonts/truetype/dejavu")
+FONT = _first_existing(
+    _AUTHOR_FONTS / "PTSans-Regular.ttf",
+    _LOCAL_FONTS / "PTSans-Regular.ttf",
+    _SYS_PT / "PTSans-Regular.ttf",
+    _SYS_DEJAVU / "DejaVuSans.ttf",
+)
+FONT_B = _first_existing(
+    _AUTHOR_FONTS / "PTSans-Bold.ttf",
+    _LOCAL_FONTS / "PTSans-Bold.ttf",
+    _SYS_PT / "PTSans-Bold.ttf",
+    _SYS_DEJAVU / "DejaVuSans-Bold.ttf",
+)
+MONO = str(
+    _first_existing(
+        _SYS_DEJAVU / "DejaVuSansMono.ttf",
+        Path("/usr/share/fonts/dejavu/DejaVuSansMono.ttf"),
+    )
+)
 
 INK = (28, 28, 32)
 ACCENT = (16, 84, 160)
