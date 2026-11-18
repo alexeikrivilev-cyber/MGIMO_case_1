@@ -93,7 +93,7 @@
 ```bash
 python3 -m venv .venv && . .venv/bin/activate    # изолированное окружение (один раз)
 python3 -m pip install -r requirements.txt        # единственная зависимость — pytest
-python3 -m pytest tests/ -q                                   # 517 тестов
+python3 -m pytest tests/ -q                                   # 553 теста
 python3 scripts/check_sources.py project/brief.md project/research.md \
   project/options.md project/strategy-product.md \
   project/strategy-comms.md project/verification-plan.md \
@@ -433,7 +433,7 @@ README есть путь проверки.
 
 | Утверждение | Как проверить |
 |---|---|
-| «517 тестов зелёные» | `python3 -m pytest tests/ -q` (без ключей, без сети; зелёное и в свежем клоне — TASK-hermes-21; 3 пропуска сида руки B устранены фолбэком на отслеживаемую копию — TASK-hermes-25) |
+| «553 теста зелёные» | `python3 -m pytest tests/ -q` (без ключей, без сети; зелёное и в свежем клоне — TASK-hermes-21; 3 пропуска сида руки B устранены фолбэком на отслеживаемую копию — TASK-hermes-25) |
 | «Гейты ловят дефекты» | `python3 scripts/check_sources.py <файл с числом без основания>` — ненулевой код возврата; негативные Controls в тестах |
 | «Артефакты демо зелёные» | команды §1.1 на `project/*.md` — exit 0 |
 | «Каждое число несёт основание» | `check_evidence_links --task all` — число резолвится в cited ev-N |
