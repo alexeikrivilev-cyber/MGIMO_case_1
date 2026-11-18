@@ -29,9 +29,11 @@
     python3 eval/run_long_dialogue.py --hand A [--turns 1-36] [--timeout SEC]
         [--dry-run] [--out DIR]
 
-Без `--turns` выполняются ВСЕ повороты из `TURNS` (36 в §34). `--turns`
-принимает диапазон («13-36»), список («1,3,5») и одиночный номер («12») —
-§33 воспроизводится как `--turns 1-12`.
+`--hand` обязателен для прогона; в `--dry-run` он необязателен (план
+печатается по сиду руки A). Без `--turns` выполняются ВСЕ повороты из
+`TURNS` (36 в §34). `--turns` принимает диапазон («13-36»), список
+(«1,3,5») и одиночный номер («12») — §33 воспроизводится как
+`--turns 1-12`.
 
 Коды возврата: 0 — все запрошенные повороты выполнены (включая помеченные
 FAILED по порогу годности и останов по лимиту контекста — и то, и другое
@@ -786,7 +788,10 @@ def run_hand(arm: str, turns: list[int], timeout: int, out_root: Path) -> int:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="run_long_dialogue.py")
-    parser.add_argument("--hand", required=True, choices=["A", "B", "C"])
+    # --hand обязателен для прогона, но не для --dry-run: план §33
+    # воспроизводится командой `--turns 1-12 --dry-run` без выбора руки
+    # (TASK-hermes-26 §5), а сид руки A — полный, он и печатается.
+    parser.add_argument("--hand", default=None, choices=["A", "B", "C"])
     parser.add_argument("--turns", default=None,
                         help="диапазон «1-36», список «1,3,5» или номер «12»; "
                              "без флага — все повороты из TURNS")
@@ -794,6 +799,13 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--out", default=None)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
+
+    if args.hand is None:
+        if not args.dry_run:
+            parser.error("--hand обязателен для прогона (A, B или C)")
+        args.hand = "A"
+        print("[dry-run] --hand не задан — печатаю план по сиду руки A "
+              "(полный сид: рамка + все артефакты)")
 
     turns = parse_turns(args.turns) if args.turns else sorted(TURNS)
     out_root = Path(args.out) if args.out else RUNS_ROOT

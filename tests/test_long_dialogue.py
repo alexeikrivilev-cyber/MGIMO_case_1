@@ -612,6 +612,22 @@ class TestParseTurns(unittest.TestCase):
         self.assertEqual(code, DRIVER.EXIT_OK)
         self.assertIn("поворотов 36", buffer.getvalue())
 
+    def test_dry_run_without_hand_reproduces_section_33_plan(self):
+        """Команда TASK-hermes-26 §5 дословно: `--turns 1-12 --dry-run`."""
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = DRIVER.main(["--turns", "1-12", "--dry-run"])
+        out = buffer.getvalue()
+        self.assertEqual(code, DRIVER.EXIT_OK)
+        self.assertIn("поворотов 12 (1–12)", out)
+        self.assertIn("репликация §33", out)
+
+    def test_run_without_hand_is_refused(self):
+        """Прогон без руки — отказ: молча запустить руку по умолчанию нельзя."""
+        with self.assertRaises(SystemExit):
+            with contextlib.redirect_stderr(io.StringIO()):
+                DRIVER.main([])
+
     def test_label_prefix_comes_from_out_dir(self):
         """Метка стоимости строится из каталога прогона (§34: t26-longdialogue36)."""
         buffer = io.StringIO()
