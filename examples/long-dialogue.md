@@ -353,7 +353,8 @@ baseline, докризисный уровень, порог, вторая мет
 ## Выводы гейтов по этой цепочке
 
 `scripts/check_sources.py` на сохранённых ответах (правило C для пути
-`eval/runs/…`; полный вывод — `eval/runs/t23-longdialogue/gates/`):
+`eval/runs/…`; сами файлы `gates/sources-*.txt` — вне git, пересчитываются
+командой ниже):
 
 ```
 $ python3 scripts/check_sources.py eval/runs/t23-longdialogue/A/turn-*.answer.md

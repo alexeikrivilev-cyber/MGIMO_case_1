@@ -6,7 +6,8 @@
     A — одна длинная сессия: сид (рамка + все артефакты инлайном), затем
         12 поворотов РП в той же сессии (`opencode run -s <id>`);
     B — продуктовый паттерн: каждый поворот — свежая сессия, сид =
-        `STATE.md` + релевантный артефакт инлайном;
+        `STATE.md` (dev) или закоммиченной копии состояния из журнала
+        прогона (свежий клон) + релевантный артефакт инлайном;
     C — контроль: каждый поворот — свежая сессия с артефактом инлайном,
         без состояния и без истории.
 
@@ -35,6 +36,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -123,6 +125,12 @@ TURN_ARTIFACTS: dict[int, list[tuple[str, str]]] = {
 
 STATE_PATH = REPO_ROOT / "STATE.md"
 TEMPLATE_PATH = "eval/runs/t23-longdialogue/prompt-template.md"
+# Закоммиченная копия STATE.md, которая лежала в сиде руки B прогона
+# TASK-hermes-23 (TASK-hermes-25): STATE.md — файл разработки вне git,
+# поэтому в свежем клоне сид руки B воспроизводится по этой копии.
+STATE_AS_USED_PATH = (
+    REPO_ROOT / "eval" / "runs" / "t23-longdialogue" / "B" / "state-as-used.md"
+)
 
 
 def sha256_text(text: str) -> str:
@@ -154,6 +162,43 @@ def read_component(rel: str) -> str:
     return (REPO_ROOT / rel).read_text(encoding="utf-8")
 
 
+def state_from_committed_copy(path: Path) -> str:
+    """Состояние задачи из закоммиченной копии `B/state-as-used.md`.
+
+    Копия несёт шапку (`sha256:` + `скопирован:`) и разделитель `---`;
+    состояние — всё после разделителя. Sha256 из шапки сверяется с
+    извлечённым телом: сдвиг на перевод строки (или правка копии)
+    обязан быть ошибкой, а не тихой порчей сида.
+    """
+    copy = path.read_text(encoding="utf-8")
+    head, sep, body = copy.partition("\n---\n\n")
+    if not sep:
+        raise FileNotFoundError(f"в копии {path} не найдён разделитель состояния после шапки")
+    declared = re.search(r"^sha256: `([0-9a-f]{64})`", head, re.MULTILINE)
+    if not declared:
+        raise ValueError(f"в шапке копии {path} нет строки sha256")
+    if sha256_text(body) != declared.group(1):
+        raise ValueError(
+            f"состояние из {path} не сходится с sha256 шапки — сид руки B был бы испорчен"
+        )
+    return body
+
+
+def state_text_for_seed() -> str:
+    """Текст STATE.md для сида руки B.
+
+    Dev-окружение: живой `STATE.md` — поведение не меняется. Свежий
+    клон: файла разработки нет (политика «артефакты работы не в git»),
+    поэтому берём закоммиченную копию `eval/runs/t23-longdialogue/B/
+    state-as-used.md` — ровно те байты, что лежали в сиде прогона
+    (TASK-hermes-25). Обратный фолбэк (клон → STATE.md) не делается:
+    в клоне живого состояния по определению нет.
+    """
+    if STATE_PATH.is_file():
+        return STATE_PATH.read_text(encoding="utf-8")
+    return state_from_committed_copy(STATE_AS_USED_PATH)
+
+
 def build_seed(arm: str, turn: int) -> tuple[str, list[dict[str, str]]]:
     """Собрать полный промпт поворота. Возвращает (текст, компоненты с sha256)."""
     template = read_component(TEMPLATE_PATH)
@@ -171,7 +216,7 @@ def build_seed(arm: str, turn: int) -> tuple[str, list[dict[str, str]]]:
     parts.append("")
     index = 1
     if arm == "B":
-        state_text = STATE_PATH.read_text(encoding="utf-8")
+        state_text = state_text_for_seed()
         parts.append(f"[{index}] СОСТОЯНИЕ ЗАДАЧИ — файл STATE.md (resume-карта, дословно)")
         parts.append("")
         parts.append(state_text.strip())
@@ -404,7 +449,7 @@ def run_hand(arm: str, turns: list[int], timeout: int, out_root: Path) -> int:
             encoding="utf-8",
         )
     if arm == "B":
-        state_text = STATE_PATH.read_text(encoding="utf-8")
+        state_text = state_text_for_seed()
         (arm_dir / "state-as-used.md").write_text(
             f"# STATE.md как использован в сиде руки B\n\n"
             f"sha256: `{sha256_text(state_text)}`\n"

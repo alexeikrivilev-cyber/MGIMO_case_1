@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import importlib.util
 import json
 import re
@@ -43,15 +44,15 @@ SCORER = load_module("score_long_dialogue_test", REPO_ROOT / "eval" / "score_lon
 
 RUNS = REPO_ROOT / "eval" / "runs" / "t23-longdialogue"
 
-# `STATE.md` — файл разработки вне git (политика «артефакты работы не в
-# git»): в свежем клоне его нет, поэтому тесты сида руки B обязаны быть
-# явно обусловлены. Урок TASK-hermes-21: тест, читающий файл вне git,
-# зелёный локально и красный у организатора. Сид руки B воспроизводим из
-# копии `eval/runs/t23-longdialogue/B/state-as-used.md` (она в git).
-HAS_STATE_FILE = (REPO_ROOT / "STATE.md").is_file()
-requires_state_file = unittest.skipUnless(
-    HAS_STATE_FILE, "STATE.md вне git — тест сида руки B выполняется только в dev-окружении"
-)
+# Сид руки B воспроизводим в любом окружении (TASK-hermes-25): живой
+# `STATE.md` — файл разработки вне git, в свежем клоне его нет, поэтому
+# `build_seed("B", …)` падает на закоммиченную копию
+# `eval/runs/t23-longdialogue/B/state-as-used.md` — те самые байты, что
+# лежали в сиде прогона (сверка с журналом — в
+# `test_arm_b_seed_is_byte_identical_to_recorded_run`). Урок
+# TASK-hermes-21 (тест, зелёный локально и красный у организатора)
+# закрыт здесь по существу: тесты сида руки B не skip'ятся и не
+# зависят от окружения.
 
 
 class TestTurnsFrozen(unittest.TestCase):
@@ -97,7 +98,6 @@ class TestSeedAssembly(unittest.TestCase):
         self.assertIn("project/verification-plan.md", prompt)
         self.assertNotIn("project/decisions.md", prompt)
 
-    @requires_state_file
     def test_arm_b_seed_has_state_and_relevant_artifact(self):
         prompt, components = DRIVER.build_seed("B", 2)
         roles = [c["role"] for c in components]
@@ -112,8 +112,65 @@ class TestSeedAssembly(unittest.TestCase):
         self.assertNotIn("resume-карта", prompt)
         self.assertTrue(prompt.rstrip().endswith(DRIVER.TURNS[2]))
 
-    @requires_state_file
+    def test_arm_b_seed_is_byte_identical_to_recorded_run(self):
+        """Фолбэк даёт сид руки B побайтово тот, что был в прогоне.
+
+        STATE.md — файл разработки вне git, поэтому в свежем клоне сид
+        берётся из закоммиченной копии `B/state-as-used.md`. Ориентир —
+        журнал прогона (`B/turn-01.json`): sha256 состояния и sha256
+        полного промпта поворота 1. STATE_PATH подменяется отсутствующим
+        путём — это ровно условие свежего клона; подмена (а не чтение
+        dev-файла) делает тест детерминированным и в dev, где живой
+        STATE.md уже уехал вперёд относительно прогона.
+        """
+        recorded = json.loads((RUNS / "B" / "turn-01.json").read_text(encoding="utf-8"))
+        recorded_state_sha = next(
+            c["sha256"] for c in recorded["components"] if c["role"] == "состояние задачи"
+        )
+        absent = RUNS / "B" / "__state_absent_in_fresh_clone__.md"
+        self.assertFalse(absent.is_file())
+        with mock.patch.object(DRIVER, "STATE_PATH", absent):
+            prompt, components = DRIVER.build_seed("B", 1)
+        state_comp = next(c for c in components if c["role"] == "состояние задачи")
+        self.assertEqual(
+            state_comp["sha256"], recorded_state_sha,
+            "состояние в сиде B разошлось с тем, что лежало в сиде прогона",
+        )
+        self.assertEqual(
+            DRIVER.sha256_text(prompt), recorded["prompt_sha256"],
+            "полный промпт руки B в клоне разошёлся с промптом прогона",
+        )
+        self.assertEqual(len(prompt), recorded["prompt_chars"])
+
+    def test_arm_b_seed_prefers_live_state_file_over_copy(self):
+        """Обратная ветка фолбэка: живой STATE.md имеет приоритет.
+
+        Условие клона разобрано в
+        `test_arm_b_seed_is_byte_identical_to_recorded_run`; здесь
+        проверяется приоритет dev-файла — иначе «удобная» копия молча
+        подменила бы живое состояние и в dev. STATE_PATH подменяется
+        временным файлом с известными байтами, поэтому тест одинаков в
+        dev и в клоне.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            live = Path(tmp) / "STATE.md"
+            live_text = "# живое состояние задачи\n\nшаг 0 — рамка\n"
+            live.write_text(live_text, encoding="utf-8")
+            with mock.patch.object(DRIVER, "STATE_PATH", live):
+                prompt, components = DRIVER.build_seed("B", 3)
+        state_comp = next(c for c in components if c["role"] == "состояние задачи")
+        self.assertEqual(state_comp["sha256"], DRIVER.sha256_text(live_text),
+                         "при живом STATE.md сид обязан брать его, а не копию")
+        self.assertIn("живое состояние задачи", prompt)
+
     def test_arms_differ_only_by_state_bridge_on_same_turn(self):
+        """B и C на одном повороте различаются ТОЛЬКО блоком состояния.
+
+        Проверка по-настоящему, не по skip: выкинув из сида B блок
+        состояния и вернув артефакту его номер, получаем сид C
+        байт-в-байт. Если в сид B протечёт что-то ещё (история, мета,
+        лишний артефакт) или сид C потеряет артефакт — строки разойдутся.
+        """
         prompt_b, _ = DRIVER.build_seed("B", 9)
         prompt_c, _ = DRIVER.build_seed("C", 9)
         self.assertIn("СОСТОЯНИЕ ЗАДАЧИ", prompt_b)
@@ -121,6 +178,11 @@ class TestSeedAssembly(unittest.TestCase):
         # кроме моста состояния, сид B и C на поворот 9 — один и тот же артефакт
         self.assertIn("project/strategy-comms.md", prompt_b)
         self.assertIn("project/strategy-comms.md", prompt_c)
+        start = prompt_b.index("[1] СОСТОЯНИЕ ЗАДАЧИ")
+        end = prompt_b.index("[2] АРТЕФАКТ — КОММУНИКАЦИОННАЯ СТРАТЕГИЯ")
+        b_without_state = prompt_b[:start] + "[1] " + prompt_b[end + len("[2] "):]
+        self.assertEqual(b_without_state, prompt_c,
+                         "сид B и C на одном повороте различаются не только мостом состояния")
 
     def test_prompt_passed_via_stdin_not_argv(self):
         """Регресс E2BIG: промпт ~250 КБ одним argv упал бы на MAX_ARG_STRLEN."""
@@ -346,13 +408,75 @@ class TestArmAContinuation(unittest.TestCase):
             self.assertLess(len(prompt), 200)
             self.assertEqual(comps, components, "компоненты сида те же, что в повороте 1")
 
-    @requires_state_file
     def test_hands_b_and_c_always_fresh_session_with_seed(self):
+        """Руки B и C не продолжат чужую сессию — каждый поворот со сидом.
+
+        Раньче тест был обусловлен наличием STATE.md (dev-окружение);
+        с фолбэком на закоммиченную копию состояния (TASK-hermes-25) он
+        проверяет логику рук, а не окружение, поэтому выполняется и в
+        свежем клоне: сид B там берётся из `B/state-as-used.md`, а рука C
+        от состояния не зависит вовсе.
+        """
         for arm in ("B", "C"):
             prompt, _, cont = DRIVER.prompt_for_turn(arm, 5, "ses_ignored", [])
             self.assertFalse(cont, f"рука {arm} не продолжает чужую сессию")
             self.assertIn(DRIVER.TURNS[5], prompt)
             self.assertGreater(len(prompt), 5_000, f"рука {arm} несёт полный сид")
+
+
+class TestJournalReferencesResolve(unittest.TestCase):
+    """Ссылки на журнал в отслеживаемых документах резолвятся в git.
+
+    Дефект найден сверкой keep-list'а и документов: `M1-adjudication.md` и
+    `A-defective-contract/DEFECT.md` цитировались из `summary.md`,
+    `examples/proof.md` и `examples/long-dialogue.md` как проверяемое
+    доказательство, но не входили в keep-list `.gitignore` — в свежем клоне
+    ссылки висели бы (тот же класс, что утечка BRIEF.md в TASK-hermes-22).
+
+    Правило: путь журнала в отслеживаемом документе либо резолвится в
+    `git ls-files`, либо в ТОЙ ЖЕ строке честно назван вне git
+    («вне git» / «пересчитыва» / «воспроизводят»).
+    """
+
+    DOCS = ("examples/long-dialogue.md", "examples/proof.md", "README.md",
+            "eval/runs/t23-longdialogue/summary.md",
+            "eval/runs/t23-longdialogue/PREREGISTRATION.md")
+    REF_RE = re.compile(r"`(eval/runs/t23-longdialogue/[^`]+)`")
+    DISCLOSURE = ("вне git", "пересчитыва", "воспроизводят")
+
+    def tracked(self) -> set[str]:
+        out = subprocess.run(
+            ["git", "ls-files", "eval/runs/t23-longdialogue/"],
+            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
+        )
+        return set(out.stdout.split())
+
+    def test_every_journal_reference_resolves_or_is_disclosed(self):
+        tracked = self.tracked()
+        self.assertIn("eval/runs/t23-longdialogue/M1-adjudication.md", tracked,
+                      "M1-adjudication.md цитируется как доказательство — должен быть в git")
+        self.assertIn("eval/runs/t23-longdialogue/A-defective-contract/DEFECT.md", tracked,
+                      "DEFECT.md цитируется как доказательство — должен быть в git")
+        dangling: list[str] = []
+        for doc in self.DOCS:
+            for lineno, line in enumerate(
+                (REPO_ROOT / doc).read_text(encoding="utf-8").splitlines(), start=1
+            ):
+                for ref in self.REF_RE.findall(line):
+                    if ref.endswith("/"):
+                        continue  # каталог — не файл
+                    if "NN" in ref:
+                        # шаблон «turn-NN»: резолвится, если хоть один
+                        # поворот такого имени в git
+                        pattern = ref.replace("NN", "*")
+                        if any(fnmatch.fnmatch(path, pattern) for path in tracked):
+                            continue
+                    elif ref in tracked:
+                        continue
+                    if any(word in line for word in self.DISCLOSURE):
+                        continue
+                    dangling.append(f"{doc}:{lineno}: {ref}")
+        self.assertEqual(dangling, [], f"ссылки на файлы журнала вне git без оговорки: {dangling}")
 
 
 class TestParseTurns(unittest.TestCase):

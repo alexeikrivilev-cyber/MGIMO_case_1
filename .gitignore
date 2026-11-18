@@ -107,11 +107,13 @@ eval/runs/t20-gate-revision/*
 eval/runs/t23-longdialogue/*
 !eval/runs/t23-longdialogue/PREREGISTRATION.md
 !eval/runs/t23-longdialogue/prompt-template.md
+!eval/runs/t23-longdialogue/M1-adjudication.md
 !eval/runs/t23-longdialogue/summary.md
 !eval/runs/t23-longdialogue/metrics.json
 !eval/runs/t23-longdialogue/A/
 !eval/runs/t23-longdialogue/B/
 !eval/runs/t23-longdialogue/C/
+!eval/runs/t23-longdialogue/A-defective-contract/
 eval/runs/t23-longdialogue/A/*
 !eval/runs/t23-longdialogue/A/seed-manifest.json
 !eval/runs/t23-longdialogue/A/turn-*.answer.md
@@ -120,6 +122,11 @@ eval/runs/t23-longdialogue/B/*
 !eval/runs/t23-longdialogue/B/turn-*.answer.md
 eval/runs/t23-longdialogue/C/*
 !eval/runs/t23-longdialogue/C/turn-*.answer.md
+# дефектный первый прогон руки A: в git только описание дефекта — на него
+# ссылаются summary.md, examples/proof.md §11 и LOG.md; ответы того прогона
+# не в git (тот же класс данных, что и у исправленной руки, но не она).
+eval/runs/t23-longdialogue/A-defective-contract/*
+!eval/runs/t23-longdialogue/A-defective-contract/DEFECT.md
 
 # --- регрессионные фикстуры и курируемые доказательства исследований ---
 # (t16-addendum, t17-axis, ab-options-demo-retention, critic-matrix,

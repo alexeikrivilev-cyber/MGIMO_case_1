@@ -213,7 +213,7 @@ $3.00 по меткам `t18-case-ho-` в `COST.md`; первый запуск �
 
 | Утверждение примера | Чем проверить |
 |---|---|
-| «12 поворотов — реальные, а не сценарий» | `eval/runs/t23-longdialogue/A/turn-NN.answer.md` (12 файлов, дословные ответы) + `A/turn-NN.prompt.md` (вопрос + sha256 компонентов сида) |
+| «12 поворотов — реальные, а не сценарий» | `eval/runs/t23-longdialogue/A/turn-NN.answer.md` (12 файлов, дословные ответы) + `A/seed-manifest.json` (компоненты сида с sha256; поворотовые записи промптов — вне git, воспроизводятся драйвером) |
 | «Повороты зафиксированы до прогонов» | `eval/runs/t23-longdialogue/PREREGISTRATION.md` §4 против `eval/run_long_dialogue.py:TURNS`; тест `tests/test_long_dialogue.py::TestTurnsFrozen` |
 | «Ответы дословны» | `grep -c` любой фрагмент примера в `A/turn-NN.answer.md`; сокрашения помечены `…` |
 | «Метрика и baseline держатся 12 поворотов» | `eval/score_long_dialogue.py` → `metrics.json`, секция `m3` (пробы 3/6/11) |
