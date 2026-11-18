@@ -161,9 +161,11 @@ python3 scripts/check_actionability.py project/strategy-product.md \
 ```
 
 Финальные выводы гейтов сохранены по файлам:
-`eval/runs/t18-case/gates/final-*.gate.txt` (18 файлов — sources,
-transferability, options, decisions, acceptance, actionability,
-complexity, ranges). Проверка: `ls eval/runs/t18-case/gates/`.
+`eval/runs/t18-case/gates/final-*.gate.txt` (18 финальных файлов —
+sources, transferability, options, decisions, acceptance,
+actionability, complexity, ranges; рядом лежат выводы промежуточных
+раундов ревизии, их в каталоге 86). Проверка:
+`ls eval/runs/t18-case/gates/final-*.gate.txt | wc -l` → 18.
 
 ## 8. Это не одноразовый результат: held-out задание
 
