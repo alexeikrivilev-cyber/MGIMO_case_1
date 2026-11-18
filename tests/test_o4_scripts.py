@@ -30,6 +30,12 @@ EVAL_DIR = REPO_ROOT / "eval"
 BENCH_DIR = REPO_ROOT / "eval" / "benchmarks" / "dabstep" / "scripts"
 APPLY_REVISION = SCRIPTS_DIR / "apply_revision.py"
 
+# Каноническая фикстура STATE.md (схема 9 секций): рабочий STATE.md
+# разработки вне git (решение PO 2026-11-18) — в свежем клоне файла нет
+# на диске, инварианты «прогон метки не меняет STATE.md» проверяются
+# на фикстуре, а не на рабочем файле разработки.
+STATE_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "STATE.md"
+
 
 def load_module(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -167,11 +173,17 @@ class RunLabelTests(unittest.TestCase):
             module.clear_run_label()  # повторное удаление — не ошибка
 
     def test_state_md_untouched_during_run(self) -> None:
-        """Прогон метки не изменяет STATE.md агента ни на байт."""
+        """Прогон метки не изменяет STATE.md агента ни на байт.
+
+        TASK-hermes-22: рабочий STATE.md вне git — читается каноническая
+        фикстура tests/fixtures/STATE.md; сам инвариант байт-в-байт
+        сохранён (root подменён на временный каталог, сравнение по всем
+        байтам до и после set/clear метки).
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             state = root / "STATE.md"
-            original = (REPO_ROOT / "STATE.md").read_text(encoding="utf-8")
+            original = STATE_FIXTURE.read_text(encoding="utf-8")
             state.write_text(original, encoding="utf-8")
             module = load_module("run_critic_label_under_test", SCRIPTS_DIR / "run_critic.py")
             module.REPO_ROOT = root
@@ -182,11 +194,16 @@ class RunLabelTests(unittest.TestCase):
             self.assertEqual(state.read_text(encoding="utf-8"), original)
 
     def test_agent_edits_state_during_session_survive(self) -> None:
-        """Гонка больше не теряет правки: агент правит STATE, пока метка жива."""
+        """Гонка больше не теряет правки: агент правит STATE, пока метка жива.
+
+        TASK-hermes-22: как и в тесте выше — каноническая фикстура
+        вместо рабочего STATE.md вне git; инвариант (правка агента
+        выживает после снятия метки) сохранён дословно.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             state = root / "STATE.md"
-            original = (REPO_ROOT / "STATE.md").read_text(encoding="utf-8")
+            original = STATE_FIXTURE.read_text(encoding="utf-8")
             state.write_text(original, encoding="utf-8")
             module = load_module("run_critic_race_under_test", SCRIPTS_DIR / "run_critic.py")
             module.REPO_ROOT = root

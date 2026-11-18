@@ -5,8 +5,11 @@
 ровно то же поведение, что и хук/человек в терминале.
 
 Фикстуры создаются во временной директории (tempfile) — репозиторий
-не мусорится. Исключение — тесты «реальный STATE.md / COST.md»: они
-проверяют артефакты самого репозитория (критерий приёмки задания).
+не мусорится. Исключение — тесты «реальный COST.md» и «STATE.md
+репозитория»: они проверяют критерий приёмки задания. Рабочий STATE.md
+разработки вне git (решение PO 2026-11-18), поэтому «живой» STATE.md
+проверяется там, где он есть (машина разработки), а в свежем клоне —
+каноническая фикстура `tests/fixtures/STATE.md` (схема 9 секций).
 
 Запуск: python3 -m unittest tests.test_scripts -v
 """
@@ -37,6 +40,12 @@ EXIT_FAILED = 2
 EXIT_UNRESOLVED = 2
 
 PLACEHOLDER = "(пока нет)"
+
+# Каноническая фикстура STATE.md (схема 9 секций, PRD §6): рабочий
+# STATE.md разработки вне git (решение PO 2026-11-18) — в свежем клоне
+# файла нет на диске, проверки «на живом репозитории» читают фикстуру,
+# а не рабочий файл разработки.
+STATE_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "STATE.md"
 
 
 def run_script(name: str, *args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -535,8 +544,19 @@ class CheckStateTests(TempDirTestCase):
         self.assertEqual(result.returncode, EXIT_USAGE)
 
     def test_repo_state_file_is_valid(self) -> None:
-        """Критерий приёмки: реальный STATE.md репозитория проходит проверку."""
-        result = run_script(CHECK_STATE)
+        """Критерий приёмки: STATE.md репозитория проходит проверку.
+
+        TASK-hermes-22: рабочий STATE.md вне git (решение PO 2026-11-18).
+        На машине разработки проверяется живой файл (инвариант «агент
+        ведёт валидный STATE.md» сохранён); в свежем клоне файла нет —
+        проверяется каноническая фикстура tests/fixtures/STATE.md той
+        же схемы 9 секций. Ослабления нет: в обоих случаях прогоняется
+        настоящий scripts/check_state.py и требуется exit 0.
+        """
+        live = REPO_ROOT / "STATE.md"
+        path = live if live.is_file() else STATE_FIXTURE
+        self.assertTrue(path.is_file(), f"нет ни живого STATE.md, ни фикстуры: {path}")
+        result = run_script(CHECK_STATE, str(path))
         self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
 
 
@@ -1375,8 +1395,8 @@ class RecoverStateTests(TempDirTestCase):
         self.assertEqual((repo / "STATE.md").read_text(encoding="utf-8"), "# сломано\n")
 
     def test_real_repo_state_recovers_or_valid(self) -> None:
-        """Критерий приёмки: на живом репозитории recover_state не требует
-        восстановления и НЕ ПИШЕТ в STATE.md.
+        """Критерий приёмки: recover_state не требует восстановления
+        валидного STATE.md и НЕ ПИШЕТ в него.
 
         РЕГРЕСС (TASK-hermes-15): тест без --dry-run ПИСАЛ в STATE.md
         репозитория — прогон на моментально битом STATE.md (правки агента
@@ -1384,13 +1404,29 @@ class RecoverStateTests(TempDirTestCase):
         очереди. Тест не имеет права менять состояние репозитория:
         инвариант проверяется байт-в-байт. Класс — из «провалившихся
         подходов»: инструмент, пишущий в боевой путь, создаёт гонку.
+
+        TASK-hermes-22: рабочий STATE.md вне git (решение PO), в свежем
+        клоне файла нет — инвариант сохранён на канонической фикстуре:
+        настоящий scripts/recover_state.py репозитория, корень по
+        умолчанию (реальный, без подмены STRATEGY_AGENT_ROOT), --state на
+        копию фикстуры во временном каталоге. И с --dry-run, и без него
+        (регресс TASK-15: на валидном STATE.md писать нельзя вовсе) байты
+        файла не меняются.
         """
-        state_path = REPO_ROOT / "STATE.md"
-        before = state_path.read_bytes()
-        result = run_script(RECOVER_STATE, "--dry-run")
-        self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
-        self.assertEqual(state_path.read_bytes(), before,
-                         "тест не имеет права менять STATE.md репозитория")
+        state = self.tmp / "STATE.md"
+        original = STATE_FIXTURE.read_bytes()
+        state.write_bytes(original)
+        for extra in (("--dry-run",), ()):
+            result = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / RECOVER_STATE),
+                 "--state", str(state), *extra],
+                capture_output=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+            )
+            self.assertEqual(result.returncode, EXIT_OK, result.stdout + result.stderr)
+            self.assertEqual(state.read_bytes(), original,
+                             "recover_state не имеет права писать в STATE.md")
 
 
 # --------------------------------------------------------------------------

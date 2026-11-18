@@ -146,6 +146,11 @@ project/council/run-*/*.end
 # Журналы, состояние и управление разработкой этого репозитория
 LOG.md
 STATE.md
+# кроме канонической фикстуры для тестов: инварианты («прогон метки не
+# меняет STATE.md ни на байт», «recover_state не пишет», «check_state
+# зелёный») проверяются на ней — курируемое доказательство, в git
+# (TASK-hermes-22)
+!tests/fixtures/STATE.md
 BRIEF.md
 CHANGELOG.md
 ROADMAP.md
