@@ -141,3 +141,20 @@ project/council/run-*/*.out
 project/council/run-*/*.err
 project/council/run-*/*.start
 project/council/run-*/*.end
+
+# --- Рабочее окружение разработки: организаторам не нужно (файлы остаются на диске) ---
+# Журналы, состояние и управление разработкой этого репозитория
+LOG.md
+STATE.md
+BRIEF.md
+CHANGELOG.md
+ROADMAP.md
+docs/process/
+# Задания стенда (предрегистрации, процесс работы) — вне git
+TASK-hermes-*.md
+# Референс-видео, собираемое билдером из файлов проекта (видео для сдачи
+# записывает владелец) — вне git, пересоздаётся build_demo_video.py
+docs/submission/видео-агент.mp4
+
+# --- Билдер референс-видео (видео для сдачи записывает владелец) — вне git ---
+docs/submission/build_demo_video.py

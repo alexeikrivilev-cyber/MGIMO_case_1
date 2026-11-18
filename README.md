@@ -75,7 +75,6 @@
 python3 -m venv .venv && . .venv/bin/activate    # изолированное окружение (один раз)
 python3 -m pip install -r requirements.txt        # единственная зависимость — pytest
 python3 -m pytest tests/ -q                                   # 482 теста
-python3 scripts/check_state.py                                # STATE.md цел
 python3 scripts/check_sources.py project/brief.md project/research.md \
   project/options.md project/strategy-product.md \
   project/strategy-comms.md project/verification-plan.md \
@@ -129,8 +128,9 @@ opencode run "Выполни шаг 0 (рамка) по демо-задаче ev
 в TASK-hermes-20, прежде гейты смотрели только на strategy-product.md,
 и остальные артефакты этапа дошли до сдачи без плана); на каждом
 сообщении ассистента хук дописывает строку учёта в прод-таблицу
-`COST.md`; состояние шага живёт в `STATE.md` — прерванный прогон
-продолжается новым чатом
+`COST.md`; состояние шага агент ведёт в `STATE.md` и журнале `LOG.md`
+(создаются прогоном в рабочей копии, в репозитории не хранятся) —
+прерванный прогон продолжается новым чатом
 (`opencode run "Прочитай STATE.md и LOG.md (навык resume) и продолжи"`).
 
 Сколько стоит: одна сессия шага — **$0.3–0.6**. Измеренный полный путь
@@ -377,9 +377,8 @@ sha256 артефактов) — `eval/runs/t18-case/manifest.md`.
   strategy-product ×4, comms ×1, verification-plan ×1, decisions ×1 +
   критик-детектор на шагах 4–5). Итог — в его manifest.
 - **Видео** записывает и выкладывает владелец (решение 2026-11-17);
-  сценарий и референс — `docs/submission/видео-сценарий.md` и
-  `docs/submission/видео-агент.mp4`. Описание работы (PDF, 6 разделов
-  ТЗ) — `docs/submission/описание-работы.pdf`, сборщик —
+  сценарий съёмки — `docs/submission/видео-сценарий.md`. Описание работы
+  (PDF, 6 разделов ТЗ) — `docs/submission/описание-работы.pdf`, сборщик —
   `docs/submission/build_submission_pdf.py`.
 - **Целевая среда** — OpenCode CLI; другие среды работают через
   `AGENTS.md` (портируемость описана, но матрица сред неполная —
@@ -405,7 +404,7 @@ README есть путь проверки.
 | «Прирост измерен, не заявлен» | `docs/research/measurements.md` §23.5 (абляция), §24.1 (k=3), §22 (детектор) — с предрегистрациями и MDD |
 | «Отрицательные результаты не спрятаны» | measurements.md: §30.2 (аддендум НЕ валидирован), §22.7/H-R2 (второй раунд ревизии деградирует), §23.6 (порог правок r=+0.23) |
 | «Секретов нет» | `.opencode/opencode.json` — `{env:STEPFUN_API_KEY}`; `git log -p --all | grep -c "sk-"` → 0 |
-| «Продолжение после перерыва работает» | прецедент task 18: коммит 8cc19ac + запись в LOG.md |
+| «Продолжение после перерыва работает» | прецедент task 18: возобновление зафиксировано в manifest прогона (`eval/runs/t18-case/manifest.md`) |
 
 Состав репозитория и что в нём намеренно НЕТ:
 
@@ -437,10 +436,8 @@ README есть путь проверки.
 
 | Документ | Что внутри |
 |---|---|
-| [`BRIEF.md`](BRIEF.md) | кейс хакатона, ТЗ, требования владельца (первоисточник) |
 | [`TZ.md`](TZ.md) | точный текст ТЗ хакатона |
 | [`PRD.md`](PRD.md) | продуктовое и архитектурное решение, риски, DoD |
-| [`ROADMAP.md`](ROADMAP.md) | план по фазам с проверяемым артефактом на фазу |
 | [`docs/submission/`](docs/submission/README.md) | описание работы (6 разделов ТЗ) + PDF + сценарий видео |
 | [`docs/research/measurements.md`](docs/research/measurements.md) | измерения фич: «фича → метрика → результат → решение» |
 | [`docs/research/benchmarks.md`](docs/research/benchmarks.md) | бенчмарки агентных/исследовательских систем 2025–2026 |
@@ -451,7 +448,6 @@ README есть путь проверки.
 | [`docs/research/llm-pricing-agent-costs.md`](docs/research/llm-pricing-agent-costs.md) | прайсы API и стоимость агентных прогонов |
 | [`docs/routing.md`](docs/routing.md) | маршрутные решения: процесс/модель/инструмент по шагу + лог |
 | [`docs/portability.md`](docs/portability.md) | портируемость: матрица сред, адаптеры |
-| [`docs/process/tasks/`](docs/process/tasks/) | задания стенда (TASK-hermes-1…21) с предрегистрациями |
 | [`project/README.md`](project/README.md) | демо-проект: как читать артефакты |
 | [`eval/runs/t18-case/manifest.md`](eval/runs/t18-case/manifest.md) | журнал демо-прогона: сессии, ревизии, коды гейтов, sha256 |
 
