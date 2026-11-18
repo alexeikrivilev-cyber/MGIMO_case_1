@@ -263,7 +263,7 @@ OK, попыток 2` не чистилась, числа журнала (36/21/
 ```bash
 ls eval/runs/t26-longdialogue36/                       # журнал: A/ C/ + артефакты вердикта
 python3 eval/score_long_dialogue.py --runs eval/runs/t26-longdialogue36 \
-    --cost-label t26-longdialogue36                    # пересчёт M1–M5/M6 с адъюдикацией
+    --cost-label t26-longdialogue36                    # пересчёт M1–M5/M6 с адъюдикацией (в dev-дереве: поворотовые .json вне git)
 grep -c "t26-longdialogue36" COST.md                   # строки стоимости (39)
 python3 scripts/cost_report.py                         # сводка по контурам
 python3 -m pytest tests/test_long_dialogue.py -q       # инварианты эксперимента
