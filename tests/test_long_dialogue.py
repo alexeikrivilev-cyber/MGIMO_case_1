@@ -113,34 +113,37 @@ class TestSeedAssembly(unittest.TestCase):
         self.assertTrue(prompt.rstrip().endswith(DRIVER.TURNS[2]))
 
     def test_arm_b_seed_is_byte_identical_to_recorded_run(self):
-        """Фолбэк даёт сид руки B побайтово тот, что был в прогоне.
+        """Фолбэк даёт сид руки B теми байтами, что легли в прогон.
 
         STATE.md — файл разработки вне git, поэтому в свежем клоне сид
         берётся из закоммиченной копии `B/state-as-used.md`. Ориентир —
-        журнал прогона (`B/turn-01.json`): sha256 состояния и sha256
-        полного промпта поворота 1. STATE_PATH подменяется отсутствующим
-        путём — это ровно условие свежего клона; подмена (а не чтение
-        dev-файла) делает тест детерминированным и в dev, где живой
-        STATE.md уже уехал вперёд относительно прогона.
+        sha256 в шапке этой копии: её снимал драйвер с живого STATE.md
+        во время прогона, и вся остальная журналия поворотов
+        (`turn-NN.json`, `turn-NN.prompt.md`) вне git — тест не может
+        читать её в клоне (урок TASK-hermes-21: тест на файле вне git
+        зелёный локально и красный у организатора). STATE_PATH
+        подменяется отсутствующим путём — это ровно условие свежего
+        клона; подмена (а не чтение dev-файла) делает тест
+        детерминированным и в dev, где живой STATE.md уже уехал вперёд
+        относительно прогона.
         """
-        recorded = json.loads((RUNS / "B" / "turn-01.json").read_text(encoding="utf-8"))
-        recorded_state_sha = next(
-            c["sha256"] for c in recorded["components"] if c["role"] == "состояние задачи"
-        )
+        copy = (RUNS / "B" / "state-as-used.md").read_text(encoding="utf-8")
+        declared = re.findall(r"^sha256: `([0-9a-f]{64})`", copy, re.MULTILINE)
+        self.assertEqual(len(declared), 1,
+                         "в шапке копии состояния должен быть ровно один sha256 прогона")
         absent = RUNS / "B" / "__state_absent_in_fresh_clone__.md"
         self.assertFalse(absent.is_file())
         with mock.patch.object(DRIVER, "STATE_PATH", absent):
             prompt, components = DRIVER.build_seed("B", 1)
         state_comp = next(c for c in components if c["role"] == "состояние задачи")
         self.assertEqual(
-            state_comp["sha256"], recorded_state_sha,
-            "состояние в сиде B разошлось с тем, что лежало в сиде прогона",
+            state_comp["sha256"], declared[0],
+            "состояние в сиде B разошлось с тем, что драйвер снял в прогоне",
         )
-        self.assertEqual(
-            DRIVER.sha256_text(prompt), recorded["prompt_sha256"],
-            "полный промпт руки B в клоне разошёлся с промптом прогона",
-        )
-        self.assertEqual(len(prompt), recorded["prompt_chars"])
+        # состояние лежит в промпте дословно (края подрезает только сборка)
+        _, _, body = copy.partition("\n---\n\n")
+        self.assertTrue(body.strip(), "в копии состояния пустое тело")
+        self.assertIn(body.strip(), prompt)
 
     def test_arm_b_seed_prefers_live_state_file_over_copy(self):
         """Обратная ветка фолбэка: живой STATE.md имеет приоритет.
