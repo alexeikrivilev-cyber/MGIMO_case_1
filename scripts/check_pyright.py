@@ -50,6 +50,11 @@ EXIT_FINDINGS = 2
 NAMED_EXCEPTIONS: tuple[tuple[str, str], ...] = (
     ("scripts/run_critic.py", 'Import "arg_chunk" could not be resolved'),
     ("scripts/run_critic.py", 'Import "run_label" could not be resolved'),
+    # Тот же рантайм-pattern `sys.path.insert` в скорере эксперимента
+    # TASK-hermes-23: M2 переиспользует правила гейта `check_sources`
+    # (один дом факта — копировать регексы в eval/ значило бы развести
+    # две версии правила).
+    ("eval/score_long_dialogue.py", 'Import "check_sources" could not be resolved'),
 )
 
 

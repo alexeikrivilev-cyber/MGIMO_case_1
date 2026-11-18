@@ -94,6 +94,33 @@ eval/runs/t18-case-heldout/*
 eval/runs/t20-gate-revision/*
 !eval/runs/t20-gate-revision/manifest.md
 
+# --- эксперимент «длинный диалог» (TASK-hermes-23): журнал и данные ---
+# В git — предрегистрация (заморожена ДО прогонов), шаблон промпта,
+# вердикт (summary.md), метрики (metrics.json), сид руки B (копия
+# STATE.md — файл вне git, без копии сид невоспроизводим), манифест сида
+# руки A (сид = проектные файлы + sha256, seed.md на диске) и ДОСЛОВНЫЕ
+# ответы всех 12 поворотов трёх рук — это первичные данные эксперимента,
+# без которых M1–M3 не пересчитать. Поворотовые .json, gates/ и логи —
+# вне git, воспроизводятся драйверами eval/run_long_dialogue.py и
+# eval/score_long_dialogue.py.
+!eval/runs/t23-longdialogue/
+eval/runs/t23-longdialogue/*
+!eval/runs/t23-longdialogue/PREREGISTRATION.md
+!eval/runs/t23-longdialogue/prompt-template.md
+!eval/runs/t23-longdialogue/summary.md
+!eval/runs/t23-longdialogue/metrics.json
+!eval/runs/t23-longdialogue/A/
+!eval/runs/t23-longdialogue/B/
+!eval/runs/t23-longdialogue/C/
+eval/runs/t23-longdialogue/A/*
+!eval/runs/t23-longdialogue/A/seed-manifest.json
+!eval/runs/t23-longdialogue/A/turn-*.answer.md
+eval/runs/t23-longdialogue/B/*
+!eval/runs/t23-longdialogue/B/state-as-used.md
+!eval/runs/t23-longdialogue/B/turn-*.answer.md
+eval/runs/t23-longdialogue/C/*
+!eval/runs/t23-longdialogue/C/turn-*.answer.md
+
 # --- регрессионные фикстуры и курируемые доказательства исследований ---
 # (t16-addendum, t17-axis, ab-options-demo-retention, critic-matrix,
 #  t13-blindpairs — читаются тестами и цитируются в measurements.md)

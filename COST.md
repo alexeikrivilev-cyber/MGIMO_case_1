@@ -661,9 +661,17 @@ international price list, доступ 2026-11-16).
 | 2026-11-17 | ses_e14fb5f1effeI57a8qGFolK0Kx | О4: t20-gate-rev-decisions-patch | step-5-preview | 10282 | 20666 | 0 | 23680 | 0 | 0 | $0.07 |
 | 2026-11-17 | ses_e14f9e1b4ffe1wpk7fVVISR69w | О4: t20-gate-rev-decisions-patch | step-5-preview | 12443 | 415 | 0 | 23680 | 0 | 0 | $0.02 |
 | 2026-11-17 | ses_e14f93180ffepn2BXGDQlFRVVh | О4: t20-gate-rev-verification-plan-patch | step-5-preview | 8269 | 4205 | 0 | 23680 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e11118ccbffeyXBggcQ4a2S3aA | t23-longdialogue: проба механики CLI (argv) | step-5-preview | 23661 | 3 | 0 | 0 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e110f61e7ffe6ev7s7VNFuCFWy | t23-longdialogue: проба механики CLI (stdin) | step-5-preview | 44 | 3 | 0 | 23616 | 0 | 0 | $0.00 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:
+- Две строки `t23-longdialogue: проба механики CLI` (argv/stdin) записаны
+  хуком с резервной меткой из `STATE.md` («TASK-hermes-21»): файл метки
+  `eval/.cost-label` на момент проб не был выставлен (прецедент t13/t17).
+  Метка исправлена вручную, токены и $ не тронуты; пробы стоили $0.02 и
+  $0.00 и учтены в цене эксперимента TASK-hermes-23.
+
 - Строка `ses_e1b3f4ed5ffe…` сверена с БД OpenCode (session totals:
   29 775 in / 46 821 out / cache-read 2 365 504): агрегат хука жил в памяти
   процесса и при продолжении сессии новым запуском заменял строку вместо
