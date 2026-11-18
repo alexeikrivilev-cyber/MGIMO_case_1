@@ -690,6 +690,45 @@ international price list, доступ 2026-11-16).
 | 2026-11-18 | ses_e10feaf5effei4rNUMZlAefj4n | t23-longdialogue-C-t12 | step-5-preview | 8572 | 2169 | 0 | 32256 | 0 | 0 | $0.02 |
 | 2026-11-18 | ses_e10fa7e71ffeSTXgF1x17TPOqW | t23-longdialogue-probe-continue | step-5-preview | 185 | 193 | 0 | 47488 | 0 | 0 | $0.01 |
 | 2026-11-18 | ses_e10f96d01ffe2m3vIsB4iilq2P | t23-longdialogue-A | step-5-preview | 765 | 11819 | 0 | 916736 | 0 | 0 | $0.12 |
+| 2026-11-18 | ses_e10b840c9ffeH2rhXVqedeiCzo | t26-longdialogue36-A | step-5-preview | 9281 | 21843 | 0 | 3047488 | 0 | 0 | $0.37 |
+| 2026-11-18 | ses_e10af9738ffeRrl7K30eo22Mig | t26-longdialogue36-C-t01 | step-5-preview | 3416 | 1365 | 0 | 30272 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10af6ed3ffehsUbtbxS5ACfWW | t26-longdialogue36-C-t02 (релейбл: хук взял резервную метку STATE.md — прецедент t13/t17) | step-5-preview | 8 | 507 | 0 | 30912 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e10af53a5ffe1kgNtzCI2TTkVV | t26-longdialogue36-C-t03 | step-5-preview | 50 | 543 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10af37caffeAFKZZV9FsCCkKu | t26-longdialogue36-C-t04 | step-5-preview | 56 | 4083 | 0 | 39168 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aede38ffeoQsviT0TBwcDyx | t26-longdialogue36-C-t05 | step-5-preview | 63 | 2279 | 0 | 39168 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aea889ffefX56vpiO7NWQGH | t26-longdialogue36-C-t06 | step-5-preview | 56 | 400 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ae8f5fffeDUxU53OYmodtRn | t26-longdialogue36-C-t07 | step-5-preview | 15 | 591 | 0 | 30336 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e10ae7433ffeS2SivfceRFHAef | t26-longdialogue36-C-t08 | step-5-preview | 84 | 2259 | 0 | 32256 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ae39d9ffeowuyj6ZjHtUx8F | t26-longdialogue36-C-t09 | step-5-preview | 54 | 1265 | 0 | 30656 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ae11b9ffeGDXMRpDQ1NsbrK | t26-longdialogue36-C-t10 | step-5-preview | 52 | 3345 | 0 | 39168 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10adc156ffeNq8XSwdNOQhlNT | t26-longdialogue36-C-t11 | step-5-preview | 46 | 990 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ad9bc6ffeh7ogli5GbuZdew | t26-longdialogue36-C-t12 | step-5-preview | 60 | 762 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ad7bf4ffeF7MZ5AL6NDE4LC | t26-longdialogue36-C-t13 | step-5-preview | 100 | 500 | 0 | 30848 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e10ad611dffeKoYLUTqg6R5Ak7 | t26-longdialogue36-C-t14 | step-5-preview | 12109 | 1212 | 0 | 24000 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e10ad3aa0ffezDiCuAr6F5gcia | t26-longdialogue36-C-t15 | step-5-preview | 57 | 450 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ad20f9ffe2sb1Lh0iyeCQSW | t26-longdialogue36-C-t16 | step-5-preview | 3376 | 521 | 0 | 24000 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ad04eeffeaYkHfH5IV2d4yt | t26-longdialogue36-C-t17 | step-5-preview | 59 | 1255 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10acdd75ffeoJmaZJD7X3khMh | t26-longdialogue36-C-t18 | step-5-preview | 89 | 1303 | 0 | 32256 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10acb5d6ffeaV5ifRcsqpdCHl | t26-longdialogue36-C-t19 | step-5-preview | 10290 | 608 | 0 | 24000 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ac9927ffeCvv6lhg4O57ZkW | t26-longdialogue36-C-t20 | step-5-preview | 63 | 3534 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ac503bffe5KHAxHPcHsa6Fi | t26-longdialogue36-C-t21 | step-5-preview | 46 | 270 | 0 | 27328 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e10ac3776ffe40CHFq3ZHgn1bu | t26-longdialogue36-C-t21 | step-5-preview | 46 | 484 | 0 | 27328 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e10ac1405ffegcBUTi6678E42j | t26-longdialogue36-C-t22 | step-5-preview | 73 | 319 | 0 | 30848 | 0 | 0 | $0.00 |
+| 2026-11-18 | ses_e10abfad3ffeANK4yCBP6bFLCR | t26-longdialogue36-C-t23 | step-5-preview | 61 | 972 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10abd447ffemNSs8jYRNyMOa5 | t26-longdialogue36-C-t24 | step-5-preview | 48 | 931 | 0 | 27328 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10abaaffffexNVpET9LvM05nN | t26-longdialogue36-C-t25 | step-5-preview | 64 | 2095 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ab731effeU1bGiNsVq1e81A | t26-longdialogue36-C-t26 | step-5-preview | 60 | 2360 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ab3878ffe3m5J02thkrDLej | t26-longdialogue36-C-t27 | step-5-preview | 6397 | 2151 | 0 | 27328 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10ab01e4ffeFLL7lotsdobzeM | t26-longdialogue36-C-t28 | step-5-preview | 63 | 983 | 0 | 34240 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aade90ffeSct4T7fUA2ROqH | t26-longdialogue36-C-t29 | step-5-preview | 63 | 1172 | 0 | 30656 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aab676ffevhyatUuEMDGdfm | t26-longdialogue36-C-t30 | step-5-preview | 6756 | 378 | 0 | 32256 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aa9caaffePa213MmOXgilJt | t26-longdialogue36-C-t30 | step-5-preview | 36 | 562 | 0 | 38976 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aa7ddbffeLLJpFX2BBEB61Z | t26-longdialogue36-C-t31 | step-5-preview | 8521 | 1604 | 0 | 24000 | 0 | 0 | $0.02 |
+| 2026-11-18 | ses_e10aa4fcfffeDoA3qFJE8eOAq3 | t26-longdialogue36-C-t32 | step-5-preview | 52 | 415 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aa3678ffeI9oZFTjBrZ0rpw | t26-longdialogue36-C-t33 | step-5-preview | 64 | 529 | 0 | 39168 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10aa1a65ffe5HTWFCsLr8kC5T | t26-longdialogue36-C-t34 | step-5-preview | 64 | 3704 | 0 | 39168 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10a9c735ffeLf05ouZcmRkqdW | t26-longdialogue36-C-t35 | step-5-preview | 51 | 1629 | 0 | 40768 | 0 | 0 | $0.01 |
+| 2026-11-18 | ses_e10a991f4ffe02AJIWpcnWVDrL | t26-longdialogue36-C-t36 | step-5-preview | 60 | 739 | 0 | 40768 | 0 | 0 | $0.01 |
 <!-- cost-rows:end -->
 
 Примечания к прод-таблице:

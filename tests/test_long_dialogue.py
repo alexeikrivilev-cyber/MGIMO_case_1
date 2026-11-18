@@ -181,7 +181,18 @@ class TestPreregistration26(unittest.TestCase):
         self.assertTrue((RUNS_T26 / "PREREGISTRATION.md").is_file(),
                         "копия предрегистрации обязана лежать в журнале и быть в git")
         measurements = (REPO_ROOT / "docs/research/measurements.md").read_text(encoding="utf-8")
-        section = measurements[measurements.index("## 34. TASK-hermes-26"):].rstrip()
+        # §34 — от её заголовка до следующего раздела «## » или до подраздела
+        # РЕЗУЛЬТАТ: после прогонов в §34 дописывается результат (дом-паттерн
+        # §33), но замороженные байты копии он не меняет — копия обязана
+        # содержать предрегистрационную часть дословно.
+        start = measurements.index("## 34. TASK-hermes-26")
+        rest = measurements[start:]
+        next_section = rest.find("\n## ", 1)
+        section = rest[:next_section] if next_section != -1 else rest
+        result_at = section.find("### 34.6 РЕЗУЛЬТАТ")
+        if result_at != -1:
+            section = section[:result_at]
+        section = section.rstrip()
         copy = (RUNS_T26 / "PREREGISTRATION.md").read_text(encoding="utf-8")
         self.assertIn(section, copy,
                       "тело копии разошлось с measurements.md §34 — предрегистрация подменена")
@@ -386,6 +397,126 @@ class TestM1Anchors(unittest.TestCase):
         self.assertEqual(len(values), len(set(values)), "дубликаты значений в anchor-таблице")
         for required in (21, 34, 26.54, 56.21, 0.8411, 0.75, 273):
             self.assertIn(required, values)
+
+    def test_journal_header_numbers_are_not_claims(self):
+        """Шапка журнала («поворот N из 36») — метаданные, не утверждения.
+
+        Дефект того же класса, что sessionID и ISO-даты в §33: «36» из
+        «поворот 36 из 36» оказывалось ближе к anchor 38.01 (5.3%), чем к
+        34 (5.9%), и сырой счётчик давал «контрадикцию» в КАЖДОМ из 72
+        поворотов §34, включая контрольную руку. Найден адъюдикацией
+        первого прогона §34, исправлен в измерителе и опубликован.
+        """
+        record = DRIVER.answer_record_text(
+            "A", 36, "ses_e10b840c9ffeH2rhXVqedeiCzo", "OK", 1,
+            "Метрика успеха — удержание на 30-й день, baseline 21% [допущение].",
+        )
+        result = SCORER.score_m1(record, DRIVER.TURNS[36])
+        self.assertEqual(result["contradictions"], 0, result["contradiction_details"])
+        self.assertEqual(result["ok"], 1)
+        self.assertIn("из 36", record, "проверка должна идти на записи с шапкой поворота")
+
+    def test_strip_non_claims_removes_header_keeps_answer(self):
+        record = DRIVER.answer_record_text(
+            "A", 21, "ses_e10b840c9ffeH2rhXVqedeiCzo", "OK", 2, "Отток 26.54%.",
+        )
+        cleaned = SCORER.strip_non_claims(record)
+        self.assertNotIn("из 36", cleaned)
+        self.assertNotIn("ses_e10b840c9ffe", cleaned)
+        self.assertIn("26.54%", cleaned, "ответ агента зачищаться не должен")
+
+
+class TestM1JournalHeader(unittest.TestCase):
+    """Регресс дефекта измерителя §34: журнальная шапка не даёт «контрадикций».
+
+    Дефект найден прогоном TASK-hermes-26 ДО адъюдикации: шапка записи
+    «Рука A, поворот 21 из 36; статус OK, попыток 2» не чистилась, и
+    числа журнала (36/21/2) извлекались как утверждения — «36» ближе к
+    anchor 38.01 (5.3%), чем к 34 (5.9%), поэтому сырой счётчик давал
+    «контрадикцию» в КАЖДОМ из 72 поворотов обеих рук, включая
+    контрольную. Правка (`JOURNAL_HEADER_RE` в `strip_non_claims`)
+    убирает всё до разделителя `---` — метаданные журнала; после него
+    идёт дословный ответ агента, который и измеряется. Дефект того же
+    класса, что sessionID/ISO-даты в §33: чистится в измерителе и
+    публикуется, а не спрятан в адъюдикации.
+    """
+
+    def score(self, answer: str, question: str = "") -> dict:
+        return SCORER.score_m1(answer, question)
+
+    def test_header_numbers_are_not_claims_in_any_turn(self):
+        """Во всех 36 поворотах обеих рук шапка не создаёт ни одной находки."""
+        clean = "Метрика — удержание на 30-й день, baseline 21% (project/brief.md)."
+        for arm in ("A", "C"):
+            for turn in range(1, 37):
+                record = DRIVER.answer_record_text(
+                    arm, turn, "ses_test", "OK", 2, clean
+                )
+                result = self.score(record, DRIVER.TURNS[turn])
+                self.assertEqual(
+                    result["contradictions"], 0,
+                    f"{arm} поворот {turn}: шапка журнала дала «контрадикцию» "
+                    f"{result['contradiction_details']}",
+                )
+
+    def test_real_turn_21_record_header_adds_nothing(self):
+        """Дословная форма дефекта: узкий поворот 21 с числами 36/21/2 в шапке.
+
+        Инвариант точный: шапка не добавляет ни одной находки к тем, что
+        даёт сам ответ. В ответе поворота 21 есть 58.05% — реальная
+        величина ev-002 вне замороженной anchor-таблицы; по дизайну
+        измерителя это СЫРАЯ находка (её разбирает адъюдикация:
+        `M1-adjudication.json`, ключ A:21:00). Дефект шапки заключался
+        не в находках ответа, а в находках журнала (36/21/2) — их и
+        не должно быть.
+        """
+        answer = (
+            "**96.52%** новичков (когорта tenure 0–3 мес) — на month-to-month: "
+            "n = 1 025 из 1 062; их отток — 58.05% (ev-002)."
+        )
+        record = DRIVER.answer_record_text(
+            "A", 21, "ses_e10b840c9ffeH2rhXVqedeiCzo", "FAILED", 2, answer
+        )
+        with_header = self.score(record, DRIVER.TURNS[21])
+        without_header = self.score(answer, DRIVER.TURNS[21])
+        header_claims = {c["as_written"] for c in with_header["contradiction_details"]}
+        body_claims = {c["as_written"] for c in without_header["contradiction_details"]}
+        self.assertEqual(header_claims, body_claims,
+                         "шапка журнала добавляет находки сверх тех, что даёт ответ")
+        self.assertNotIn("36", header_claims)
+        self.assertNotIn("21", header_claims)
+        # 58.05% — ожидаемая СЫРАЯ находка (пробел таблицы), не дефект шапки
+        self.assertIn("58.05 %", header_claims)
+
+    def test_answer_after_separator_is_still_scored(self):
+        """Зачистка не съедает ответ агента: число ПОСЛЕ `---` измеряется."""
+        record = DRIVER.answer_record_text(
+            "A", 5, "ses_test", "OK", 1, "Удержание упало до 24%."
+        )
+        result = self.score(record, DRIVER.TURNS[5])
+        self.assertEqual(result["contradictions"], 1, "24% против anchor 21%")
+        self.assertEqual(result["contradiction_details"][0]["value"], 24.0)
+
+    def test_strip_removes_header_but_keeps_body(self):
+        text = (
+            "# Рука A, поворот 36 — ответ агента (дословно)\n\n"
+            "> Вопрос РП: тест\n>\n"
+            "> sessionID: ses_abcdefgh12345678\n>\n"
+            "> Рука A, поворот 36 из 36; статус OK, попыток 2\n\n"
+            "---\n\n"
+            "Удержание 21%, решение от 2026-11-17, отток 26.54% (ev-002)."
+        )
+        stripped = SCORER.strip_non_claims(text)
+        self.assertNotIn("36", stripped)
+        self.assertNotIn("ses_", stripped)
+        self.assertNotIn("2026", stripped)
+        self.assertIn("21%", stripped)
+        self.assertIn("26.54%", stripped)
+
+    def test_text_without_header_is_untouched(self):
+        """Ответ без журнальной шапки (например, в юнит-входах) не режется."""
+        text = "Удержание упало до 24%."
+        self.assertEqual(SCORER.strip_non_claims(text), text)
 
 
 class TestM2Grounding(unittest.TestCase):
@@ -761,6 +892,31 @@ class TestMemoryProbes34(unittest.TestCase):
         )
         self.assertEqual(result["drift_turns_vs_baseline"], [35])
         self.assertEqual(result["probes"][35]["wrong_baseline_candidates"], ["24 %"])
+
+    def test_incidental_evidence_value_is_not_baseline_drift(self):
+        """Ложноположительный режим измерителя §34, исправленный и опубликованный.
+
+        Рука C2, повороты 20 и 26: проба называет метрику и baseline
+        правильно, но в другом абзаце того же ответа процитировано
+        реальное значение evidence «21.75%» (e-check, ev-002) — эвристика
+        без фильтра строк давала «расхождение пробы». Форма синтетики
+        повторяет настоящий ответ: величина — отдельной строкой.
+        Базовая строка должна оставаться находкой: неверный baseline В
+        строке о метрике — довод.
+        """
+        incidental = (
+            "Метрика успеха — удержание на 30-й день, baseline 21% [допущение].\n"
+            "Отдельно: доля e-check среди новичков 46.89% vs 21.75% (ev-002)."
+        )
+        result = SCORER.score_m3(self.answers({20: incidental}))
+        self.assertEqual(result["drift_turns_vs_baseline"], [],
+                         "инцидентальное значение evidence — не дрейф baseline")
+        self.assertEqual(result["probes"][20]["wrong_baseline_candidates"], [])
+        # негативный контроль: тот же 24% В строке о метрике по-прежнему довод
+        wrong = "Метрика — удержание на 30-й день, baseline 24%."
+        self.assertEqual(
+            SCORER.score_m3(self.answers({20: wrong}))["drift_turns_vs_baseline"], [20]
+        )
 
     def test_short_journal_has_no_false_drift(self):
         """Журнал §33 (12 поворотов): прова 15+ отсутствуют — сравнивать не с чем."""
