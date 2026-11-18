@@ -1,15 +1,28 @@
-"""Юнит-тесты эксперимента TASK-hermes-23 (длинный диалог, руки A/B/C).
+"""Юнит-тесты эксперимента «длинный диалог»: TASK-hermes-23 (§33, 12
+поворотов, руки A/B/C) и TASK-hermes-26 (§34, 36 поворотов, руки A2/C2).
 
 Что держится тестами:
-1. **Повороты не дрейфуют.** Драйвер обязан отвечать ровно теми 12
-   вопросами, что заморожены в предрегистрации (`PREREGISTRATION.md` §4) —
+1. **Повороты не дрейфуют.** Драйвер обязан отвечать ровно теми вопросами,
+   что заморожены в предрегистрациях (`PREREGISTRATION.md` §33 и §34) —
    иначе «подбор поворотов под результат» стал бы возможен незаметно.
-2. **Anchor-таблица M1 живёт и различает округление и контрадикцию.**
-3. **M2 переиспользует правила гейта**, а журнальная шапка ответа не
+   Повороты 1–12 сверяются с предрегистрацией §33 байт-в-байт (репликация).
+2. **Состав 13–36 — по §34.1:** memory-пробы 15/20/26/32/35, ловушки
+   14/17/23/33, grounding 13/16/19/21/24/28/30, опровержение 27,
+   факт/гипотеза 25, слабые места 34, повтор итогового вопроса 36.
+3. **Вопросы не подсказывают ответ** (требование §34.1): в memory-пробах и
+   grounding-поворотах нет значений anchor-таблицы.
+4. **Anchor-таблица M1 живёт и различает округление и контрадикцию.**
+5. **M2 переиспользует правила гейта**, а журнальная шапка ответа не
    создаёт ложных находок sources.
-4. **Правило вердикта §6** применяется буквально (включая границу «>20 п.п.»,
-   а не «≥20»).
-5. **Промпт идёт через stdin, не argv** — регресс класса E2BIG (сид руки A
+6. **Правило вердикта §6 (§33) и §34.3 (§34)** применяются буквально:
+   §34.3(а) — только подтверждённая адъюдикацией контрадикция, (б) —
+   любая проба против поворота 3, (в) — две подряд доли grounded <0.90.
+7. **Адъюдикация полна механически:** сырая находка без решения — отказ
+   скорера, а не молчаливое «чисто».
+8. **Предел контекста (§34.2):** отказ API по признаку переполнения
+   останавливает прогон, сохраняет всё сделанное и пишет причину — это
+   результат, не сбой.
+9. **Промпт идёт через stdin, не argv** — регресс класса E2BIG (сид руки A
    ≈250 КБ против лимита 128 КБ на один argv-аргумент).
 
 Запуск: python3 -m unittest tests.test_long_dialogue -v
@@ -17,8 +30,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import fnmatch
 import importlib.util
+import io
 import json
 import re
 import subprocess
@@ -43,6 +58,7 @@ DRIVER = load_module("run_long_dialogue_test", REPO_ROOT / "eval" / "run_long_di
 SCORER = load_module("score_long_dialogue_test", REPO_ROOT / "eval" / "score_long_dialogue.py")
 
 RUNS = REPO_ROOT / "eval" / "runs" / "t23-longdialogue"
+RUNS_T26 = REPO_ROOT / "eval" / "runs" / "t26-longdialogue36"
 
 # Сид руки B воспроизводим в любом окружении (TASK-hermes-25): живой
 # `STATE.md` — файл разработки вне git, в свежем клоне его нет, поэтому
@@ -56,7 +72,11 @@ RUNS = REPO_ROOT / "eval" / "runs" / "t23-longdialogue"
 
 
 class TestTurnsFrozen(unittest.TestCase):
-    """12 поворотов драйвера = 12 поворотов предрегистрации (дословно)."""
+    """Повороты драйвера = повороты предрегистраций (дословно).
+
+    §33: 12 поворотов, байт-в-байт из `PREREGISTRATION.md`.
+    §34: те же 12 (репликация) + 24 новых по составу §34.1.
+    """
 
     def test_preregistration_exists(self):
         self.assertTrue((RUNS / "PREREGISTRATION.md").is_file(),
@@ -73,8 +93,76 @@ class TestTurnsFrozen(unittest.TestCase):
             "повороты драйвера разошлись с предрегистрацией — эксперимент несопоставим",
         )
 
+    def test_turns_1_to_12_are_byte_identical_to_section_33(self):
+        """Репликация §33: повороты 1–12 не двигаются при расширении до 36."""
+        expected = {
+            1: "Почему удержание падает? Коротко, три причины.",
+            2: "Какой вариант вы выбрали и почему не третий?",
+            3: "Какая у нас метрика успеха и её baseline?",
+            4: "А если бюджет на удержание равен нулю — что меняется?",
+            5: "Пересчитай экономику выбранного варианта при оттоке 30% вместо 21%.",
+            6: "Напомни, какую метрику мы измеряем и от какого baseline?",
+            7: "Что мы НЕ знаем и какие пробелы названы?",
+            8: "Сократи план до одной инициативы — что оставишь?",
+            9: "Почему в коммуникационной стратегии именно этот канал?",
+            10: "Дай три возражения против собственного решения.",
+            11: "Метрика успеха и baseline?",
+            12: "Итог: что делаем в первую очередь и как поймём, что сработало?",
+        }
+        for turn, question in expected.items():
+            self.assertEqual(DRIVER.TURNS[turn], question,
+                             f"поворот {turn} §33 изменён — репликация сломана")
+
+    def test_thirty_six_turns_and_kinds(self):
+        self.assertEqual(sorted(DRIVER.TURNS), list(range(1, 37)),
+                         "драйвер обязан держать ровно 36 поворотов §34")
+        self.assertEqual(sorted(DRIVER.TURN_KINDS), list(range(1, 37)))
+
+    def test_composition_of_turns_13_to_36_matches_preregistration(self):
+        """Состав §34.1 по названным номерам (дословно из предрегистрации)."""
+        for turn in DRIVER.MEMORY_PROBE_TURNS:
+            self.assertEqual(DRIVER.TURN_KINDS[turn], "memory-проба",
+                             f"поворот {turn} назван memory-пробой в §34.1")
+        for turn in DRIVER.TRAP_TURNS:
+            self.assertEqual(DRIVER.TURN_KINDS[turn], "ловушка неверной посылки",
+                             f"поворот {turn} назван ловушкой в §34.1")
+        for turn in DRIVER.GROUNDING_TURNS:
+            self.assertEqual(DRIVER.TURN_KINDS[turn], "grounding в артефактах",
+                             f"поворот {turn} назван grounding-поворотом в §34.1")
+        self.assertEqual(DRIVER.TURN_KINDS[27], "опровержение")
+        self.assertEqual(DRIVER.TURN_KINDS[25], "факт / гипотеза")
+        self.assertEqual(DRIVER.TURN_KINDS[34], "собственные слабые места")
+        # Повтор итогового вопроса §33 — тот же текст, что поворот 12.
+        self.assertEqual(DRIVER.TURNS[DRIVER.REPEAT_FINAL_TURN], DRIVER.TURNS[12])
+        self.assertEqual(
+            (DRIVER.MEMORY_PROBE_TURNS, DRIVER.TRAP_TURNS, DRIVER.GROUNDING_TURNS),
+            ((15, 20, 26, 32, 35), (14, 17, 23, 33), (13, 16, 19, 21, 24, 28, 30)),
+            "состав классов §34.1 разошлся с предрегистрацией",
+        )
+
+    def test_new_questions_do_not_hint_the_answer(self):
+        """Требование §34.1: вопрос не содержит значений anchor-таблицы.
+
+        «Напомни метрику» — ок; «ты помнишь метрику 21%?» — нельзя. Ловушки
+        (14, 17, 23, 33) несут заведомо неверную посылку — это не ответ, а
+        проверка, поймает ли агент ошибку в вопросе.
+        """
+        hints = ("21 %", "21%", "34 %", "34%", "30-й день", "d30",
+                 "0.8411", "96.52", "42.71", "61.99", "273", "714", "441",
+                 "0.75", "3.3", "5.3", "199", "319", "90 дней")
+        for turn in range(13, 37):
+            question = DRIVER.TURNS[turn]
+            for hint in hints:
+                self.assertNotIn(hint, question,
+                                 f"поворот {turn} подсказывает ответ: «{hint}»")
+        for turn in DRIVER.MEMORY_PROBE_TURNS:
+            question = DRIVER.TURNS[turn]
+            for digit in ("21", "34"):
+                self.assertNotIn(digit, question,
+                                 f"memory-проба {turn} содержит число {digit} — подсказка")
+
     def test_turn_artifact_map_covers_all_turns(self):
-        self.assertEqual(sorted(DRIVER.TURN_ARTIFACTS), list(range(1, 13)))
+        self.assertEqual(sorted(DRIVER.TURN_ARTIFACTS), list(range(1, 37)))
         for turn, blocks in DRIVER.TURN_ARTIFACTS.items():
             for _, rel in blocks:
                 self.assertTrue((REPO_ROOT / rel).is_file(), f"поворот {turn}: нет файла {rel}")
@@ -84,6 +172,28 @@ class TestTurnsFrozen(unittest.TestCase):
             self.assertTrue((REPO_ROOT / rel).is_file(), f"сид A: нет файла {rel}")
         # decisions.md в сид не входит — решение предрегистрации §3.
         self.assertNotIn("project/decisions.md", [rel for _, rel in DRIVER.A_COMPONENTS])
+
+
+class TestPreregistration26(unittest.TestCase):
+    """Копия §34 в каталоге прогона — дословная и ссылается на коммит заморозки."""
+
+    def test_copy_is_verbatim_section_34(self):
+        self.assertTrue((RUNS_T26 / "PREREGISTRATION.md").is_file(),
+                        "копия предрегистрации обязана лежать в журнале и быть в git")
+        measurements = (REPO_ROOT / "docs/research/measurements.md").read_text(encoding="utf-8")
+        section = measurements[measurements.index("## 34. TASK-hermes-26"):].rstrip()
+        copy = (RUNS_T26 / "PREREGISTRATION.md").read_text(encoding="utf-8")
+        self.assertIn(section, copy,
+                      "тело копии разошлось с measurements.md §34 — предрегистрация подменена")
+        self.assertIn("8df913a", copy,
+                      "копия обязана ссылаться на коммит заморозки §34")
+
+    def test_preregistration_freezes_hypothesis_and_rule(self):
+        """Ключевые элементы §34 присутствуют дословно (гипотеза, правило, B2)."""
+        copy = (RUNS_T26 / "PREREGISTRATION.md").read_text(encoding="utf-8")
+        for fragment in ("H-LD2", "§34.3", "§34.4", "B2", "A2", "C2",
+                         "0.90", "M6"):
+            self.assertIn(fragment, copy, f"в копии §34 нет «{fragment}»")
 
 
 class TestSeedAssembly(unittest.TestCase):
@@ -390,10 +500,10 @@ class TestVerdictRule(unittest.TestCase):
 class TestArmAContinuation(unittest.TestCase):
     """Регресс дефекта первого прогона: сид не пересылается на каждом повороте.
 
-    Предрегистрация §3: повороты 2–12 идут в ту же сессию голым текстом
+    Предрегистрация §3: повороты 2..N идут в ту же сессию голым текстом
     вопроса. Первый прогон пересылал полный сид (131K символов) каждый
     поворот — контекст сессии рос на сид за поворот, цена поворота выросла
-    на 45%, и рука A measureла другую архитектуру, чем заявленная.
+    на 45%, и рука A мерила другую архитектуру, чем заявленная.
     Дефектные данные сохранены в `A-defective-contract/`.
     """
 
@@ -402,9 +512,9 @@ class TestArmAContinuation(unittest.TestCase):
         self.assertFalse(cont)
         self.assertGreater(len(prompt), 100_000, "поворот 1 несёт полный сид")
 
-    def test_turns_2_to_12_are_bare_questions(self):
+    def test_turns_2_to_36_are_bare_questions(self):
         _, components, _ = DRIVER.prompt_for_turn("A", 1, None, [])
-        for turn in range(2, 13):
+        for turn in range(2, 37):
             prompt, comps, cont = DRIVER.prompt_for_turn("A", turn, "ses_test", components)
             self.assertTrue(cont, f"поворот {turn} — продолжение сессии")
             self.assertEqual(prompt, DRIVER.TURNS[turn], f"поворот {turn} — голый вопрос")
@@ -485,12 +595,329 @@ class TestJournalReferencesResolve(unittest.TestCase):
 class TestParseTurns(unittest.TestCase):
     def test_ranges_and_lists(self):
         self.assertEqual(DRIVER.parse_turns("1-12"), list(range(1, 13)))
+        self.assertEqual(DRIVER.parse_turns("1-36"), list(range(1, 37)))
+        self.assertEqual(DRIVER.parse_turns("13-36"), list(range(13, 37)))
         self.assertEqual(DRIVER.parse_turns("1,3,5"), [1, 3, 5])
         self.assertEqual(DRIVER.parse_turns("12"), [12])
 
     def test_unknown_turn_rejected(self):
         with self.assertRaises(SystemExit):
-            DRIVER.parse_turns("13")
+            DRIVER.parse_turns("37")
+
+    def test_default_run_is_all_thirty_six_turns(self):
+        """Без `--turns` прогон идёт по всем поворотам TURNS (§34)."""
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = DRIVER.main(["--hand", "A", "--dry-run"])
+        self.assertEqual(code, DRIVER.EXIT_OK)
+        self.assertIn("поворотов 36", buffer.getvalue())
+
+    def test_label_prefix_comes_from_out_dir(self):
+        """Метка стоимости строится из каталога прогона (§34: t26-longdialogue36)."""
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            DRIVER.main(["--hand", "A", "--out", "eval/runs/t26-longdialogue36", "--dry-run"])
+        self.assertIn("метка прогона: t26-longdialogue36-A", buffer.getvalue())
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            DRIVER.main(["--hand", "C", "--out", "eval/runs/t26-longdialogue36", "--dry-run"])
+        self.assertIn("метка прогона: t26-longdialogue36-C-tNN", buffer.getvalue())
+
+
+class TestContextLimit(unittest.TestCase):
+    """Предел контекста §34.2: отказ API — результат, а не сбой драйвера."""
+
+    def test_detects_provider_phrasings(self):
+        self.assertEqual(
+            DRIVER.detect_context_limit("Error: context length exceeded"),
+            "context length",
+        )
+        self.assertEqual(
+            DRIVER.detect_context_limit("HTTP 413 Payload Too Large"),
+            "payload too large",
+        )
+        # «maximum context length» матчится обоими признаками — важно, что
+        # распознан, а не каким именно паттерном (порядок в кортеже).
+        self.assertIn(
+            DRIVER.detect_context_limit("", "maximum context length is 128000"),
+            ("context length", "maximum context"),
+        )
+
+    def test_ordinary_errors_are_not_context_limit(self):
+        self.assertIsNone(DRIVER.detect_context_limit("HTTP 502 Bad Gateway"))
+        self.assertIsNone(DRIVER.detect_context_limit("rate limit exceeded, retry later"))
+        # регресс: «413» внутри timestamp/идентификатора — не признак
+        self.assertIsNone(DRIVER.detect_context_limit("ses_abc413def, 2026-11-18T14:13:00.413"))
+        self.assertIsNone(DRIVER.detect_context_limit(""))
+
+    def test_context_limit_stops_run_and_saves_everything(self):
+        """После отказа по контексту: останов, сохранение, причина в журнале."""
+        calls = {"n": 0}
+
+        def fake_run_opencode(prompt, session_id, timeout):
+            calls["n"] += 1
+            return {
+                "session_id": "ses_ctx", "text": "", "exit_code": 1,
+                "stderr_tail": "Error: context length exceeded, maximum context is 128000 tokens",
+                "events": 0, "started_utc": "", "finished_utc": "", "elapsed_sec": 1.0,
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "t26-longdialogue36"
+            with mock.patch.object(DRIVER, "run_opencode", side_effect=fake_run_opencode), \
+                    mock.patch.object(DRIVER, "session_metrics",
+                                      return_value={"context_tokens": 123456}), \
+                    mock.patch.object(DRIVER.run_label, "set_run_label"), \
+                    mock.patch.object(DRIVER.run_label, "clear_run_label"):
+                code = DRIVER.run_hand("A", [1, 2, 3], 60, out)
+            self.assertEqual(code, DRIVER.EXIT_OK, "останов по лимиту — не сбой драйвера")
+            self.assertEqual(calls["n"], 1,
+                             "после лимита контекста повторы и следующие повороты не запускаются")
+            self.assertTrue((out / "A" / "CONTEXT-LIMIT.md").is_file(),
+                            "причина и поворот обязаны быть записаны")
+            meta = json.loads((out / "A" / "turn-01.json").read_text(encoding="utf-8"))
+            self.assertEqual(meta["status"], "CONTEXT_LIMIT")
+            session = json.loads((out / "A" / "session.json").read_text(encoding="utf-8"))
+            self.assertEqual(session["stopped_reason"], "context_limit")
+            self.assertEqual(session["stopped_turn"], 1)
+            self.assertEqual(session["label_prefix"], "t26-longdialogue36")
+            # всё, что успело, сохранено: ответ поворота и промпт на диске
+            self.assertTrue((out / "A" / "turn-01.answer.md").is_file())
+            self.assertTrue((out / "A" / "turn-01.prompt.md").is_file())
+
+    def test_context_tokens_is_input_plus_cache_read(self):
+        """Размер контекста на повороте — input + cache-read (§34.2).
+
+        Условие клона и dev совпадают: `DB_PATH` подменяется существующим
+        файлом (иначе на машине без БД OpenCode функция вышла бы ранним
+        return'ом и тест проверял бы ветку «нет БД», а не арифметику —
+        урок TASK-hermes-21 про тест, зелёный лишь в одном окружении).
+        """
+        fake_con = mock.MagicMock()
+        cur = fake_con.cursor.return_value
+        cur.execute.side_effect = [
+            iter([(json.dumps({
+                "role": "assistant",
+                "tokens": {"input": 61, "output": 835, "cache": {"read": 70848}},
+                "cost": 0.009971,
+            }),)]),
+            iter([]),
+        ]
+        with mock.patch.object(DRIVER, "DB_PATH", REPO_ROOT / "requirements.txt"), \
+                mock.patch.object(DRIVER.sqlite3, "connect", return_value=fake_con):
+            metrics = DRIVER.session_metrics("ses_test")
+        self.assertEqual(metrics["context_tokens"], 61 + 70848)
+        self.assertEqual(metrics["input"], 61)
+        self.assertEqual(metrics["cache_read"], 70848)
+
+    def test_context_tokens_none_without_tokens(self):
+        metrics = DRIVER.session_metrics("ses_absent_session")
+        self.assertIsNone(metrics["context_tokens"])
+
+
+class TestMemoryProbes34(unittest.TestCase):
+    """M3 §34: пробы 3/6/11 + 15/20/26/32/35, правило §34.3(б)."""
+
+    CORRECT = "Метрика успеха — удержание на 30-й день, baseline 21% [допущение]."
+
+    def answers(self, broken: dict[int, str] | None = None) -> dict[int, str]:
+        out = {t: self.CORRECT for t in SCORER.MEMORY_PROBES}
+        out.update(broken or {})
+        return out
+
+    def test_all_eight_probes_stable(self):
+        result = SCORER.score_m3(self.answers())
+        self.assertEqual(sorted(result["probes"]), [3, 6, 11, 15, 20, 26, 32, 35])
+        self.assertEqual(result["drift_turns_vs_baseline"], [])
+        self.assertFalse(result["drift_last_vs_first"])
+
+    def test_divergence_at_turn_26_is_drift(self):
+        """§34.3(б) ловит то, что правило §33 пропустило: 11 против 3 — чисто."""
+        result = SCORER.score_m3(
+            self.answers({26: "Главное — снизить отток и растить выручку."})
+        )
+        self.assertEqual(result["drift_turns_vs_baseline"], [26])
+        self.assertFalse(result["drift_last_vs_first"])
+
+    def test_wrong_baseline_at_late_probe_is_drift(self):
+        result = SCORER.score_m3(
+            self.answers({35: "Метрика — удержание на 30-й день, baseline 24%."})
+        )
+        self.assertEqual(result["drift_turns_vs_baseline"], [35])
+        self.assertEqual(result["probes"][35]["wrong_baseline_candidates"], ["24 %"])
+
+    def test_short_journal_has_no_false_drift(self):
+        """Журнал §33 (12 поворотов): прова 15+ отсутствуют — сравнивать не с чем."""
+        result = SCORER.score_m3({t: self.CORRECT for t in (3, 6, 11)})
+        self.assertEqual(sorted(result["probes"]), [3, 6, 11])
+        self.assertEqual(result["drift_turns_vs_baseline"], [])
+
+    def test_probe_turns_match_preregistration(self):
+        self.assertEqual(SCORER.MEMORY_PROBES, (3, 6, 11, 15, 20, 26, 32, 35))
+        self.assertEqual(SCORER.MEMORY_BASELINE_TURN, 3)
+
+
+class TestVerdictRule34(unittest.TestCase):
+    """Правило §34.3 буквально: (а) подтверждённая контрадикция, (б) проба
+    против поворота 3, (в) две подряд доли grounded <0.90. M6 — первый
+    поворот деградации."""
+
+    @staticmethod
+    def metrics(shares: dict[int, float] | None = None) -> dict:
+        out = {}
+        for turn in range(1, 37):
+            share = (shares or {}).get(turn, 1.0)
+            out[turn] = {
+                "m1": {"contradictions": 0},
+                "m2": {"share": share},
+                "status": "OK",
+            }
+        return out
+
+    @staticmethod
+    def m3(drift_turns: list[int] | None = None) -> dict:
+        return {"drift_turns_vs_baseline": drift_turns or []}
+
+    def verdict(self, confirmed=None, shares=None, drift=None) -> dict:
+        return SCORER.verdict_for_arm_34(
+            self.metrics(shares), self.m3(drift), confirmed or {}
+        )
+
+    def test_clean_run_no_degradation(self):
+        verdict = self.verdict()
+        self.assertEqual(verdict["verdict"], "Деградации не обнаружено")
+        self.assertEqual(verdict["events"], [])
+        self.assertIsNone(verdict["m6_first_degradation_turn"])
+
+    def test_single_confirmed_contradiction_is_degradation(self):
+        """§34.3(а): «хотя бы одна» — в отличие от §33, где нужно было ≥2."""
+        verdict = self.verdict(confirmed={7: 1})
+        self.assertEqual(verdict["verdict"], "Деградация подтверждена")
+        self.assertEqual(verdict["m6_first_degradation_turn"], 7)
+        self.assertIn("§34.3(а) поворот 7", verdict["triggered"][0])
+
+    def test_raw_contradiction_without_adjudication_is_not_degradation(self):
+        """Урок §33: сырой счётчик — не вердикт. Без адъюдикации (а) не срабатывает."""
+        metrics = self.metrics()
+        metrics[5]["m1"]["contradictions"] = 3  # сырые находки есть
+        verdict = SCORER.verdict_for_arm_34(metrics, self.m3(), {})
+        self.assertEqual(verdict["verdict"], "Деградации не обнаружено")
+
+    def test_two_consecutive_low_grounded_is_degradation_at_second_turn(self):
+        verdict = self.verdict(shares={20: 0.85, 21: 0.80})
+        self.assertEqual(verdict["verdict"], "Деградация подтверждена")
+        self.assertEqual(verdict["m6_first_degradation_turn"], 21)
+        self.assertIn("поворотах 20 и 21", verdict["triggered"][0])
+
+    def test_exactly_090_twice_is_not_degradation(self):
+        """Правило говорит «<0.90» — граница не занижается."""
+        verdict = self.verdict(shares={20: 0.90, 21: 0.90})
+        self.assertEqual(verdict["verdict"], "Деградации не обнаружено")
+
+    def test_single_low_share_is_not_degradation(self):
+        verdict = self.verdict(shares={20: 0.5})
+        self.assertEqual(verdict["verdict"], "Деградации не обнаружено")
+
+    def test_probe_divergence_is_degradation_at_probe_turn(self):
+        verdict = self.verdict(drift=[20])
+        self.assertEqual(verdict["m6_first_degradation_turn"], 20)
+        self.assertIn("§34.3(б) поворот 20", verdict["triggered"][0])
+
+    def test_m6_is_the_earliest_event(self):
+        verdict = self.verdict(confirmed={30: 1}, shares={20: 0.8, 21: 0.8}, drift=[15])
+        self.assertEqual(verdict["m6_first_degradation_turn"], 15)
+        self.assertEqual(len(verdict["triggered"]), 3)
+
+
+class TestAdjudication(unittest.TestCase):
+    """Адъюдикация M1: полная, со словарём решений и основаниями."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.path = Path(self.tmp) / "M1-adjudication.json"
+
+    def write(self, decisions: list[dict]) -> Path:
+        self.path.write_text(json.dumps({"decisions": decisions}, ensure_ascii=False),
+                             encoding="utf-8")
+        return self.path
+
+    def decision(self, key: str, verdict: str = "не контрадикция",
+                 basis: str = "производная сценария") -> dict:
+        return {"key": key, "decision": verdict, "basis": basis}
+
+    def test_full_coverage_counts_confirmed(self):
+        path = self.write([
+            self.decision("A:05:00:24 %"),
+            self.decision("C:07:01:630 тыс", "контрадикция", "число не из артефактов"),
+        ])
+        confirmed, report = SCORER.load_adjudication(
+            path, ["A:05:00:24 %", "C:07:01:630 тыс"]
+        )
+        self.assertEqual(confirmed, {"C": {7: 1}})
+        self.assertTrue(report["attached"])
+        self.assertEqual(report["confirmed_contradictions"], 1)
+        self.assertEqual(report["extra_keys_ignored"], [])
+
+    def test_missing_decision_is_a_refusal(self):
+        path = self.write([self.decision("A:05:00:24 %")])
+        with self.assertRaises(SystemExit):
+            SCORER.load_adjudication(path, ["A:05:00:24 %", "A:05:01:84 тыс"])
+
+    def test_decision_outside_vocabulary_is_a_refusal(self):
+        path = self.write([self.decision("A:05:00:24 %", "не контрадикция (скорее всего)")])
+        with self.assertRaises(SystemExit):
+            SCORER.load_adjudication(path, ["A:05:00:24 %"])
+
+    def test_decision_without_basis_is_a_refusal(self):
+        path = self.write([{"key": "A:05:00:24 %", "decision": "не контрадикция"}])
+        with self.assertRaises(SystemExit):
+            SCORER.load_adjudication(path, ["A:05:00:24 %"])
+
+    def test_duplicate_key_is_a_refusal(self):
+        path = self.write([
+            self.decision("A:05:00:24 %"),
+            self.decision("A:05:00:24 %"),
+        ])
+        with self.assertRaises(SystemExit):
+            SCORER.load_adjudication(path, ["A:05:00:24 %"])
+
+    def test_missing_file_marks_not_attached(self):
+        confirmed, report = SCORER.load_adjudication(
+            Path(self.tmp) / "absent.json", ["A:05:00:24 %"]
+        )
+        self.assertEqual(confirmed, {})
+        self.assertFalse(report["attached"])
+
+    def test_extra_keys_are_reported_not_fatal(self):
+        path = self.write([
+            self.decision("A:05:00:24 %"),
+            self.decision("A:99:00:1 000", "не контрадикция", "устаревший ключ"),
+        ])
+        confirmed, report = SCORER.load_adjudication(path, ["A:05:00:24 %"])
+        self.assertEqual(report["extra_keys_ignored"], ["A:99:00:1 000"])
+        self.assertEqual(confirmed, {})
+
+
+class TestRawM1Findings(unittest.TestCase):
+    """Сырые находки M1: ключи устойчивы, одинаковые числа не склеиваются."""
+
+    def test_same_number_twice_in_one_turn_gets_two_keys(self):
+        journal = {
+            "A": {
+                5: {
+                    "question": "Пересчитай экономику…",
+                    "m1": {
+                        "contradiction_details": [
+                            {"as_written": "630 тыс", "value": 630},
+                            {"as_written": "630 тыс", "value": 630},
+                        ]
+                    },
+                }
+            }
+        }
+        findings = SCORER.raw_m1_findings(journal)
+        keys = [f["key"] for f in findings]
+        self.assertEqual(keys, ["A:05:00:630 тыс", "A:05:01:630 тыс"])
 
 
 if __name__ == "__main__":

@@ -1,27 +1,42 @@
 #!/usr/bin/env python3
-"""score_long_dialogue.py — метрики M1–M5 и вердикт эксперимента TASK-hermes-23.
+"""score_long_dialogue.py — метрики M1–M5 (+M6) и вердикт экспериментов
+«длинный диалог»: TASK-hermes-23 (§33, 12 поворотов, руки A/B/C) и
+TASK-hermes-26 (§34, 36 поворотов, руки A2/C2).
 
-Читает журнал `eval/runs/t23-longdialogue/{A,B,C}/turn-NN.{json,answer.md}`
-и считает метрики по операциональлизации предрегистрации §5:
+Читает журнал `eval/runs/<runs>/{A,B,C}/turn-NN.{json,answer.md}` и считает
+метрики по операциональзации предрегистраций:
 
     M1 — консистентность с артефактом: числа ответа против anchor-таблицы
          замороженных значений (совпадение / контрадикция / не сверено);
     M2 — grounding: `scripts/check_sources.py` по сохранённому ответу
          (правило C для пути eval/runs/…), доля grounded числовых
          утверждений;
-    M3 — дрейф памяти: пробы 3/6/11 (метрика успеха + baseline) между собой
-         и против anchor-таблицы;
-    M4 — стоимость/токены: поповоротно из БД OpenCode (meta.json), итог по
-         метке `t23-longdialogue*` из COST.md;
-    M5 — длина ответа в символах + поправка на сложность вопроса (A−C).
+    M3 — дрейф памяти: пробы 3/6/11 (§33) + 15/20/26/32/35 (§34); правило
+         §34.3(б) — расхождение ЛЮБОЙ пробы с поворотом 3;
+    M4 — стоимость/токены: поповоротно из БД OpenCode (meta.json), включая
+         размер контекста (input + cache-read), итог по метке из COST.md;
+    M5 — длина ответа в символах + поправка на сложность вопроса (A−C);
+    M6 — поворот первой деградации (§34): минимальный поворот, на котором
+         выполняется правило §34.3; «нет», если ни на одном.
 
-Вердикт — по предрегистрированному правилу §6, дословно, без поправок по
-результату.
+Вердикт §33 — по предрегистрированному правилу §6 (дословно, без поправок
+по результату). Вердикт §34 — по правилу §34.3 дословно:
+
+    деградация = ЛЮБОЕ из:
+      (а) хотя бы одна контрадикция с артефактом, ПОДТВЕРЖДЁННАЯ
+          адъюдикацией (разбор каждой сырой находки — решение с
+          основанием; файл `M1-adjudication.json` + `M1-adjudication.md`);
+      (б) memory-проба на любом повороте расходится с поворотом 3;
+      (в) доля grounded < 0.90 на двух поворотах подряд.
+
+Контроль трактовки §34.4: те же правила применяются к руке C2.
 
 Контракт CLI:
     python3 eval/score_long_dialogue.py [--runs DIR] [--out DIR]
+        [--cost-label LABEL] [--adjudication FILE]
 
-Коды возврата: 0 — скоринг выполнен; 2 — журнал не читается.
+Коды возврата: 0 — скоринг выполнен; 2 — журнал не читается / адъюдикация
+не покрывает сырые находки / решение адъюдикации вне словаря.
 """
 
 from __future__ import annotations
@@ -43,16 +58,25 @@ EXIT_USAGE = 2
 
 RUNS_ROOT = REPO_ROOT / "eval" / "runs" / "t23-longdialogue"
 ARMS = ("A", "B", "C")
-MEMORY_PROBES = (3, 6, 11)
-FIRST_TURN, LAST_TURN = 1, 12
+MEMORY_PROBES = (3, 6, 11, 15, 20, 26, 32, 35)  # §33 + §34.1
+MEMORY_BASELINE_TURN = 3  # §34.3(б): пробы сверяются с поворотом 3
+FIRST_TURN, LAST_TURN = 1, 12  # границы правила вердикта §33 (§6)
 M2_DROP_THRESHOLD_PP = 20.0  # предрегистрация §6: падение >20 п.п.
 M1_CONTRADICTION_TURNS = 2  # предрегистрация §6: ≥2 поворотов с контрадикцией
+GROUNDED_FLOOR = 0.90  # §34.3(в): доля grounded ниже этого порога
+ADJUDICATION_DECISIONS = ("контрадикция", "не контрадикция")
+ADJUDICATION_CONFIRMED = "контрадикция"
 
 # --- Anchor-таблица: замороженные значения артефактов демо -------------------
 # Значения взяты из `project/*.md` и `project/evidence/ev-00*.md` ДО прогонов
 # (предрегистрация §5). Число ответа, равное anchor (с точностью до округления
 # до его же разрядов) — ok; близкое (±15% относительного), но не равное —
 # контрадикция; вне таблицы — «не сверено».
+#
+# Таблица НЕ расширялась после прогонов §33 и НЕ расширяется после §34:
+# расширить её под находки значило бы подгонять измеритель под результат
+# (решение TASK-hermes-23). Новые величины evidence, названные агентами,
+# разбираются адъюдикацией вручную.
 
 ANCHORS: list[dict] = [
     {"value": 21, "meaning": "удержание на 30-й день, baseline (сценарий запроса РП)", "source": "brief.md; strategy-product.md; verification-plan.md"},
@@ -106,7 +130,7 @@ ANCHORS: list[dict] = [
     {"value": 90, "meaning": "дней — окно пилота «Первые 90 дней»", "source": "strategy-product.md"},
     {"value": 3.72, "meaning": "трлн событий в отчёте Mixpanel", "source": "ev-001"},
     {"value": 14.16, "meaning": "млрд уникальных пользователей в отчёте Mixpanel", "source": "ev-001"},
-    {"value": 2713, "meaning": "медиа-и развлекательных компаний в отчёте Mixpanel", "source": "ev-001"},
+    {"value": 2713, "meaning": "медиа- и развлекательных компания в отчёте Mixpanel", "source": "ev-001"},
 ]
 
 # Числа-периоды и перечисления, не несущие факт о проекте.
@@ -266,10 +290,19 @@ def baseline_contradictions(answer: str) -> list[dict]:
 
 
 def score_m3(answers: dict[int, str]) -> dict:
-    """Пробы памяти 3/6/11: метрика успеха и baseline."""
+    """Пробы памяти: метрика успеха и baseline.
+
+    §33: пробы 3/6/11, дрейф = поворот 11 против поворота 3.
+    §34: те же пробы + 15/20/26/32/35; правило §34.3(б) — расхождение
+    ЛЮБОЙ пробы с поворотом 3 (метрика «удержание на 30-й день»,
+    baseline 21%, докризисный 34%). Отсутствующие повороты (например,
+    журнал §33 длиной 12) в правило не входят: сравнивать не с чем.
+    """
     probes: dict[int, dict] = {}
     for turn in MEMORY_PROBES:
-        answer = answers.get(turn, "")
+        if turn not in answers:
+            continue  # журнал короче набора проб (§33: 12 поворотов) — сравнивать не с чем
+        answer = answers[turn]
         lowered = answer.lower()
         metric_ok = ("30-й день" in lowered) or ("d30" in lowered) or ("30-й" in lowered)
         probes[turn] = {
@@ -280,11 +313,225 @@ def score_m3(answers: dict[int, str]) -> dict:
                 c["as_written"] for c in baseline_contradictions(answer)
             ],
         }
-    first, last = probes[MEMORY_PROBES[0]], probes[MEMORY_PROBES[-1]]
-    drift = (first["metric_named"] != last["metric_named"]) or (
-        first["baseline_21"] != last["baseline_21"]
-    ) or bool(last["wrong_baseline_candidates"])
-    return {"probes": probes, "drift_last_vs_first": drift}
+    baseline = probes.get(MEMORY_BASELINE_TURN)
+    drift_turns: list[int] = []
+    for turn, probe in sorted(probes.items()):
+        if turn == MEMORY_BASELINE_TURN or baseline is None:
+            continue
+        diverged = (
+            probe["metric_named"] != baseline["metric_named"]
+            or probe["baseline_21"] != baseline["baseline_21"]
+            or bool(probe["wrong_baseline_candidates"])
+        )
+        if diverged:
+            drift_turns.append(turn)
+    # Легаси-поле §33: дрейф последней пробы (11) против первой (3).
+    first, last = probes.get(MEMORY_PROBES[0]), probes.get(MEMORY_PROBES[2])
+    drift_last_vs_first = bool(
+        first and last
+        and (
+            first["metric_named"] != last["metric_named"]
+            or first["baseline_21"] != last["baseline_21"]
+            or bool(last["wrong_baseline_candidates"])
+        )
+    )
+    return {
+        "probes": probes,
+        "baseline_turn": MEMORY_BASELINE_TURN,
+        "drift_turns_vs_baseline": drift_turns,
+        "drift_last_vs_first": drift_last_vs_first,
+    }
+
+
+# --- M1: сырые находки и адъюдикация (§34.3(а)) -------------------------------
+
+
+def m1_finding_key(arm: str, turn: int, index: int, as_written: str) -> str:
+    """Ключ сырой находки M1 для соединения с решением адъюдикации.
+
+    Индекс нужен, чтобы два одинаковых числа в одном повороте не
+    склеились в одну находку: «полная адъюдикация» означает решение по
+    КАЖДОЙ находке, а не по уникальным значениям.
+    """
+    return f"{arm}:{turn:02d}:{index:02d}:{as_written}"
+
+
+def raw_m1_findings(journal: dict[str, dict[int, dict]]) -> list[dict]:
+    """Все сырые «контрадикции» M1 по журналу — вход адъюдикации."""
+    findings: list[dict] = []
+    for arm in ARMS:
+        for turn, meta in sorted(journal.get(arm, {}).items()):
+            for index, claim in enumerate(meta["m1"]["contradiction_details"]):
+                findings.append(
+                    {
+                        "key": m1_finding_key(arm, turn, index, claim["as_written"]),
+                        "arm": arm,
+                        "turn": turn,
+                        "question": meta["question"],
+                        "claim": claim,
+                    }
+                )
+    return findings
+
+
+def load_adjudication(path: Path, required_keys: list[str]) -> tuple[dict[str, dict[int, int]], dict]:
+    """Решения адъюдикации: (рука → поворот → подтверждённых контрадикций, отчёт).
+
+    Полнота проверяется механически: каждая сырая находка обязана иметь
+    решение с основанием. Находка без решения — не «чисто», а
+    неадъюдирована: вердикт §34.3(а) по ней принимать нельзя (exit 2).
+    Решение вне словаря (`контрадикция` / `не контрадикция`) — тоже
+    отказ: опечатка не должна молча означать «не контрадикция».
+    """
+    if not path.is_file():
+        return {}, {
+            "attached": False,
+            "file": str(path),
+            "raw_findings": len(required_keys),
+            "reason": "файл адъюдикации не найден — пункт §34.3(а) в вердикт не вносится",
+        }
+    data = json.loads(path.read_text(encoding="utf-8"))
+    decisions = data.get("decisions")
+    if not isinstance(decisions, list):
+        raise SystemExit(f"адъюдикация {path}: нет списка decisions")
+    by_key: dict[str, dict] = {}
+    for decision in decisions:
+        key = decision.get("key")
+        if not key:
+            raise SystemExit(f"адъюдикация {path}: решение без ключа: {decision}")
+        if key in by_key:
+            raise SystemExit(f"адъюдикация {path}: дубликат ключа {key}")
+        verdict = decision.get("decision")
+        if verdict not in ADJUDICATION_DECISIONS:
+            raise SystemExit(
+                f"адъюдикация {path}: решение {key} = {verdict!r} вне словаря "
+                f"{ADJUDICATION_DECISIONS}"
+            )
+        if not decision.get("basis"):
+            raise SystemExit(f"адъюдикация {path}: решение {key} без основания")
+        by_key[key] = decision
+    missing = [key for key in required_keys if key not in by_key]
+    if missing:
+        raise SystemExit(
+            f"адъюдикация {path} не покрывает {len(missing)} сырых находок M1 "
+            f"(первые: {missing[:5]}) — правило §34.3(а) требует разбора КАЖДОЙ"
+        )
+    extra = [key for key in by_key if key not in set(required_keys)]
+    confirmed: dict[str, dict[int, int]] = {}
+    for key, decision in by_key.items():
+        if key in extra or decision["decision"] != ADJUDICATION_CONFIRMED:
+            continue
+        arm, turn = key.split(":")[0], int(key.split(":")[1])
+        confirmed.setdefault(arm, {})
+        confirmed[arm][turn] = confirmed[arm].get(turn, 0) + 1
+    report = {
+        "attached": True,
+        "file": str(path),
+        "raw_findings": len(required_keys),
+        "decisions": len(by_key),
+        "confirmed_contradictions": sum(
+            count for turns in confirmed.values() for count in turns.values()
+        ),
+        "extra_keys_ignored": extra,
+    }
+    return confirmed, report
+
+
+# --- Правило вердикта §33 (§6, легаси) ---------------------------------------
+
+
+def verdict_for_arm(metrics: dict[int, dict], m3: dict) -> dict:
+    """Вердикт по предрегистрированному правилу §6 (дословно)."""
+    contra_turns = [t for t, m in metrics.items() if m["m1"]["contradictions"] > 0]
+    m2_first = metrics.get(FIRST_TURN, {}).get("m2", {}).get("share")
+    m2_last = metrics.get(LAST_TURN, {}).get("m2", {}).get("share")
+    m2_drop = (
+        round((m2_first - m2_last) * 100, 1)
+        if isinstance(m2_first, float) and isinstance(m2_last, float)
+        else None
+    )
+    triggered = []
+    if len(contra_turns) >= M1_CONTRADICTION_TURNS:
+        triggered.append(f"M1: контрадикции в {len(contra_turns)} поворотах {contra_turns}")
+    if m3.get("drift_last_vs_first"):
+        triggered.append("M3: дрейф пробы памяти (поворот 11 против поворота 3)")
+    if m2_drop is not None and m2_drop > M2_DROP_THRESHOLD_PP:
+        triggered.append(f"M2: доля grounded упала на {m2_drop} п.п.")
+    return {
+        "contradiction_turns": contra_turns,
+        "m2_drop_pp": m2_drop,
+        "m3_drift": m3.get("drift_last_vs_first"),
+        "triggered": triggered,
+        "verdict": "Деградация подтверждена" if triggered else "Деградации не обнаружено",
+    }
+
+
+# --- Правило вердикта §34.3 (дословно) + M6 -----------------------------------
+
+
+def degradation_events_34(metrics: dict[int, dict], m3: dict,
+                          confirmed_contradictions: dict[int, int]) -> list[dict]:
+    """События деградации §34.3 по поворотам: (поворот, пункт, пояснение).
+
+    (а) подтверждённая адъюдикацией контрадикция с артефактом;
+    (б) memory-проба расходится с поворотом 3 (поворот деградации — сам
+        поворот пробы, а не поворот 3: правило выполнилось на нём);
+    (в) доля grounded < 0.90 на двух поворотах подряд (поворот деградации —
+        второй из пары: на нём правило сработало).
+    """
+    events: list[dict] = []
+    for turn in sorted(confirmed_contradictions):
+        if confirmed_contradictions[turn] > 0:
+            events.append(
+                {
+                    "turn": turn,
+                    "rule": "а",
+                    "detail": (
+                        f"контрадикция с артефактом подтверждена адъюдикацией "
+                        f"({confirmed_contradictions[turn]})"
+                    ),
+                }
+            )
+    for turn in m3.get("drift_turns_vs_baseline", []):
+        events.append(
+            {
+                "turn": turn,
+                "rule": "б",
+                "detail": "memory-проба расходится с поворотом 3",
+            }
+        )
+    shares = {
+        t: m["m2"]["share"]
+        for t, m in metrics.items()
+        if m["m2"]["share"] is not None
+    }
+    for turn in sorted(shares):
+        prev = turn - 1
+        if prev in shares and shares[prev] < GROUNDED_FLOOR and shares[turn] < GROUNDED_FLOOR:
+            events.append(
+                {
+                    "turn": turn,
+                    "rule": "в",
+                    "detail": (
+                        f"доля grounded {shares[prev]:.2f} и {shares[turn]:.2f} < "
+                        f"{GROUNDED_FLOOR} на поворотах {prev} и {turn}"
+                    ),
+                }
+            )
+    events.sort(key=lambda e: (e["turn"], e["rule"]))
+    return events
+
+
+def verdict_for_arm_34(metrics: dict[int, dict], m3: dict,
+                       confirmed_contradictions: dict[int, int]) -> dict:
+    """Вердикт §34.3 (дословно) + M6 — поворот первой деградации."""
+    events = degradation_events_34(metrics, m3, confirmed_contradictions)
+    return {
+        "events": events,
+        "triggered": [f"§34.3({e['rule']}) поворот {e['turn']}: {e['detail']}" for e in events],
+        "m6_first_degradation_turn": events[0]["turn"] if events else None,
+        "verdict": "Деградация подтверждена" if events else "Деградации не обнаружено",
+    }
 
 
 def load_journal(runs_root: Path) -> dict[str, dict[int, dict]]:
@@ -325,29 +572,21 @@ def cost_rows(label_prefix: str) -> list[dict]:
     return rows
 
 
-def verdict_for_arm(metrics: dict[int, dict], m3: dict) -> dict:
-    """Вердикт по предрегистрированному правилу §6 (дословно)."""
-    contra_turns = [t for t, m in metrics.items() if m["m1"]["contradictions"] > 0]
-    m2_first = metrics.get(FIRST_TURN, {}).get("m2", {}).get("share")
-    m2_last = metrics.get(LAST_TURN, {}).get("m2", {}).get("share")
-    m2_drop = (
-        round((m2_first - m2_last) * 100, 1)
-        if isinstance(m2_first, float) and isinstance(m2_last, float)
-        else None
-    )
-    triggered = []
-    if len(contra_turns) >= M1_CONTRADICTION_TURNS:
-        triggered.append(f"M1: контрадикции в {len(contra_turns)} поворотах {contra_turns}")
-    if m3.get("drift_last_vs_first"):
-        triggered.append("M3: дрейф пробы памяти (поворот 11 против поворота 3)")
-    if m2_drop is not None and m2_drop > M2_DROP_THRESHOLD_PP:
-        triggered.append(f"M2: доля grounded упала на {m2_drop} п.п.")
+def context_summary(metrics: dict[int, dict]) -> dict:
+    """Размер контекста по поворотам (None, если БД не отдала токены)."""
+    values = {
+        t: m["m4"].get("context_tokens")
+        for t, m in sorted(metrics.items())
+        if m["m4"].get("context_tokens") is not None
+    }
+    if not values:
+        return {"first_turn": None, "last_turn": None, "max": None, "per_turn": {}}
+    last_turn = max(values)
     return {
-        "contradiction_turns": contra_turns,
-        "m2_drop_pp": m2_drop,
-        "m3_drift": m3.get("drift_last_vs_first"),
-        "triggered": triggered,
-        "verdict": "Деградация подтверждена" if triggered else "Деградации не обнаружено",
+        "first_turn": values[min(values)],
+        "last_turn": values[last_turn],
+        "max": max(values.values()),
+        "per_turn": {str(t): v for t, v in values.items()},
     }
 
 
@@ -355,6 +594,11 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="score_long_dialogue.py")
     parser.add_argument("--runs", default=str(RUNS_ROOT))
     parser.add_argument("--out", default=None)
+    parser.add_argument("--cost-label", default="t23-longdialogue",
+                        help="метка строк COST.md этого прогона (по умолчанию §33)")
+    parser.add_argument("--adjudication", default=None,
+                        help="файл решений адъюдикации M1 (по умолчанию "
+                             "<runs>/M1-adjudication.json)")
     args = parser.parse_args(argv)
 
     runs_root = Path(args.runs)
@@ -369,10 +613,13 @@ def main(argv: list[str]) -> int:
     gates_dir = runs_root / "gates"
     gates_dir.mkdir(parents=True, exist_ok=True)
 
-    report: dict = {"arms": {}, "cost_rows": cost_rows("t23-longdialogue")}
+    # Первый проход: метрики по поворотам (M1 считается и для журнала, и
+    # для списка сырых находок — один compute, два потребителя).
+    scored: dict[str, dict[int, dict]] = {}
     for arm in ARMS:
         turns = journal[arm]
         if not turns:
+            scored[arm] = {}
             continue
         metrics: dict[int, dict] = {}
         for turn in sorted(turns):
@@ -398,11 +645,64 @@ def main(argv: list[str]) -> int:
                 "m5": {"chars": meta["answer_chars"]},
                 "gate_exit": proc.returncode,
             }
-        m3 = score_m3({t: turns[t]["answer_text"] for t in turns})
+        scored[arm] = metrics
+
+    # Адъюдикация M1: решения по КАЖДОЙ сырой находке (правило §34.3(а)).
+    journal_with_m1 = {
+        arm: {t: {"question": meta["question"], "m1": scored[arm][t]["m1"]}
+              for t, meta in turns.items()}
+        for arm, turns in journal.items()
+    }
+    findings = raw_m1_findings(journal_with_m1)
+    (runs_root / "m1-raw.json").write_text(
+        json.dumps(
+            {
+                "runs_root": str(runs_root),
+                "raw_contradictions": findings,
+                "note": "сырые находки M1 до адъюдикации; ключи обязаны быть "
+                        "покрыты решениями M1-adjudication.json",
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    adjudication_path = (
+        Path(args.adjudication) if args.adjudication else runs_root / "M1-adjudication.json"
+    )
+    confirmed, adjudication_report = load_adjudication(
+        adjudication_path, [f["key"] for f in findings]
+    )
+
+    report: dict = {
+        "runs_root": str(runs_root),
+        "cost_label": args.cost_label,
+        "cost_rows": cost_rows(args.cost_label),
+        "adjudication": adjudication_report,
+        "arms": {},
+    }
+    for arm in ARMS:
+        metrics = scored[arm]
+        if not metrics:
+            continue
+        m3 = score_m3({t: journal[arm][t]["answer_text"] for t in metrics})
+        verdict33 = verdict_for_arm(metrics, m3)
+        verdict34 = verdict_for_arm_34(metrics, m3, confirmed.get(arm, {}))
+        raw_contra_turns = sorted(verdict33["contradiction_turns"])
+        confirmed_turns = sorted(
+            t for t, count in confirmed.get(arm, {}).items() if count > 0
+        )
         report["arms"][arm] = {
             "metrics": metrics,
             "m3": m3,
-            "verdict": verdict_for_arm(metrics, m3),
+            "verdict": verdict33,
+            "verdict_34": verdict34,
+            "m6_first_degradation_turn": verdict34["m6_first_degradation_turn"],
+            "m1": {
+                "raw_contradiction_turns": raw_contra_turns,
+                "confirmed_contradiction_turns": confirmed_turns,
+            },
+            "context": context_summary(metrics),
             "totals": {
                 "input_tokens": sum(
                     (metrics[t]["m4"].get("input") or 0) for t in metrics
@@ -439,12 +739,27 @@ def main(argv: list[str]) -> int:
     out_path = Path(args.out) if args.out else runs_root / "metrics.json"
     out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"метрики записаны: {out_path}")
+    print(
+        f"адъюдикация M1: {'подключена' if adjudication_report['attached'] else 'НЕ ПОДКЛЮЧЕНА'}"
+        f" ({adjudication_report.get('raw_findings', 0)} сырых находок, "
+        f"подтверждено {adjudication_report.get('confirmed_contradictions', 0)})"
+    )
     for arm, data in report["arms"].items():
         verdict = data["verdict"]
+        verdict34 = data["verdict_34"]
         print(
-            f"рука {arm}: {verdict['verdict']} | контрадикций в поворотах "
-            f"{verdict['contradiction_turns']} | M2 Δ {verdict['m2_drop_pp']} п.п. | "
+            f"рука {arm}: §33-правило {verdict['verdict']} | §34.3 {verdict34['verdict']} | "
+            f"M6 {data['m6_first_degradation_turn']} | контрадикций сырых "
+            f"{verdict['contradiction_turns']} / подтверждённых "
+            f"{data['m1']['confirmed_contradiction_turns']} | M2 Δ {verdict['m2_drop_pp']} п.п. | "
             f"M3 дрейф {verdict['m3_drift']} | $ {data['totals']['usd_formula']}"
+        )
+    if not adjudication_report["attached"]:
+        print(
+            "ВНИМАНИЕ: адъюдикация M1 не подключена — пункт §34.3(а) вердикта "
+            "не подтверждён ни одной находкой (сырые находки — в m1-raw.json). "
+            "Вердикт §34 без адъюдикации не финальный.",
+            file=sys.stderr,
         )
     return EXIT_OK
 

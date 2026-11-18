@@ -128,6 +128,34 @@ eval/runs/t23-longdialogue/C/*
 eval/runs/t23-longdialogue/A-defective-contract/*
 !eval/runs/t23-longdialogue/A-defective-contract/DEFECT.md
 
+# --- эксперимент «предел длины диалога» (TASK-hermes-26, §34) ---
+# Тот же контракт, что у t23: предрегистрация (копия §34, зафиксирована
+# коммитом 8df913a ДО прогонов), вердикт, метрики, ПОЛНАЯ адъюдикация M1
+# (md для человека + json для скорера — правило §34.3(а) требует решения
+# по каждой сырой находке), сырые находки (m1-raw.json) и дословные ответы
+# 36 поворотов рук A2 и C2. Поворотовые .json, gates/, seed.md и логи —
+# вне git, воспроизводятся драйверами. Руки B в этом эксперименте нет
+# (решение §34.1).
+!eval/runs/t26-longdialogue36/
+eval/runs/t26-longdialogue36/*
+!eval/runs/t26-longdialogue36/PREREGISTRATION.md
+!eval/runs/t26-longdialogue36/M1-adjudication.md
+!eval/runs/t26-longdialogue36/M1-adjudication.json
+!eval/runs/t26-longdialogue36/summary.md
+!eval/runs/t26-longdialogue36/metrics.json
+!eval/runs/t26-longdialogue36/m1-raw.json
+!eval/runs/t26-longdialogue36/A/
+!eval/runs/t26-longdialogue36/C/
+eval/runs/t26-longdialogue36/A/*
+!eval/runs/t26-longdialogue36/A/seed-manifest.json
+!eval/runs/t26-longdialogue36/A/turn-*.answer.md
+eval/runs/t26-longdialogue36/C/*
+!eval/runs/t26-longdialogue36/C/turn-*.answer.md
+# останов по лимиту контекста (§34.2) — если случится: это результат,
+# он обязан быть в git рядом с вердиктом.
+!eval/runs/t26-longdialogue36/CONTEXT-LIMIT.md
+!eval/runs/t26-longdialogue36/A/CONTEXT-LIMIT.md
+
 # --- регрессионные фикстуры и курируемые доказательства исследований ---
 # (t16-addendum, t17-axis, ab-options-demo-retention, critic-matrix,
 #  t13-blindpairs — читаются тестами и цитируются в measurements.md)
