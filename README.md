@@ -481,7 +481,7 @@ README есть путь проверки.
   (`bank-additional-full.csv`, основание ev-001…ev-007) и выходы Phase 2
   ролей прогона Консилиума (доказательство квот R1–R3). Остальное
   сырьё прогонов заменено фикстурами `tests/fixtures/` с записанными
-  значений. Итого tracked — 503 файла (полоса ~375±30, верхняя граница 405:
+  значений. Итого tracked — 506 файлов (полоса ~375±30, верхняя граница 405:
   +98 сверх неё — первичные данные двух экспериментов и human ground
   truth, без которых метрики и вердикты не пересчитать: дословные
   ответы 36 поворотов (12 × 3 руки) эксперимента TASK-hermes-23,
@@ -500,7 +500,7 @@ README есть путь проверки.
 |---|---|
 | [`TZ.md`](TZ.md) | точный текст ТЗ хакатона |
 | [`PRD.md`](PRD.md) | продуктовое и архитектурное решение, риски, DoD |
-| [`docs/submission/`](docs/submission/README.md) | описание работы (6 разделов ТЗ) + PDF + сценарий видео |
+| [`docs/submission/`](docs/submission/README.md) | описание работы (6 разделов ТЗ) + PDF + описание процесса создания + сценарий видео |
 | [`docs/research/measurements.md`](docs/research/measurements.md) | измерения фич: «фича → метрика → результат → решение» |
 | [`docs/research/benchmarks.md`](docs/research/benchmarks.md) | бенчмарки агентных/исследовательских систем 2025–2026 |
 | [`docs/research/hypothesis-validation.md`](docs/research/hypothesis-validation.md) | проверка гипотез (persona, мультиагентность, skills…) с вердиктами |
